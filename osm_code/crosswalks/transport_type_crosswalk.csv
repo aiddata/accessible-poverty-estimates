@@ -1,0 +1,12 @@
+type,group
+bus_stop,ground
+bus_station,ground
+ferry_terminal,water
+taxi,ground
+railway_station,ground
+railway_halt,ground
+apron,air
+airfield,air
+helipad,air
+tram_stop,ground
+airport,air

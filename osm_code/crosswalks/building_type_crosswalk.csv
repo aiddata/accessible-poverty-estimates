@@ -1,0 +1,463 @@
+type,group
+scss,0
+guardhouse,0
+yes2,0
+entrance,0
+dome,0
+Bahay Pag-asa,0
+logistics,0
+balcony,0
+PDEA_Regional_Office,0
+Crystal_Building,0
+DigitalGlobe,0
+Multi-Purpose_Hall,0
+bell_tower,0
+Mixed_Use,0
+bahay_laang,0
+purok_center,0
+no,0
+hs,0
+???,0
+Doña Remedios Trini,0
+no_building,0
+Aqua Ardenta Purifie,0
+Covered Court,0
+stilthouse,0
+canopy,0
+24597,0
+garage,0
+facility,0
+water,0
+Post_1992,0
+bing,0
+kitchen,0
+2,0
+parish shelter,0
+bridge,0
+generic,0
+Taytay-San Juan,0
+truck,0
+Checkpoint,0
+,0
+Mandaluyong,0
+part,0
+y>,0
+repaired,0
+h,0
+construction,0
+meeting center,0
+path,0
+over_water,0
+Generic building,0
+purok shade,0
+yes3,0
+Sanchez Mira Nationa,0
+multipurpose,0
+covered,0
+permanent,0
+Mahacot East RWSA Of,0
+hall,0
+patio,0
+cover court,0
+Covered_Court,0
+garages,0
+unknown,0
+bulpur6hh022,0
+141,0
+public,0
+belfry,0
+yes & no,0
+4,0
+coastline,0
+Not_sure.,0
+with roof,0
+covered_court,0
+undefined,0
+NO,0
+BluVer,0
+terrace,0
+convention and ciult,0
+hh,0
+unclassified,0
+yess,0
+service,0
+Jarbe_Palay_Buying_W,0
+tank,0
+bunker,0
+purok_center_1,0
+Clustered,0
+3,0
+kuboshed,0
+\,0
+cemetery,0
+address,0
+Kaunlaran St.,0
+toilets,0
+REACT_Philippines_In,0
+l,0
+Multipurpose Coopera,0
+connector_bridge_sky,0
+yesq,0
+*,0
+basilica,0
+Waiting_Shed,0
+q,0
+mixed_use,0
+Sanchez Mira Public,0
+footway,0
+Uncertain,0
+130,0
+outbuilding,0
+gatehouse,0
+y],0
+reconstructed,0
+H,0
+gazeebo,0
+unidentified,0
+shed,0
+sty,0
+Idelfonso Tuazon Str,0
+"source=DigitalGlobe,",0
+Vacant Lot,0
+COE,0
+building,0
+purok center,0
+covered court,0
+ye\,0
+guard_house,0
+disused,0
+historic,0
+1,0
+GLC_Bldg.,0
+Gatehouse,0
+carport,0
+wall,0
+active,0
+roof,0
+edificio,0
+minor_basilica,0
+ruins,0
+143,0
+yes “© OpenStreet,0
+?,0
+gothic,0
+gawad kaling phase 1,0
+foundations,0
+Unsure_-_please_chec,0
+Cr,0
+Yakult,0
+Cattubo MPC,0
+nipahuthouse,0
+multiple,0
+"OSS, Alumni, HR, Rec",0
+BFP_Iloilo,0
+Waiting Shed,0
+MAB_Building,0
+tower,0
+yesl,0
+Bagumbayan Riverboat,0
+Building,0
+rural,0
+conctruction,0
+cell tower,commercial
+Reservoir,commercial
+Bus_Terminal,commercial
+stable,commercial
+gymnasium,commercial
+Sanchez Mira Gymnasi,commercial
+motorway,commercial
+transportation,commercial
+Office,commercial
+PTT Gas Station,commercial
+canteen,commercial
+internet_cafe,commercial
+Airport Terminal,commercial
+commercial;retail,commercial
+mausoleum,commercial
+Grocery,commercial
+train_station,commercial
+resort,commercial
+Service,commercial
+daycare,commercial
+bank,commercial
+"Hotel,_Shopping,_Sto",commercial
+shop,commercial
+retail_store,commercial
+convenience,commercial
+commercial,commercial
+C.Alcantara & sons,commercial
+REHABILITATION_CENTE,commercial
+Office_Building,commercial
+Marikina Clean Food,commercial
+business,commercial
+RFJ Construction and,commercial
+"barber_shop,tacloban",commercial
+yes;retail,commercial
+retail;commercial,commercial
+court house and offi,commercial
+DRRM OFFICE,commercial
+Sarisari store,commercial
+supermarket,commercial
+market,commercial
+Bank,commercial
+hotel,commercial
+Canteen,commercial
+carwash,commercial
+Botique,commercial
+pavilion,commercial
+bakehouse,commercial
+Store,commercial
+Studio,commercial
+grocery,commercial
+mall,commercial
+commerical,commercial
+store,commercial
+parking,commercial
+restaurant,commercial
+grocery store,commercial
+public market,commercial
+OSART_office,commercial
+office,commercial
+town plaza,commercial
+marketplace,commercial
+airport_terminal,commercial
+Day Care Center,commercial
+internet cafe,commercial
+Convenience_Store,commercial
+hangar,commercial
+convention hall,commercial
+day care center,commercial
+pool,commercial
+daycarecenter,commercial
+Car_Wash,commercial
+business establishme,commercial
+Shopping_and_Retail,commercial
+store_shop,commercial
+Sari-sari store,commercial
+Company_Office,commercial
+retail,commercial
+collapsed,damaged
+residential;collapse,damaged
+demolished,damaged
+abandoned,damaged
+damaged,damaged
+damage,damaged
+destroyed,damaged
+Elementary School,education
+institution,education
+college,education
+classroom,education
+School,education
+kindergarten,education
+college_of_architect,education
+SCHOOL_BUILDING,education
+schooL,education
+Shool,education
+institutional,education
+educational,education
+SChool,education
+school,education
+aviation_school,education
+Institutional,education
+Institution,education
+University Library,education
+classrooms,education
+School of Applied Ec,education
+School+,education
+University_Building,education
+Elementary,education
+College,education
+university,education
+Minanga Elementary S,education
+College of Business,education
+Knowledge Center,education
+public school,education
+SCHool,education
+education,education
+school_facility,education
+Baicapture HQ,government
+evacuation center,government
+military,government
+police station,government
+Police_Station,government
+barangay hall,government
+Local_Government,government
+government_building,government
+office=government,government
+Government Agency,government
+government office,government
+administrative,government
+court,government
+Barangay Hall,government
+Government,government
+Registry of Deeds,government
+town_hall,government
+Brgy.Hall,government
+jail facility,government
+Cattubo_Barangay_Hal,government
+Government_Building,government
+Pigcawayan Municipal,government
+QC_Civil_Registrar,government
+Minanga Barangay Hal,government
+Barangay_Hall,government
+government,government
+fire_station,government
+Brgy._Hall,government
+barangay_hall,government
+Subdivision_Administ,government
+Municipal_Hall,government
+Local_Government_Pro,government
+Brgy. San Vicente,government
+Baranggay hall,government
+Government_Office,government
+municipal court,government
+brgytanodoutpost,government
+Research office,government
+civic,government
+townhall,government
+govermental,government
+Barngay hall,government
+goverment_building,government
+pharmacy,health
+healthcare,health
+Philippine_Nurses_As,health
+clinic,health
+Clinic,health
+Health_Center,health
+Health Center,health
+heath,health
+Health_Building,health
+Health_Facility,health
+Community_Pharmacy,health
+medical,health
+health center/touris,health
+Pharmacy,health
+drugstore,health
+hospital,health
+hospital grounds,health
+water_tank,industrial
+weather_station,industrial
+Power GenSet House,industrial
+Substation,industrial
+greenhouse,industrial
+Water_Station,industrial
+rice mill,industrial
+yes;industrial,industrial
+"yes,_Processing_Plan",industrial
+workshop,industrial
+laboratory,industrial
+Batangas City Conven,industrial
+stock room,industrial
+power_substation,industrial
+gasometer,industrial
+piggery,industrial
+factory,industrial
+fuel_depot,industrial
+industrial,industrial
+pumping_station,industrial
+Supply_Building,industrial
+warehouse,industrial
+water station,industrial
+storage,industrial
+conference_hall,industrial
+silo,industrial
+farm_auxiliary,industrial
+Sales and Warehouse,industrial
+JL Farm Station,industrial
+farmhouse,industrial
+storage_tank,industrial
+cowshed,industrial
+manufacture,industrial
+vulcanizing shop,industrial
+farm,industrial
+Rice_Mill,industrial
+quarry,industrial
+barn,industrial
+pond,recreational
+clubhouse,recreational
+basketball court,recreational
+theatre,recreational
+boathouse,recreational
+stage,recreational
+Stage,recreational
+tennis,recreational
+dock,recreational
+grandstand,recreational
+grand_stand,recreational
+Gazebo,recreational
+lounge,recreational
+monument,recreational
+recreational,recreational
+pavillion,recreational
+track,recreational
+recreation_ground,recreational
+museum,recreational
+gazebo,recreational
+sport,recreational
+Recreational_Buildin,recreational
+stadium,recreational
+Entertainment,recreational
+sports_hall,recreational
+Stadium,recreational
+Gymnasium,recreational
+religious,religious
+shrine,religious
+Chapel,religious
+cathedral,religious
+mosque,religious
+synagogue,religious
+temple,religious
+rectory,religious
+yes;chapel,religious
+chapel,religious
+San Luis Parish Chur,religious
+monastery,religious
+church,religious
+seminary,religious
+place_of_worship,religious
+stilt_house,residential
+Pineda Residence,residential
+hut,residential
+tent,residential
+Residential_Condomin,residential
+cottage,residential
+Condominium,residential
+residential,residential
+yes;house,residential
+bungalow,residential
+"Residential,_Commerc",residential
+Guest_House,residential
+private property,residential
+inn,residential
+Senior_Citizen_Build,residential
+commercial/residenti,residential
+dormitory,residential
+residential building,residential
+BAUTISTA RESIDENT,residential
+yes;residential,residential
+houses,residential
+residences,residential
+row_house,residential
+allotment_house,residential
+Rolly's House,residential
+apartments,residential
+Generic residential,residential
+Ubbos_Residence,residential
+cabin,residential
+Der Mana Residences,residential
+Residence,residential
+detached,residential
+Dormitory,residential
+House,residential
+Residential,residential
+2-door apartment,residential
+orphanage,residential
+semidetached_house,residential
+accommodation,residential
+hostel,residential
+CORTEZ RESIDENT,residential
+apartment,residential
+Lodge,residential
+house,residential
+generric residential,residential
+dorm,residential
