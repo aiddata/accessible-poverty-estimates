@@ -673,3 +673,37 @@ def download_from_bucket(
         )
     )
     return blob.public_url
+
+
+#### Data subsetting for model efficiency
+
+def corr_finder(X, threshold):
+    """ For each variable, find the independent variables that are equal to 
+        or more highly correlated than the threshold with the curraent variable
+
+    Parameters
+    ----------
+    X : pandas Dataframe
+        Contains only independent variables and desired index
+    threshold: float < 1
+        Minimum level of correlation to search for
+    
+    Returns
+    -------
+    Dictionary with the key's as independent variavble indices and values as a 
+    list of variables with a correlation greater to or equal than the threshold.
+
+    Correlation Matrix
+    """
+
+    corr_matrix = X.corr(method='kendall') #create the correlation matrix
+    corr_dic = {}
+    for row_name, ser in corr_matrix.iterrows(): #search through each row
+        corr_list = [] #list of variables past/at the threshold
+        for idx, val in ser.iteritems():  #search through the materials of each row
+            if (abs(val) > threshold) and (abs(val) != 1): #if the variable correlates past/at the threshold
+                corr_list.append(idx) 
+        if len(corr_list) > 0:
+            corr_dic[row_name] = corr_list
+    return corr_dic, corr_matrix
+
