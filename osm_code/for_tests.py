@@ -156,6 +156,9 @@ spatial_df = osm_ntl_df.merge(geoquery_data, on="DHSID", how="left")
 
 geoquery_cols = ['wb_aid.na.sum', 'viirs_vcmcfg_dnb_composites_v10_yearly_max.2015.mean', 'viirs_vcmcfg_dnb_composites_v10_yearly_max.2016.mean', 'udel_precip_v501_mean.2015.mean', 'udel_precip_v501_mean.2016.mean', 'udel_precip_v501_sum.2015.sum', 'udel_precip_v501_sum.2016.sum', 'udel_air_temp_v501_mean.2015.mean', 'udel_air_temp_v501_mean.2016.mean', 'srtm_slope_500m.na.mean', 'srtm_elevation_500m.na.mean', 'onshore_petroleum_v12.na.mean', 'oco2_xco2_yearly.2015.mean', 'oco2_xco2_yearly.2016.mean', 'modis_lst_day_yearly_mean.2015.mean', 'modis_lst_day_yearly_mean.2016.mean', 'ltdr_avhrr_ndvi_v5_yearly.2015.mean', 'ltdr_avhrr_ndvi_v5_yearly.2016.mean', 'hansen2018_v16_treecover2000.na.mean', 'gpw_v4_density.2015.mean', 'gpw_v4_count.2015.sum', 'globalwindatlas_windspeed.na.mean', 'globalsolaratlas_pvout.na.mean', 'gemdata_201708.na.sum', 'distance_to_gold_v12.na.mean', 'distance_to_gemdata_201708.na.mean', 'distance_to_drugdata_201708.na.mean', 'distance_to_coast_236.na.mean', 'dist_to_water.na.mean', 'dist_to_onshore_petroleum_v12.na.mean', 'dist_to_gadm28_borders.na.mean', 'diamond_distance_201708.na.mean', 'diamond_binary_201708.na.mean', 'ambient_air_pollution_2013_o3.2013.mean', 'ambient_air_pollution_2013_fus_calibrated.2013.mean', 'accessibility_to_cities_2015_v1.0.mean']
 
+geoquery_cols = geoquery_cols + ['wdpa_iucn_cat_201704.na.categorical_count', 'wdpa_iucn_cat_201704.na.categorical_unprotected', 'wdpa_iucn_cat_201704.na.categorical_ia', 'wdpa_iucn_cat_201704.na.categorical_ib','wdpa_iucn_cat_201704.na.categorical_ii', 'wdpa_iucn_cat_201704.na.categorical_iii', 'wdpa_iucn_cat_201704.na.categorical_iv', 'wdpa_iucn_cat_201704.na.categorical_v', 'wdpa_iucn_cat_201704.na.categorical_vi', 'wdpa_iucn_cat_201704.na.categorical_not_applicable', 'wdpa_iucn_cat_201704.na.categorical_not_assigned', 'wdpa_iucn_cat_201704.na.categorical_not_reported', 'wdpa_iucn_cat_201704.na.categorical_mix', 'wdpa_iucn_cat_201704.na.count', 'viirs_vcmcfg_dnb_composites_v10_yearly_max.2017.mean', 'viirs_vcmcfg_dnb_composites_v10_yearly_max.2018.mean', 'udel_precip_v501_mean.2017.mean', 'udel_precip_v501_sum.2017.sum', 'udel_air_temp_v501_mean.2017.mean', 'oco2_xco2_yearly.2017.mean', 'oco2_xco2_yearly.2018.mean', 'modis_lst_day_yearly_mean.2017.mean', 'ltdr_avhrr_ndvi_v5_yearly.2017.mean', 'ltdr_avhrr_ndvi_v5_yearly.2018.mean', 'hansen2018_v16_lossyear.na.mean', 'gpw_v4_density.2020.mean', 'gpw_v4_count.2020.sum', 'gdp_grid.na.sum', 'esa_landcover_v207.2015.categorical_count', 'esa_landcover_v207.2015.categorical_mosaic_cropland', 'esa_landcover_v207.2015.categorical_rainfed_cropland', 'esa_landcover_v207.2015.categorical_urban', 'esa_landcover_v207.2015.categorical_water_bodies', 'esa_landcover_v207.2015.categorical_forest', 'esa_landcover_v207.2015.categorical_irrigated_cropland', 'esa_landcover_v207.2015.categorical_no_data', 'esa_landcover_v207.2015.categorical_bare_areas', 'esa_landcover_v207.2015.categorical_sparse_vegetation', 'esa_landcover_v207.2015.categorical_grassland', 'esa_landcover_v207.2015.categorical_wetland', 'esa_landcover_v207.2015.categorical_shrubland', 'esa_landcover_v207.2015.categorical_snow_ice', 'drugdata_categorical_201708.na.categorical_count', 'drugdata_categorical_201708.na.categorical_none', 'drugdata_categorical_201708.na.categorical_cannabis', 'drugdata_categorical_201708.na.categorical_coca_bush', 'drugdata_categorical_201708.na.categorical_opium', 'drugdata_categorical_201708.na.categorical_mix', 'categorical_gold_v12.na.categorical_count', 'categorical_gold_v12.na.categorical_none', 'categorical_gold_v12.na.categorical_lootable', 'categorical_gold_v12.na.categorical_surface', 'categorical_gold_v12.na.categorical_nonlootable', 'categorical_gold_v12.na.categorical_mix']
+
+
 osm_ntl_covar_cols = osm_ntl_cols + geoquery_cols
 
 #Saving entire csv
@@ -182,37 +185,16 @@ for i in spatial_df.columns:
 
 #---------------------------------------------------------
 
-correlated_ivs, corr_matrix = data_utils.corr_finder(spatial_df, .7)
-
-print('The variables correlated with NTL_mean')
-print(correlated_ivs['ntl_mean'])
-
-# print(osm_ntl_covar_cols)
-
-updated_cols = []
-for col in osm_ntl_covar_cols:
-     if col not in correlated_ivs['ntl_mean']:
-         updated_cols.append(col)
-
-all_updated_cols = updated_cols + ['Wealth Index', 'Cluster number'] #the reason for this is because the osm_ntl_covar cols are feature columns and wealth index/cluster number are not used in the feature columns, so the need to be manually added.
-
-updated_df = spatial_df[all_updated_cols]
-
-# check = []
-# for col in osm_ntl_covar_cols:
-#     if col not in updated_cols:
-#         check.append(col)
-# print('These columns were removed during the subsetting process', check )
+correlated_ivs, corr_matrix = data_utils.corr_finder(spatial_df, .85) #will only return variables that had at least one other variable with an .85 correlation
 
 
+updated_df, new_features = data_utils.subset_dataframe(spatial_df, osm_ntl_covar_cols, correlated_ivs['ntl_mean'])
 
-# print(updated_df.columns)
 
-# print(osm_ntl_covar_cols)
 
 test1_cv, test1_predictions = model_utils.evaluate_model(
-    data=updated_df,
-    feature_cols=updated_cols,
+    data=updated_df2,
+    feature_cols=new_features2,
     indicator_cols=indicators,
     search_type="grid",  ## this is a change from the initial 
     clust_str="Cluster number",
@@ -227,14 +209,16 @@ test1_cv, test1_predictions = model_utils.evaluate_model(
 )
 
 
-# define X,y for all data
-test1_X = new_df[new_df_cols]
-test1_y = new_df['Wealth Index'].tolist()
+# #define X,y for all data
+# test1_X = new_df[new_df_cols]
+# test1_y = new_df['Wealth Index'].tolist()
 
 
-# refit cv model with all data
-test1_best = test1_cv.best_estimator_.fit(test1_X, test1_y)
+# # refit cv model with all data
+# test1_best = test1_cv.best_estimator_.fit(test1_X, test1_y)
 
-# save model
-test1_model_path = os.path.join(data_dir, 'models/test1_best.joblib')
-dump(test1_best, test1_model_path)
+# # save model
+# test1_model_path = os.path.join(data_dir, 'models/test1_best.joblib')
+# dump(test1_best, test1_model_path)
+
+# print(updated_df.shape)

@@ -707,3 +707,27 @@ def corr_finder(X, threshold):
             corr_dic[row_name] = corr_list
     return corr_dic, corr_matrix
 
+
+def subset_dataframe(df,feature_cols, remove_cols):
+    """ Create and return a copy of the desired dataframe without the listed columns.
+
+    Parameters
+    ----------
+    df : pandas Dataframe
+        Dataframe from which subset will occur
+
+    feature_cols: list of strings
+        Column labels of features to be used in analysis
+    
+    remove_cols: list of strings
+        Column labels for the columns to be removed
+    
+    Return
+    ------
+    Subsetted pandas DataFrame and a new feature columns list
+    """
+
+    updated_cols = [col for col in df.columns if col not in remove_cols ]  #update list of column names for dataframe
+    new_features = [col for col in feature_cols if col not in remove_cols] #update column list of feature columns
+    return df.copy()[updated_cols], new_features
+

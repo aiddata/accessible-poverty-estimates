@@ -117,19 +117,20 @@ print("Shape of osm dataframe after drops: {}".format(osm_df.shape))
 
 osm_ntl_cols = osm_cols + ntl_cols
 
+print('Number of OSM + NTL Features:', len(osm_ntl_cols))
+
 # >>>>>
 # for use with old osm data
 # osm_ntl_df = final_df.merge(osm_df, left_on='Cluster number', right_on=osm_dhs_id_field)
 
 osm_ntl_df = final_df.merge(osm_df, on=osm_dhs_id_field)
 
-#osm_ntl_test = osm_ntl_df.sample(100)  #DELETE LATER
-# <<<<<
-##print('osm_ntl_test:')  #DELETE LATER 
-##print(osm_ntl_test) #DELETE LATER 
+osm_ntl_path = os.path.join(data_dir, 'osm_ntl.csv')
+osm_ntl_df.to_csv(osm_ntl_path)
+
 
 # -------------------------------------
-# Additional spatial covar data prep           #NOTE to Sasan: RUN geoquery spatial covers after initial analysis
+#Additional spatial covar data prep           #NOTE to Sasan: RUN geoquery spatial covers after initial analysis
 
 
 # join GeoQuery spatial covars
@@ -142,14 +143,16 @@ spatial_df = osm_ntl_df.merge(geoquery_data, on="DHSID", how="left")
 # geoquery_cols = [i for i in geoquery_data.columns if len(i.split(".")) == 3 and "categorical" not in i]
 
 geoquery_cols = ['wb_aid.na.sum', 'viirs_vcmcfg_dnb_composites_v10_yearly_max.2015.mean', 'viirs_vcmcfg_dnb_composites_v10_yearly_max.2016.mean', 'udel_precip_v501_mean.2015.mean', 'udel_precip_v501_mean.2016.mean', 'udel_precip_v501_sum.2015.sum', 'udel_precip_v501_sum.2016.sum', 'udel_air_temp_v501_mean.2015.mean', 'udel_air_temp_v501_mean.2016.mean', 'srtm_slope_500m.na.mean', 'srtm_elevation_500m.na.mean', 'onshore_petroleum_v12.na.mean', 'oco2_xco2_yearly.2015.mean', 'oco2_xco2_yearly.2016.mean', 'modis_lst_day_yearly_mean.2015.mean', 'modis_lst_day_yearly_mean.2016.mean', 'ltdr_avhrr_ndvi_v5_yearly.2015.mean', 'ltdr_avhrr_ndvi_v5_yearly.2016.mean', 'hansen2018_v16_treecover2000.na.mean', 'gpw_v4_density.2015.mean', 'gpw_v4_count.2015.sum', 'globalwindatlas_windspeed.na.mean', 'globalsolaratlas_pvout.na.mean', 'gemdata_201708.na.sum', 'distance_to_gold_v12.na.mean', 'distance_to_gemdata_201708.na.mean', 'distance_to_drugdata_201708.na.mean', 'distance_to_coast_236.na.mean', 'dist_to_water.na.mean', 'dist_to_onshore_petroleum_v12.na.mean', 'dist_to_gadm28_borders.na.mean', 'diamond_distance_201708.na.mean', 'diamond_binary_201708.na.mean', 'ambient_air_pollution_2013_o3.2013.mean', 'ambient_air_pollution_2013_fus_calibrated.2013.mean', 'accessibility_to_cities_2015_v1.0.mean']
+geoquery_cols = geoquery_cols + ['wdpa_iucn_cat_201704.na.categorical_count', 'wdpa_iucn_cat_201704.na.categorical_unprotected', 'wdpa_iucn_cat_201704.na.categorical_ia', 'wdpa_iucn_cat_201704.na.categorical_ib','wdpa_iucn_cat_201704.na.categorical_ii', 'wdpa_iucn_cat_201704.na.categorical_iii', 'wdpa_iucn_cat_201704.na.categorical_iv', 'wdpa_iucn_cat_201704.na.categorical_v', 'wdpa_iucn_cat_201704.na.categorical_vi', 'wdpa_iucn_cat_201704.na.categorical_not_applicable', 'wdpa_iucn_cat_201704.na.categorical_not_assigned', 'wdpa_iucn_cat_201704.na.categorical_not_reported', 'wdpa_iucn_cat_201704.na.categorical_mix', 'wdpa_iucn_cat_201704.na.count', 'viirs_vcmcfg_dnb_composites_v10_yearly_max.2017.mean', 'viirs_vcmcfg_dnb_composites_v10_yearly_max.2018.mean', 'udel_precip_v501_mean.2017.mean', 'udel_precip_v501_sum.2017.sum', 'udel_air_temp_v501_mean.2017.mean', 'oco2_xco2_yearly.2017.mean', 'oco2_xco2_yearly.2018.mean', 'modis_lst_day_yearly_mean.2017.mean', 'ltdr_avhrr_ndvi_v5_yearly.2017.mean', 'ltdr_avhrr_ndvi_v5_yearly.2018.mean', 'hansen2018_v16_lossyear.na.mean', 'gpw_v4_density.2020.mean', 'gpw_v4_count.2020.sum', 'gdp_grid.na.sum', 'esa_landcover_v207.2015.categorical_count', 'esa_landcover_v207.2015.categorical_mosaic_cropland', 'esa_landcover_v207.2015.categorical_rainfed_cropland', 'esa_landcover_v207.2015.categorical_urban', 'esa_landcover_v207.2015.categorical_water_bodies', 'esa_landcover_v207.2015.categorical_forest', 'esa_landcover_v207.2015.categorical_irrigated_cropland', 'esa_landcover_v207.2015.categorical_no_data', 'esa_landcover_v207.2015.categorical_bare_areas', 'esa_landcover_v207.2015.categorical_sparse_vegetation', 'esa_landcover_v207.2015.categorical_grassland', 'esa_landcover_v207.2015.categorical_wetland', 'esa_landcover_v207.2015.categorical_shrubland', 'esa_landcover_v207.2015.categorical_snow_ice', 'drugdata_categorical_201708.na.categorical_count', 'drugdata_categorical_201708.na.categorical_none', 'drugdata_categorical_201708.na.categorical_cannabis', 'drugdata_categorical_201708.na.categorical_coca_bush', 'drugdata_categorical_201708.na.categorical_opium', 'drugdata_categorical_201708.na.categorical_mix', 'categorical_gold_v12.na.categorical_count', 'categorical_gold_v12.na.categorical_none', 'categorical_gold_v12.na.categorical_lootable', 'categorical_gold_v12.na.categorical_surface', 'categorical_gold_v12.na.categorical_nonlootable', 'categorical_gold_v12.na.categorical_mix']
 
 osm_ntl_covar_cols = osm_ntl_cols + geoquery_cols
 
-#Sasan: Saving entire csv
-
+#Saving entire csv
 all_data_path = os.path.join(data_dir, 'osm_ntl_dhs_geo.csv')
 spatial_df.to_csv(all_data_path)
 #all_data_csv = pd.read_csv(geoquery_path)
+
+print(len(osm_ntl_covar_cols))
 
 # # join DHS spatial covars
 # covars_path = os.path.join(data_dir, 'dhs/PH_2017_DHS_03022021_2055_109036/PHGC72FL/PHGC72FL.csv')
@@ -163,6 +166,9 @@ spatial_df.to_csv(all_data_path)
 for i in spatial_df.columns:
     na = spatial_df[i].isna().sum()
     if na > 0: print(i, spatial_df[i].isna().sum())
+
+##------------------------------------
+#population subsetting 
 
 
 # # -----------------------------------------------------------------------------
@@ -290,7 +296,7 @@ for i in spatial_df.columns:
 
 
 # -----------------------------------------------------------------------------
-# # NTL + OSM + spatial models
+# NTL + OSM + spatial models
 
 data_utils.plot_corr(
     data=spatial_df,
