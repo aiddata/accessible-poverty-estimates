@@ -39,6 +39,7 @@ import geopandas as gpd
 from shapely.geometry import Point
 from shapely.ops import nearest_points
 from sklearn.neighbors import BallTree
+import numpy as np
 
 project_dir = "/Users/sasanfaraj/Desktop/folders/AidData/PHL_WORK"
 data_dir = os.path.join(project_dir, 'data')
@@ -102,250 +103,250 @@ buffers_gdf = buffers_gdf.to_crs("EPSG:4326") # WGS84
 # pois
 # count of each type of pois (100+) in each buffer
 
-##print("Running pois...")
+print("Running pois...")
 
-##osm_pois_shp_path = os.path.join(data_dir, 'osm/philippines-{}-free.shp/gis_osm_pois_free_1.shp'.format(date))
-##osm_pois_a_shp_path = os.path.join(data_dir, 'osm/philippines-{}-free.shp/gis_osm_pois_a_free_1.shp'.format(date))
+osm_pois_shp_path = os.path.join(data_dir, 'osm/philippines-{}-free.shp/gis_osm_pois_free_1.shp'.format(date))
+osm_pois_a_shp_path = os.path.join(data_dir, 'osm/philippines-{}-free.shp/gis_osm_pois_a_free_1.shp'.format(date))
 
-##raw_pois_geo = gpd.read_file(osm_pois_shp_path)
-##raw_pois_a_geo = gpd.read_file(osm_pois_a_shp_path)
+raw_pois_geo = gpd.read_file(osm_pois_shp_path)
+raw_pois_a_geo = gpd.read_file(osm_pois_a_shp_path)
 
-##pois_geo = pd.concat([raw_pois_geo, raw_pois_a_geo])
+pois_geo = pd.concat([raw_pois_geo, raw_pois_a_geo])
 
-##"""
+"""
 # manually generate crosswalk
 #   first prep CSV with all types - can combine multiple OSM timesteps (see below)
 #   then in Excel/whatever, assign group to each type/fclass
 
-##type_df = pd.DataFrame({"type": list(set(pois_geo["fclass"]))})
-##type_df["group"]= 0
-##type_df.to_csv(os.path.join(project_dir, "OSM/crosswalks/pois_type_crosswalk.csv"), index=False, encoding="utf-8")
+type_df = pd.DataFrame({"type": list(set(pois_geo["fclass"]))})
+type_df["group"]= 0
+type_df.to_csv(os.path.join(project_dir, "OSM/crosswalks/pois_type_crosswalk.csv"), index=False, encoding="utf-8")
 
-##"""
+"""
 
 # load crosswalk for types and assign any not grouped to "other"
-##pois_type_crosswalk_path = os.path.join(project_dir, 'OSM/osm_code/crosswalks/pois_type_crosswalk.csv')
-##pois_type_crosswalk_df = pd.read_csv(pois_type_crosswalk_path)
-##pois_type_crosswalk_df.loc[pois_type_crosswalk_df["group"] == "0", "group"] = "other"
+pois_type_crosswalk_path = os.path.join(project_dir, 'OSM/osm_code/crosswalks/pois_type_crosswalk.csv')
+pois_type_crosswalk_df = pd.read_csv(pois_type_crosswalk_path)
+pois_type_crosswalk_df.loc[pois_type_crosswalk_df["group"] == "0", "group"] = "other"
 
 # merge new classification and assign any features without a type to unclassifid
-##pois_geo = pois_geo.merge(pois_type_crosswalk_df, left_on="fclass", right_on="type", how="left")
+pois_geo = pois_geo.merge(pois_type_crosswalk_df, left_on="fclass", right_on="type", how="left")
 
-##pois_geo.loc[pois_geo["fclass"].isna(), "group"] = "unclassified"
+pois_geo.loc[pois_geo["fclass"].isna(), "group"] = "unclassified"
 
 # show breakdown of groups
-##print(pois_geo.group.value_counts())
+print(pois_geo.group.value_counts())
 
 # group_field = "fclass"
-##group_field = "group"
+group_field = "group"
 
 # split by group
 # pois_group_list = ["all"] + [i for i in set(pois_geo[group_field])]
-##pois_group_list = [i for i in set(pois_geo[group_field])]
+pois_group_list = [i for i in set(pois_geo[group_field])]
 
 # copy of buffers gdf to use for output
-##buffers_gdf_pois = buffers_gdf.copy(deep=True)
+buffers_gdf_pois = buffers_gdf.copy(deep=True)
 
-##for group in pois_group_list:
-##    print(group)
-    # subet by group
-##    if group == "all":
-##        pois_geo_subset = pois_geo.reset_index(inplace=True).copy(deep=True)
-##    else:
-##        pois_geo_subset = pois_geo.loc[pois_geo[group_field] == group].reset_index().copy(deep=True)
-    # query to find pois in each buffer
-##    bquery = pois_geo_subset.sindex.query_bulk(buffers_gdf.geometry)
-##    # pois dataframe where each column contains a cluster and one building in it (can have multiple rows per cluster)
-##    bquery_df = pd.DataFrame({"cluster": bquery[0], "pois": bquery[1]})
-    # add pois data to spatial query dataframe
-##    bquery_full = bquery_df.merge(pois_geo_subset, left_on="pois", right_index=True, how="left")
-    # aggregate spatial query df with pois info, by cluster
-##    bquery_agg = bquery_full.groupby("cluster").agg({"pois": "count"})
-##    bquery_agg.columns = [group + "_pois_count"]
-    # join cluster back to original buffer_geo dataframe with columns for specific building type queries
-##    z1 = buffers_gdf.merge(bquery_agg, left_index=True, right_on="cluster", how="left")
-    # not each cluster will have relevant pois, set those to zero
-##    z1.fillna(0, inplace=True)
-    # set index and drop unnecessary columns
-##    if z1.index.name != "cluster": z1.set_index("cluster", inplace=True)
-##    z2 = z1[group + "_pois_count"]
-    # merge group columns back to main cluster dataframe
-##    buffers_gdf_pois = buffers_gdf_pois.merge(z2, left_index=True, right_index=True)
+for group in pois_group_list:
+    print(group)
+#     subet by group
+    if group == "all":
+        pois_geo_subset = pois_geo.reset_index(inplace=True).copy(deep=True)
+    else:
+        pois_geo_subset = pois_geo.loc[pois_geo[group_field] == group].reset_index().copy(deep=True)
+#     query to find pois in each buffer
+    bquery = pois_geo_subset.sindex.query_bulk(buffers_gdf.geometry)
+    # pois dataframe where each column contains a cluster and one building in it (can have multiple rows per cluster)
+    bquery_df = pd.DataFrame({"cluster": bquery[0], "pois": bquery[1]})
+#     add pois data to spatial query dataframe
+    bquery_full = bquery_df.merge(pois_geo_subset, left_on="pois", right_index=True, how="left")
+#     aggregate spatial query df with pois info, by cluster
+    bquery_agg = bquery_full.groupby("cluster").agg({"pois": "count"})
+    bquery_agg.columns = [group + "_pois_count"]
+#     join cluster back to original buffer_geo dataframe with columns for specific building type queries
+    z1 = buffers_gdf.merge(bquery_agg, left_index=True, right_on="cluster", how="left")
+#     not each cluster will have relevant pois, set those to zero
+    z1.fillna(0, inplace=True)
+#     set index and drop unnecessary columns
+    if z1.index.name != "cluster": z1.set_index("cluster", inplace=True)
+    z2 = z1[group + "_pois_count"]
+#     merge group columns back to main cluster dataframe
+    buffers_gdf_pois = buffers_gdf_pois.merge(z2, left_index=True, right_index=True)
 
 # output final features
-##pois_feature_cols = [geom_id] + [i for i in buffers_gdf_pois.columns if "_pois_" in i]
-##pois_features = buffers_gdf_pois[pois_feature_cols].copy(deep=True)
-##pois_features_path = os.path.join(data_dir, 'osm/features/{}_pois_{}.csv'.format(geom_label, date))
-##pois_features.to_csv(pois_features_path, index=False, encoding="utf-8")
+pois_feature_cols = [geom_id] + [i for i in buffers_gdf_pois.columns if "_pois_" in i]
+pois_features = buffers_gdf_pois[pois_feature_cols].copy(deep=True)
+pois_features_path = os.path.join(data_dir, 'osm/features/{}_pois_{}.csv'.format(geom_label, date))
+pois_features.to_csv(pois_features_path, index=False, encoding="utf-8")
 
 
 # ---------------------------------------------------------
 # traffic
 # count of each type of traffic item in each buffer
 
-##print("Running traffic...")
+print("Running traffic...")
 
-##osm_traffic_shp_path = os.path.join(data_dir, 'osm/philippines-{}-free.shp/gis_osm_traffic_free_1.shp'.format(date))
-##osm_traffic_a_shp_path = os.path.join(data_dir, 'osm/philippines-{}-free.shp/gis_osm_traffic_a_free_1.shp'.format(date))
+osm_traffic_shp_path = os.path.join(data_dir, 'osm/philippines-{}-free.shp/gis_osm_traffic_free_1.shp'.format(date))
+osm_traffic_a_shp_path = os.path.join(data_dir, 'osm/philippines-{}-free.shp/gis_osm_traffic_a_free_1.shp'.format(date))
 
-##raw_traffic_geo = gpd.read_file(osm_traffic_shp_path)
-##raw_traffic_a_geo = gpd.read_file(osm_traffic_a_shp_path)
+raw_traffic_geo = gpd.read_file(osm_traffic_shp_path)
+raw_traffic_a_geo = gpd.read_file(osm_traffic_a_shp_path)
 
-##traffic_geo = pd.concat([raw_traffic_geo, raw_traffic_a_geo])
+traffic_geo = pd.concat([raw_traffic_geo, raw_traffic_a_geo])
 
 
-##"""
+"""
 # manually generate crosswalk
 #   first prep CSV with all types - can combine multiple OSM timesteps (see below)
 #   then in Excel/whatever, assign group to each type/fclass
 
-##type_df = pd.DataFrame({"type": list(set(traffic_geo["fclass"]))})
-##type_df["group"]= 0
-##type_df.to_csv(os.path.join(project_dir, "OSM/crosswalks/traffic_type_crosswalk.csv"), index=False, encoding="utf-8")
+type_df = pd.DataFrame({"type": list(set(traffic_geo["fclass"]))})
+type_df["group"]= 0
+type_df.to_csv(os.path.join(project_dir, "OSM/crosswalks/traffic_type_crosswalk.csv"), index=False, encoding="utf-8")
 
-##"""
+"""
 
 # load crosswalk for types and assign any not grouped to "other"
-##traffic_type_crosswalk_path = os.path.join(project_dir, 'OSM/osm_code/crosswalks/traffic_type_crosswalk.csv')
-##traffic_type_crosswalk_df = pd.read_csv(traffic_type_crosswalk_path)
-##traffic_type_crosswalk_df.loc[traffic_type_crosswalk_df["group"] == "0", "group"] = "other"
+traffic_type_crosswalk_path = os.path.join(project_dir, 'OSM/osm_code/crosswalks/traffic_type_crosswalk.csv')
+traffic_type_crosswalk_df = pd.read_csv(traffic_type_crosswalk_path)
+traffic_type_crosswalk_df.loc[traffic_type_crosswalk_df["group"] == "0", "group"] = "other"
 
 # merge new classification and assign any features without a type to unclassifid
-##traffic_geo = traffic_geo.merge(traffic_type_crosswalk_df, left_on="fclass", right_on="type", how="left")
+traffic_geo = traffic_geo.merge(traffic_type_crosswalk_df, left_on="fclass", right_on="type", how="left")
 
-##traffic_geo.loc[traffic_geo["fclass"].isna(), "group"] = "unclassified"
+traffic_geo.loc[traffic_geo["fclass"].isna(), "group"] = "unclassified"
 
 # show breakdown of groups
-##print(traffic_geo.group.value_counts())
+print(traffic_geo.group.value_counts())
 
 # group_field = "fclass"
-##group_field = "group"
+group_field = "group"
 
 # split by group
 # traffic_group_list = ["all"] + [i for i in set(traffic_geo[group_field])]
-##traffic_group_list = [i for i in set(traffic_geo[group_field])]
+traffic_group_list = [i for i in set(traffic_geo[group_field])]
 
 # copy of buffers gdf to use for output
-##buffers_gdf_traffic = buffers_gdf.copy(deep=True)
+buffers_gdf_traffic = buffers_gdf.copy(deep=True)
 
-##for group in traffic_group_list:
-##    print(group)
+for group in traffic_group_list:
+    print(group)
     # subet by group
-##    if group == "all":
-##        traffic_geo_subset = traffic_geo.copy(deep=True)
-##    else:
-##        traffic_geo_subset = traffic_geo.loc[traffic_geo[group_field] == group].reset_index().copy(deep=True)
+    if group == "all":
+        traffic_geo_subset = traffic_geo.copy(deep=True)
+    else:
+        traffic_geo_subset = traffic_geo.loc[traffic_geo[group_field] == group].reset_index().copy(deep=True)
     # query to find traffic in each buffer
-##    bquery = traffic_geo_subset.sindex.query_bulk(buffers_gdf.geometry)
+    bquery = traffic_geo_subset.sindex.query_bulk(buffers_gdf.geometry)
     # traffic dataframe where each column contains a cluster and one building in it (can have multiple rows per cluster)
-##    bquery_df = pd.DataFrame({"cluster": bquery[0], "traffic": bquery[1]})
+    bquery_df = pd.DataFrame({"cluster": bquery[0], "traffic": bquery[1]})
     # add traffic data to spatial query dataframe
-##    bquery_full = bquery_df.merge(traffic_geo_subset, left_on="traffic", right_index=True, how="left")
+    bquery_full = bquery_df.merge(traffic_geo_subset, left_on="traffic", right_index=True, how="left")
     # aggregate spatial query df with traffic info, by cluster
-##    bquery_agg = bquery_full.groupby("cluster").agg({"traffic": "count"})
-##    bquery_agg.columns = [group + "_traffic_count"]
+    bquery_agg = bquery_full.groupby("cluster").agg({"traffic": "count"})
+    bquery_agg.columns = [group + "_traffic_count"]
     # join cluster back to original buffer_geo dataframe with columns for specific building type queries
-##    z1 = buffers_gdf.merge(bquery_agg, left_index=True, right_on="cluster", how="left")
+    z1 = buffers_gdf.merge(bquery_agg, left_index=True, right_on="cluster", how="left")
     # not each cluster will have relevant traffic, set those to zero
-##    z1.fillna(0, inplace=True)
+    z1.fillna(0, inplace=True)
     # set index and drop unnecessary columns
-##    if z1.index.name != "cluster": z1.set_index("cluster", inplace=True)
-##    z2 = z1[group + "_traffic_count"]
+    if z1.index.name != "cluster": z1.set_index("cluster", inplace=True)
+    z2 = z1[group + "_traffic_count"]
     # merge group columns back to main cluster dataframe
-##    buffers_gdf_traffic = buffers_gdf_traffic.merge(z2, left_index=True, right_index=True)
+    buffers_gdf_traffic = buffers_gdf_traffic.merge(z2, left_index=True, right_index=True)
 
 # output final features
-##traffic_feature_cols = [geom_id] + [i for i in buffers_gdf_traffic.columns if "_traffic_" in i]
-##traffic_features = buffers_gdf_traffic[traffic_feature_cols].copy(deep=True)
-##traffic_features_path = os.path.join(data_dir, 'osm/features/{}_traffic_{}.csv'.format(geom_label, date))
-##traffic_features.to_csv(traffic_features_path, index=False, encoding="utf-8")
+traffic_feature_cols = [geom_id] + [i for i in buffers_gdf_traffic.columns if "_traffic_" in i]
+traffic_features = buffers_gdf_traffic[traffic_feature_cols].copy(deep=True)
+traffic_features_path = os.path.join(data_dir, 'osm/features/{}_traffic_{}.csv'.format(geom_label, date))
+traffic_features.to_csv(traffic_features_path, index=False, encoding="utf-8")
 
 # ---------------------------------------------------------
 # transport
 # count of each type of transport item in each buffer
 
-##print("Running transport...")
+print("Running transport...")
 
-##osm_transport_shp_path = os.path.join(data_dir, 'osm/philippines-{}-free.shp/gis_osm_transport_free_1.shp'.format(date))
-##osm_transport_a_shp_path = os.path.join(data_dir, 'osm/philippines-{}-free.shp/gis_osm_transport_a_free_1.shp'.format(date))
+osm_transport_shp_path = os.path.join(data_dir, 'osm/philippines-{}-free.shp/gis_osm_transport_free_1.shp'.format(date))
+osm_transport_a_shp_path = os.path.join(data_dir, 'osm/philippines-{}-free.shp/gis_osm_transport_a_free_1.shp'.format(date))
 
-##raw_transport_geo = gpd.read_file(osm_transport_shp_path)
-##raw_transport_a_geo = gpd.read_file(osm_transport_a_shp_path)
+raw_transport_geo = gpd.read_file(osm_transport_shp_path)
+raw_transport_a_geo = gpd.read_file(osm_transport_a_shp_path)
 
-##transport_geo = pd.concat([raw_transport_geo, raw_transport_a_geo])
+transport_geo = pd.concat([raw_transport_geo, raw_transport_a_geo])
 
 
-##"""
-# manually generate crosswalk
-#   first prep CSV with all types - can combine multiple OSM timesteps (see below)
-#   then in Excel/whatever, assign group to each type/fclass
+"""
+ manually generate crosswalk
+   first prep CSV with all types - can combine multiple OSM timesteps (see below)
+   then in Excel/whatever, assign group to each type/fclass
 
-##type_df = pd.DataFrame({"type": list(set(transport_geo["fclass"]))})
-##type_df["group"]= 0
-##type_df.to_csv(os.path.join(project_dir, "OSM/crosswalks/transport_type_crosswalk.csv"), index=False, encoding="utf-8")
+type_df = pd.DataFrame({"type": list(set(transport_geo["fclass"]))})
+type_df["group"]= 0
+type_df.to_csv(os.path.join(project_dir, "OSM/crosswalks/transport_type_crosswalk.csv"), index=False, encoding="utf-8")
 
-##"""
+"""
 
 # load crosswalk for types and assign any not grouped to "other"
-##transport_type_crosswalk_path = os.path.join(project_dir, 'OSM/osm_code/crosswalks/transport_type_crosswalk.csv')
-##transport_type_crosswalk_df = pd.read_csv(transport_type_crosswalk_path)
-##transport_type_crosswalk_df.loc[transport_type_crosswalk_df["group"] == "0", "group"] = "other"
+transport_type_crosswalk_path = os.path.join(project_dir, 'OSM/osm_code/crosswalks/transport_type_crosswalk.csv')
+transport_type_crosswalk_df = pd.read_csv(transport_type_crosswalk_path)
+transport_type_crosswalk_df.loc[transport_type_crosswalk_df["group"] == "0", "group"] = "other"
 
 # merge new classification and assign any features without a type to unclassifid
-##transport_geo = transport_geo.merge(transport_type_crosswalk_df, left_on="fclass", right_on="type", how="left")
+transport_geo = transport_geo.merge(transport_type_crosswalk_df, left_on="fclass", right_on="type", how="left")
 
-##transport_geo.loc[transport_geo["fclass"].isna(), "group"] = "unclassified"
+transport_geo.loc[transport_geo["fclass"].isna(), "group"] = "unclassified"
 
 # show breakdown of groups
-##print(transport_geo.group.value_counts())
+print(transport_geo.group.value_counts())
 
 # group_field = "fclass"
-##group_field = "group"
+group_field = "group"
 
 # split by group
 # transport_group_list = ["all"] + [i for i in set(transport_geo[group_field])]
-##transport_group_list = [i for i in set(transport_geo[group_field])]
+transport_group_list = [i for i in set(transport_geo[group_field])]
 
 # copy of buffers gdf to use for output
-##buffers_gdf_transport = buffers_gdf.copy(deep=True)
+buffers_gdf_transport = buffers_gdf.copy(deep=True)
 
-##for group in transport_group_list:
-##    print(group)
+for group in transport_group_list:
+    print(group)
     # subet by group
-##    if group == "all":
-##        transport_geo_subset = transport_geo.copy(deep=True)
-##    else:
-##        transport_geo_subset = transport_geo.loc[transport_geo[group_field] == group].reset_index().copy(deep=True)
+    if group == "all":
+        transport_geo_subset = transport_geo.copy(deep=True)
+    else:
+        transport_geo_subset = transport_geo.loc[transport_geo[group_field] == group].reset_index().copy(deep=True)
     # query to find transport in each buffer
-##    bquery = transport_geo_subset.sindex.query_bulk(buffers_gdf.geometry)
+    bquery = transport_geo_subset.sindex.query_bulk(buffers_gdf.geometry)
     # transport dataframe where each column contains a cluster and one building in it (can have multiple rows per cluster)
-##    bquery_df = pd.DataFrame({"cluster": bquery[0], "transport": bquery[1]})
+    bquery_df = pd.DataFrame({"cluster": bquery[0], "transport": bquery[1]})
     # add transport data to spatial query dataframe
-##    bquery_full = bquery_df.merge(transport_geo_subset, left_on="transport", right_index=True, how="left")
+    bquery_full = bquery_df.merge(transport_geo_subset, left_on="transport", right_index=True, how="left")
     # aggregate spatial query df with transport info, by cluster
-##    bquery_agg = bquery_full.groupby("cluster").agg({"transport": "count"})
-##    bquery_agg.columns = [group + "_transport_count"]
+    bquery_agg = bquery_full.groupby("cluster").agg({"transport": "count"})
+    bquery_agg.columns = [group + "_transport_count"]
     # join cluster back to original buffer_geo dataframe with columns for specific building type queries
-##    z1 = buffers_gdf.merge(bquery_agg, left_index=True, right_on="cluster", how="left")
+    z1 = buffers_gdf.merge(bquery_agg, left_index=True, right_on="cluster", how="left")
     # not each cluster will have relevant transport, set those to zero
-##    z1.fillna(0, inplace=True)
+    z1.fillna(0, inplace=True)
     # set index and drop unnecessary columns
-##    if z1.index.name != "cluster": z1.set_index("cluster", inplace=True)
-##    z2 = z1[group + "_transport_count"]
+    if z1.index.name != "cluster": z1.set_index("cluster", inplace=True)
+    z2 = z1[group + "_transport_count"]
     # merge group columns back to main cluster dataframe
-##    buffers_gdf_transport = buffers_gdf_transport.merge(z2, left_index=True, right_index=True)
+    buffers_gdf_transport = buffers_gdf_transport.merge(z2, left_index=True, right_index=True)
 
 # output final features
-##transport_feature_cols = [geom_id] + [i for i in buffers_gdf_transport.columns if "_transport_" in i]
-##transport_features = buffers_gdf_transport[transport_feature_cols].copy(deep=True)
-##transport_features_path = os.path.join(data_dir, 'osm/features/{}_transport_{}.csv'.format(geom_label, date))
-##transport_features.to_csv(transport_features_path, index=False, encoding="utf-8")
+transport_feature_cols = [geom_id] + [i for i in buffers_gdf_transport.columns if "_transport_" in i]
+transport_features = buffers_gdf_transport[transport_feature_cols].copy(deep=True)
+transport_features_path = os.path.join(data_dir, 'osm/features/{}_transport_{}.csv'.format(geom_label, date))
+transport_features.to_csv(transport_features_path, index=False, encoding="utf-8")
 
 
 # ---------------------------------------------------------
-# buildings
-# for each type of building (and all buildings combined)
-# count of buildings in each buffer, average areas of buildings in each buffer, total area of building in each buffer, ratio of building area to total area of buffer
+# # buildings
+# # for each type of building (and all buildings combined)
+# # count of buildings in each buffer, average areas of buildings in each buffer, total area of building in each buffer, ratio of building area to total area of buffer
 
 print("Running buildings...")
 
@@ -354,8 +355,8 @@ buildings_geo_raw = gpd.read_file(osm_buildings_shp_path)
 
 """
  manually generate crosswalk
-   first prep CSV with all types - can combine multiple OSM timesteps (see below)
-   then in Excel/whatever, assign group to each type/fclass
+ first prep CSV with all types - can combine multiple OSM timesteps (see below)
+ then in Excel/whatever, assign group to each type/fclass
 
  type_df = pd.DataFrame({"type": list(set(buildings_geo["type"]))})
  type_df["group"]= 0
@@ -363,31 +364,32 @@ buildings_geo_raw = gpd.read_file(osm_buildings_shp_path)
 
  """
 
-# load crosswalk for building types and assign any not grouped to "other"
-building_type_crosswalk_path = os.path.join(project_dir, 'OSM/osm_code/crosswalks/building_type_crosswalk.csv')
+# # load crosswalk for building types and assign any not grouped to "other"
+building_type_crosswalk_path = os.path.join(project_dir, 'OSM/osm_code/osm_code/crosswalks/building_type_crosswalk.csv')
 building_type_crosswalk_df = pd.read_csv(building_type_crosswalk_path)
 building_type_crosswalk_df.loc[building_type_crosswalk_df["group"] == "0", "group"] = "other"
 
-# merge new classification and assign any buildings without a type to unclassifid
+# # merge new classification and assign any buildings without a type to unclassifid
 buildings_geo_raw = buildings_geo_raw.merge(building_type_crosswalk_df, on="type", how="left")
 
 buildings_geo_raw.loc[buildings_geo_raw["type"].isna(), "group"] = "unclassified"
 
 group_field = "group"
 
-# show breakdown of groups
+# # show breakdown of groups
 print(buildings_geo_raw.group.value_counts())
 
 buildings_geo = buildings_geo_raw.copy(deep=True)
 
-# split by building types
-# group_list = ["residential"]
-# group_list = ["all"] + [i for i in set(buildings_geo["group"]) if i not in ["other", "unclassified"]]
+# # split by building types
+# # group_list = ["residential"]
+# # group_list = ["all"] + [i for i in set(buildings_geo["group"]) if i not in ["other", "unclassified"]]
 buildings_group_list = [i for i in set(buildings_geo["group"]) if i not in ["other", "unclassified"]]
 
-# an nan is produced in the group list after removing "other" and "unclassified"
-# i will remove "nan" from building_group_list and see what happens
-buildings_group_list = [i for i in buildings_group_list if str(i) != 'nan']  #Sasan: removes nan from building_group_list
+buildings_group_list = [i for i in buildings_group_list if str(i) != 'nan']  #removes nan from building_group_list - Sasan
+
+buildings_group_list = buildings_group_list + ['all'] #add a section for all buildings into group lost
+
 
 
 if "all" not in buildings_group_list:
@@ -494,8 +496,8 @@ roads_group_list = [i for i,j in roads_geo[group_field].value_counts().to_dict()
 # roads_group_list = ["all", "primary", "secondary"]
 
 
-# -----------------
-# find distance to nearest road (based on vertices of roads)
+#-----------------
+#find distance to nearest road (based on vertices of roads)
 
 
 # generate centroids of buffers
@@ -540,10 +542,10 @@ cluster_centroids = cluster_centroids[[geom_id] + [i for i in cluster_centroids.
 cluster_centroids.set_index(geom_id, inplace=True)
 
 
-# -----------------
-# calculate number of roads and length of roads intersecting with each buffer
+# # -----------------
+# # calculate number of roads and length of roads intersecting with each buffer
 
-# copy of buffers gdf to use for output
+# # copy of buffers gdf to use for output
 buffers_gdf_roads = buffers_gdf.copy(deep=True)
 
 for group in roads_group_list:
@@ -578,3 +580,41 @@ roads_feature_cols = [geom_id] + [i for i in roads_features.columns if "_roads_"
 roads_features = roads_features[roads_feature_cols].copy(deep=True)
 roads_features_path = os.path.join(data_dir, 'osm/features/{}_roads_{}.csv'.format(geom_label, date))
 roads_features.to_csv(roads_features_path, index=False, encoding="utf-8")
+
+# ------------------------
+# Compute and then aggregate data on all roads count, length, and nearest distances, later adding them to the roads_features csv
+
+#read in previously created osm_road features data frame
+roads_df = pd.read_csv('/Users/sasanfaraj/Desktop/folders/AidData/PHL_WORK/data/osm/features/dhs-buffers_roads_210101.csv')
+
+#create lists to keep track of aggregated road data
+
+allroads_count =  []
+allroads_length = []
+allroads_nearestdist = []
+
+#iterate through each row (cluster), and aggregate the road count and length & find the minimum nearest road
+
+for cluster, series_vals in roads_df.iterrows():
+    count = 0
+    length = 0
+    nearest_dist = []
+    for col_name, val in series_vals.iteritems():
+        if 'count' in col_name:
+            count += val
+        elif 'length' in col_name:
+            length += val
+        elif 'dist' in col_name:
+            nearest_dist.append(val)
+    allroads_count.append(count)
+    allroads_length.append(length)
+    allroads_nearestdist.append(np.min(nearest_dist))
+
+roads_df['all_roads_count'] = allroads_count
+roads_df['all_roads_nearestdist'] = allroads_nearestdist
+roads_df['all_roads_length'] = allroads_length
+
+roads_df_path = os.path.join(data_dir, 'osm/features/{}_roads_{}.csv'.format(geom_label, date))
+roads_df.to_csv(roads_df_path, index=False, encoding="utf-8")
+
+
