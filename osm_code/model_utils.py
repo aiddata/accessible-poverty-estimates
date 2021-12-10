@@ -326,7 +326,7 @@ def nested_cross_validation(
     param_grid,
     scoring,
     refit,
-    search_type="random",  #search type is set to random.. I should change this to a grid search
+    search_type="random",  
     n_splits=5,
     n_iter=50,
     std_scale=False,
