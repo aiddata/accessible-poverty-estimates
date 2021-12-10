@@ -20,7 +20,7 @@ import warnings
 warnings.filterwarnings('ignore')
 
 
-project_dir = '/Users/sasanfaraj/Desktop/folders/AidData/PHL_WORK'  #"/home/userw/Desktop/PHL_WORK"
+project_dir = '/Users/sasanfaraj/Desktop/Desktop/folders/AidData/PHL_WORK'  #"/home/userw/Desktop/PHL_WORK"
 data_dir = os.path.join(project_dir, 'data')
 
 sys.path.insert(0, os.path.join(project_dir, 'OSM'))
@@ -104,15 +104,23 @@ osm_df = osm_df.loc[:, ~osm_df.columns.duplicated()]
 osm_df = osm_df[[i for i in osm_df.columns if "_roads_nearest-osmid" not in i]]
 
 
-print("Shape of osm dataframe: {}".format(osm_df.shape))
+
+#Subset osm_data to only include DHSID, all_roads, all_buildings
+all_list = ['all_buildings_ratio','all_buildings_count','all_buildings_totalarea','all_buildings_avgarea','all_roads_count', 'all_roads_nearestdist','all_roads_length']
+agg_osm_df = osm_df[all_list]
+
+
+#print shape of subsetted osm_data
+print("Shape of osm dataframe: {}".format(agg_osm_df.shape))
 
 # Get list of columns
-osm_cols = list(osm_df.columns[1:])
+osm_cols = list(agg_osm_df.columns[1:])
 
-osm_cols =  [i for i in osm_cols if osm_df[i].min() != osm_df[i].max()]
+osm_cols =  [i for i in agg_osm_df if agg_osm_df[i].min() != agg_osm_df[i].max()]
 osm_df = osm_df[[osm_dhs_id_field] + osm_cols]
 
 print("Shape of osm dataframe after drops: {}".format(osm_df.shape))
+print('osm_cols:', osm_cols)
 
 
 osm_ntl_cols = osm_cols + ntl_cols
@@ -305,14 +313,33 @@ data_utils.plot_corr(
     max_n=50,
     figsize=(10,13),
     name='all_variables',
-    pathway = '/Users/sasanfaraj/Desktop/folders/AidData/PHL_WORK/data/models/correlation_plots'
+    pathway = '/Users/sasanfaraj/Desktop/Desktop/folders/AidData/PHL_WORK/data/models/correlation_plots'
 )
 
+
+
+#return a dictionary that identifes a a list of variables for which each variables has a correlation of .7 or higher
+correlated_ivs, corr_matrix = data_utils.corr_finder(spatial_df, .7) #will only return variables that had at least one other variable with an .85 correlation
+
+##subset data based on correlation but make sure that specifically desired covariates are still within the group. 
+##ensure that even if road/building data can have a low correlation with each other, only one from each group is used per model evaluation
+remove_corrs = correlated_ivs['ntl_median']  + correlated_ivs['gpw_v4_density.2020.mean']  + correlated_ivs['all_roads_length'] + correlated_ivs['all_buildings_totalarea']
+to_keep = ['ntl_median','all_buildings_totalarea','all_roads_length','gpw_v4_density.2020.mean']
+remove_corrs = [label for label in remove_corrs if label not in to_keep]
+remove_corrs = remove_corrs +['ntl_max','all_buildings_count', 'all_buildings_ratio','all_buildings_avgarea','all_roads_nearestdist','all_roads_count']
+
+
+
+updated_df, new_features = data_utils.subset_dataframe(spatial_df, osm_ntl_covar_cols, remove_corrs)
+print('Features tested on first round:', new_features)
+print('Number of features tested on first round', len(new_features))
+
+
 test1_cv, test1_predictions = model_utils.evaluate_model(
-    data=spatial_df,
-    feature_cols=osm_ntl_covar_cols,
+    data=updated_df,
+    feature_cols=new_features,
     indicator_cols=indicators,
-    search_type="grid",  ## this is a change from the initial 
+    search_type="grid",   
     clust_str="Cluster number",
     wandb=None,
     scoring=scoring,
@@ -325,17 +352,55 @@ test1_cv, test1_predictions = model_utils.evaluate_model(
 )
 
 
-# define X,y for all data
-test1_X = spatial_df[osm_ntl_covar_cols]
-test1_y = spatial_df['Wealth Index'].tolist()
+#create a dataframe based on feature importance the df is ordered from most important to least important feature.
+df = model_utils.rf_feature_importance_dataframe(test1_cv,updated_df[new_features],updated_df[indicators])
 
 
-# refit cv model with all data
+## subset data based on desired feature importance feature importance
+thresh = .01
+remove_importance = []
+for row, ser in df.iterrows():
+    for idx, val in ser.iteritems():
+        if (val < thresh): #if the variable correlates past/at the threshold
+            remove_importance.append(row) 
+
+print('The removed columns from feature importance subsetting are:',remove_importance)
+
+updated_df, new_features = data_utils.subset_dataframe(updated_df, new_features, remove_importance)
+print('Features used by subsetting feature importance <', thresh,':', new_features)
+test1_cv, test1_predictions = model_utils.evaluate_model(
+    data=updated_df,
+    feature_cols=new_features,
+    indicator_cols=indicators,
+    search_type="grid",  
+    clust_str="Cluster number",
+    wandb=None,
+    scoring=scoring,
+    model_type='random_forest',
+    refit='r2',
+    n_splits=4,
+    n_iter=10,
+    plot_importance=True,
+    verbose=2
+)
+
+#create a dataframe based on feature importance after the second model has run
+df = model_utils.rf_feature_importance_dataframe(test1_cv,updated_df[new_features],updated_df[indicators])
+print('Feature importance of final model:', df)
+
+
+# #define X,y for all data
+test1_X = updated_df[new_features]
+test1_y = updated_df['Wealth Index'].tolist()
+
+
+ # refit cv model with all data
 test1_best = test1_cv.best_estimator_.fit(test1_X, test1_y)
 
 # save model
 test1_model_path = os.path.join(data_dir, 'models/test1_best.joblib')
 dump(test1_best, test1_model_path)
+
 
 
 
