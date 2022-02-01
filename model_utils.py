@@ -21,7 +21,6 @@ from sklearn.model_selection import (
     StratifiedKFold,
     cross_val_score,
     cross_validate,
-    train_test_split,
     cross_val_predict,
 )
 from sklearn.metrics import r2_score, mean_squared_error
@@ -42,20 +41,11 @@ from sklearn.preprocessing import (
     StandardScaler,
     PolynomialFeatures,
 )
-from sklearn.metrics import (
-    precision_score,
-    recall_score,
-    confusion_matrix,
-    classification_report,
-    accuracy_score,
-    f1_score,
-    make_scorer,
-    roc_auc_score,
-    balanced_accuracy_score,
-)
+
 from sklearn.svm import SVR, SVC
-from sklearn.inspection import permutation_importance 
+from sklearn.inspection import permutation_importance
 import seaborn as sns
+
 
 TM_pal_categorical_3 = ("#ef4631", "#10b9ce", "#ff9138")
 sns.set(
@@ -66,6 +56,7 @@ sns.set(
 
 SEED = 42
 np.random.seed(SEED)
+
 
 def evaluate_model(
     data,
@@ -149,7 +140,7 @@ def evaluate_model(
 
         # Instantiate model
         model = get_model(model_type)
-        
+
 
         # Nested cross validation
         cv, nested_scores, y_true, y_pred = nested_cross_validation(
@@ -254,12 +245,12 @@ def get_param_grid(model_type='ridge'):
     #the following random forest hyperparameters are explained in the paper
     elif model_type == "random_forest":
         param_grid = {
-            "regressor__n_estimators": [256,300],   
+            "regressor__n_estimators": [256,300],
             "regressor__max_features": ["sqrt"],
             "regressor__max_depth": [20],
             "regressor__min_samples_split": [4,6],
             "regressor__min_samples_leaf": [2,4],
-            "regressor__bootstrap": [True] 
+            "regressor__bootstrap": [True]
         }
     elif model_type == "xgboost":
         param_grid = {
@@ -326,7 +317,7 @@ def nested_cross_validation(
     param_grid,
     scoring,
     refit,
-    search_type="random",  
+    search_type="random",
     n_splits=5,
     n_iter=50,
     std_scale=False,
@@ -607,6 +598,7 @@ def rf_feature_importance_dataframe(
             by="Feature Importance", ascending=False
         )
         return df
+
 
 def rf_permutation_importance_dataframe(
         cv, X, y
