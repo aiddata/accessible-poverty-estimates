@@ -1,0 +1,122 @@
+{
+    "config": {
+        "user_prefix": "asg",
+        "batch_name": "phl_dhs_buffer",
+        "job_name": "phl_dhs_buffer",
+        "node_spec": "c18c",
+        "max_node_count": 2,
+        "ppn_override": 16,
+        "walltime_override": true,
+        "walltime": 180,
+        "branch":"master"
+    },
+    "defaults": {
+        "bnd_absolute": "/sciclone/data10/aiddata20/projects/philippines_poverty/extracts/shps/dhs_buffers.geojson",
+        "bnd_name": "phl_dhs_buffer",
+        "extract_type": "mean",
+        "extract_method": "python",
+        "output_base": "/sciclone/data10/aiddata20/projects/philippines_poverty/extracts/extracts",
+        "years": "2013:2021",
+        "run_hours": 1
+    },
+    "data": [
+        {
+            "name": "wb_aid",
+            "data_base": "/sciclone/aiddata10/REU/outputs/master/msr/done/worldbank_geocodedresearchrelease_level1_v1_4_1/d5b34883bbcea030b71da739f450987159f45032/raster.tif",
+            "data_name": "wb_aid",
+            "file_mask": "None",
+            "extract_type": "sum"
+        },
+        {
+            "name": "wdpa_iucn_cat_201704",
+            "extract_type": "categorical"
+        },
+        {
+            "name": "wdpa_iucn_cat_201704",
+            "extract_type": "count"
+        },
+        {
+            "name": "viirs",
+            "data_base": "/sciclone/aiddata10/REU/geo/data/rasters/viirs/eogdata/annual/v20/avg_masked",
+            "data_name": "viirs",
+            "file_mask": "YYYY.tif",
+            "extract_type": "mean"
+        },
+        {
+            "name": "viirs",
+            "data_base": "/sciclone/aiddata10/REU/geo/data/rasters/viirs/eogdata/annual/v20/avg_masked",
+            "data_name": "viirs",
+            "file_mask": "YYYY.tif",
+            "extract_type": "min"
+        },
+        {
+            "name": "viirs",
+            "data_base": "/sciclone/aiddata10/REU/geo/data/rasters/viirs/eogdata/annual/v20/avg_masked",
+            "data_name": "viirs",
+            "file_mask": "YYYY.tif",
+            "extract_type": "max"
+        },
+        {
+            "name": "viirs",
+            "data_base": "/sciclone/aiddata10/REU/geo/data/rasters/viirs/eogdata/annual/v20/avg_masked",
+            "data_name": "viirs",
+            "file_mask": "YYYY.tif",
+            "extract_type": "sum"
+        },
+        {
+            "name":"udel_precip_v501_mean"
+        },
+        {
+            "name":"udel_precip_v501_sum",
+            "extract_type": "sum"
+        },
+        {
+            "name": "udel_air_temp_v501_mean"
+        },
+        {
+            "name": "srtm_slope_500m"
+        },
+        {
+            "name": "srtm_elevation_500m"
+        },
+        {
+            "name": "oco2",
+            "data_base": "/sciclone/aiddata10/REU/geo/data/rasters/gesdisc/OCO2_L2_Lite_FP_V10r/xco2/year_interp",
+            "data_name": "oco2",
+            "file_mask": "xco2_YYYY.tif"
+        },
+        {
+            "name": "ltdr_avhrr_ndvi_v5_yearly",
+            "data_base": "/sciclone/aiddata10/REU/geo/data/rasters/ltdr/avhrr_ndvi_v5/yearly",
+            "data_name": "ltdr_avhrr_ndvi_v5_yearly",
+            "file_mask": "avhrr_ndvi_v5_YYYY.tif"
+        },
+        {
+            "name": "gpw_v4r11_density",
+            "data_base": "/sciclone/aiddata10/REU/geo/data/rasters/gpw/gpw_v4_rev11/density",
+            "data_name": "gpw_v4_density",
+            "file_mask": "gpw_v4_population_density_adjusted_to_2015_unwpp_country_totals_rev11_YYYY_30_sec.tif"
+        },
+        {
+            "name": "gpw_v4r11_count",
+            "data_base": "/sciclone/aiddata10/REU/geo/data/rasters/gpw/gpw_v4_rev11/count",
+            "data_name": "gpw_v4r11_count",
+            "file_mask": "gpw_v4_population_count_adjusted_to_2015_unwpp_country_totals_rev11_YYYY_30_sec.tif",
+            "extract_type": "sum"
+        },
+        {
+            "name": "esa_landcover_v207",
+            "extract_type":"categorical"
+        },
+        {
+            "name": "distance_to_coast_236"
+        },
+        {
+            "name": "dist_to_water"
+        },
+        {
+            "name": "accessibility_to_cities_2015_v1.0",
+            "extract_type": "mean"
+        }
+    ]
+}
