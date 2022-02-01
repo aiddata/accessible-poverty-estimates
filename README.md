@@ -6,10 +6,11 @@ Original methodology and portions of code based on https://github.com/thinkingma
 
 
 
-
 ## Instructions
 
-1. Create Conda environment
+1. Clone repo
+
+2. Create Conda environment
 
 	- To create a new environment:
         From scratch
@@ -34,4 +35,15 @@ Original methodology and portions of code based on https://github.com/thinkingma
 		```
 		conda env export > environment.yml
 		```
-2. xxxxx
+
+3. Download DHS data
+
+4. Download OSM data
+
+5. Setup `config.ini`
+
+6. Run `dhs_clusters.py` to prepare DHS data
+
+7. Run `osm_features.py` to prepare OSM data
+
+8. Run `models.py` to train models and produce figures.
