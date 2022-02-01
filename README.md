@@ -2,3 +2,36 @@ Using random forests regressions (RFRs) and features derived from OpenStreetMap 
 
 
 Original methodology and portions of code based on https://github.com/thinkingmachines/ph-poverty-mapping
+
+
+
+
+
+## Instructions
+
+1. Create Conda environment
+
+	- To create a new environment:
+        From scratch
+        ```
+        conda create -n osm-rf python=3.9 -c conda-forge
+        conda activate osm-rf
+        conda install -c conda-forge --file requirements.txt
+        ```
+        From env file
+		```
+		conda env create -f environment.yml
+        conda activate osm-rf
+		```
+    - Activate and install pip
+        ```
+        pip install mpi4py
+        ```
+	- To update your environment (if needed):
+		```
+		conda env update --prefix ./env --file environment.yml  --prune
+	- To export your environment (if needed):
+		```
+		conda env export > environment.yml
+		```
+2. xxxxx

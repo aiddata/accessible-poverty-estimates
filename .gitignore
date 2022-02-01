@@ -1,0 +1,6 @@
+__pycache__/
+data/*
+!data/osm/features
+!data/extract_job.json
+!data/merge_phl_dhs_buffer.csv
+!data/models
