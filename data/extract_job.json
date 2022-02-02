@@ -4,7 +4,7 @@
         "batch_name": "phl_dhs_buffer",
         "job_name": "phl_dhs_buffer",
         "node_spec": "c18c",
-        "max_node_count": 2,
+        "max_node_count": 1,
         "ppn_override": 16,
         "walltime_override": true,
         "walltime": 180,
@@ -105,8 +105,26 @@
             "extract_type": "sum"
         },
         {
-            "name": "esa_landcover_v207",
-            "extract_type":"categorical"
+            "name": "esa_landcover",
+            "data_base": "/sciclone/aiddata10/REU/geo/data/rasters/esa_landcover",
+            "data_name": "esa_landcover",
+            "file_mask": "esa_lc_YYYY.tif",
+            "extract_type":"categorical",
+            "categories" : {
+                "urban" : 190,
+                "bare_areas" : 200,
+                "sparse_vegetation" : 140,
+                "snow_ice" : 220,
+                "shrubland" : 120,
+                "no_data" : 0,
+                "mosaic_cropland" : 30,
+                "rainfed_cropland" : 10,
+                "wetland" : 180,
+                "forest" : 50,
+                "grassland" : 110,
+                "water_bodies" : 210,
+                "irrigated_cropland" : 20
+            }
         },
         {
             "name": "distance_to_coast_236"
