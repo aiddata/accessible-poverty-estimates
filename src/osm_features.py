@@ -96,7 +96,7 @@ type_df.to_csv(os.path.join(project_dir, "OSM/crosswalks/pois_type_crosswalk.csv
 """
 
 # load crosswalk for types and assign any not grouped to "other"
-pois_type_crosswalk_path = os.path.join(project_dir, 'crosswalks/pois_type_crosswalk.csv')
+pois_type_crosswalk_path = os.path.join(data_dir, 'crosswalks/pois_type_crosswalk.csv')
 pois_type_crosswalk_df = pd.read_csv(pois_type_crosswalk_path)
 pois_type_crosswalk_df.loc[pois_type_crosswalk_df["group"] == "0", "group"] = "other"
 
@@ -185,7 +185,7 @@ type_df.to_csv(os.path.join(project_dir, "OSM/crosswalks/traffic_type_crosswalk.
 """
 
 # load crosswalk for types and assign any not grouped to "other"
-traffic_type_crosswalk_path = os.path.join(project_dir, 'crosswalks/traffic_type_crosswalk.csv')
+traffic_type_crosswalk_path = os.path.join(data_dir, 'crosswalks/traffic_type_crosswalk.csv')
 traffic_type_crosswalk_df = pd.read_csv(traffic_type_crosswalk_path)
 traffic_type_crosswalk_df.loc[traffic_type_crosswalk_df["group"] == "0", "group"] = "other"
 
@@ -268,7 +268,7 @@ type_df.to_csv(os.path.join(project_dir, "OSM/crosswalks/transport_type_crosswal
 """
 
 # load crosswalk for types and assign any not grouped to "other"
-transport_type_crosswalk_path = os.path.join(project_dir, 'crosswalks/transport_type_crosswalk.csv')
+transport_type_crosswalk_path = os.path.join(data_dir, 'crosswalks/transport_type_crosswalk.csv')
 transport_type_crosswalk_df = pd.read_csv(transport_type_crosswalk_path)
 transport_type_crosswalk_df.loc[transport_type_crosswalk_df["group"] == "0", "group"] = "other"
 
@@ -347,7 +347,7 @@ type_df.to_csv(os.path.join(project_dir, "OSM/crosswalks/building_type_crosswalk
 """
 
 # load crosswalk for building types and assign any not grouped to "other"
-building_type_crosswalk_path = os.path.join(project_dir, 'crosswalks/building_type_crosswalk.csv')
+building_type_crosswalk_path = os.path.join(data_dir, 'crosswalks/building_type_crosswalk.csv')
 building_type_crosswalk_df = pd.read_csv(building_type_crosswalk_path)
 building_type_crosswalk_df.loc[building_type_crosswalk_df["group"] == "0", "group"] = "other"
 
@@ -468,7 +468,7 @@ type_df.to_csv(os.path.join(project_dir, "OSM/crosswalks/roads_type_crosswalk.cs
 """
 
 # load crosswalk for types and assign any not grouped to "other"
-roads_type_crosswalk_path = os.path.join(project_dir, 'crosswalks/roads_type_crosswalk.csv')
+roads_type_crosswalk_path = os.path.join(data_dir, 'crosswalks/roads_type_crosswalk.csv')
 roads_type_crosswalk_df = pd.read_csv(roads_type_crosswalk_path)
 roads_type_crosswalk_df.loc[roads_type_crosswalk_df["group"] == "0", "group"] = "other"
 
