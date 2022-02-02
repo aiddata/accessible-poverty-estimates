@@ -216,7 +216,7 @@ def plot_hist(
     plt.xlabel(x_label)
     plt.ylabel(y_label)
     if output_file:
-        plt.savefig(fname=output_file)
+        plt.savefig(fname=output_file, bbox_inches="tight")
     if show:
         plt.show(block=False)
 
@@ -271,7 +271,7 @@ def plot_regplot(
     plt.xlabel(x_label)
     plt.ylabel(y_label)
     if output_file:
-        plt.savefig(fname=output_file)
+        plt.savefig(fname=output_file, bbox_inches="tight")
     if show:
         plt.show(block=False)
 
@@ -330,7 +330,7 @@ def plot_corr(
     )
     plt.grid()
     if output_file:
-        plt.savefig(fname=output_file)
+        plt.savefig(fname=output_file, bbox_inches="tight")
     if show:
         plt.show(block=False)
 

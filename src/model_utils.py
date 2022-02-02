@@ -190,7 +190,7 @@ def evaluate_model(
                 nested_scores,
                 wandb=wandb,
                 refit=refit,
-                output_file=output_file  + "cross_val.png",
+                output_file=output_file  + f"cross_val_{index}.png",
                 show=show
             )
 
@@ -210,13 +210,13 @@ def evaluate_model(
             if model_type == "random_forest":
                 rf_feature_importance(
                     cv, X, y, size=figsize,
-                    output_file=output_file + "rf_feature_importance.png",
+                    output_file=output_file + f"rf_feature_importance_{index}.png",
                     show=show
                 )
             elif model_type == "xgboost":
                 xgb_feature_importance(
                     cv, X, y, size=figsize,
-                    output_file=output_file + "xgb_feature_importance.png",
+                    output_file=output_file + f"xgb_feature_importance_{index}.png",
                     show=show
                 )
 
@@ -491,6 +491,7 @@ def plot_cross_val_results(
 
     # Get cross validation results
     #y_pred = cross_val_predict(cv_model, X, y, cv=n_splits)
+    plt.figure()
 
     # Plot Actual vs Predicted
     ax = sns.regplot(
@@ -506,11 +507,12 @@ def plot_cross_val_results(
         )
     )
     plt.xlabel("Observed " + indicator.lower())
+    plt.xticks(rotation=30)
     plt.ylabel("Predicted " + indicator.lower())
     if wandb is not None:
         wandb.log({'{}'.format(indicator): wandb.Image(plt)})
     if output_file:
-        plt.savefig(fname=output_file)
+        plt.savefig(fname=output_file, bbox_inches="tight")
     if show:
         plt.show(block=False)
 
@@ -544,6 +546,8 @@ def rf_feature_importance(
         ].feature_importances_[
             z
         ]
+    plt.figure()
+
     pd.DataFrame(
         {"Feature Importance": feat_impt}
     ).sort_values(
@@ -556,9 +560,10 @@ def rf_feature_importance(
     plt.grid()
     plt.gca().invert_yaxis()
     if output_file:
-        plt.savefig(fname=output_file)
+        plt.savefig(fname=output_file, bbox_inches="tight")
     if show:
         plt.show(block=False)
+
 
 def xgb_feature_importance(
     cv, X, y, n_features=30, size=(10, 15)
@@ -577,6 +582,7 @@ def xgb_feature_importance(
     size : tuple
         Size of the figure
     """
+    plt.figure()
 
     fig, ax = plt.subplots(1, 1, figsize=size)
     xgb.plot_importance(
