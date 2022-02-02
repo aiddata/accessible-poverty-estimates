@@ -79,7 +79,9 @@ def evaluate_model(
     poly_degree=2,
     n_workers=-1,
     verbose=0,
-    plot=True
+    plot=True,
+    output_file=None,
+    show=True
 ):
     """ Automatically trains and evaluates the specified model on given dataset
     using an n-fold nested cross validation scheme. Supported models so far are:
@@ -187,7 +189,9 @@ def evaluate_model(
                 formatted_indicator,
                 nested_scores,
                 wandb=wandb,
-                refit=refit
+                refit=refit,
+                output_file=output_file  + "cross_val.png",
+                show=show
             )
 
         # Get best estimator
@@ -205,11 +209,15 @@ def evaluate_model(
         if plot_importance:
             if model_type == "random_forest":
                 rf_feature_importance(
-                    cv, X, y, size=figsize
+                    cv, X, y, size=figsize,
+                    output_file=output_file + "rf_feature_importance.png",
+                    show=show
                 )
             elif model_type == "xgboost":
                 xgb_feature_importance(
-                    cv, X, y, size=figsize
+                    cv, X, y, size=figsize,
+                    output_file=output_file + "xgb_feature_importance.png",
+                    show=show
                 )
 
     return cv, pd.DataFrame(results)
@@ -461,7 +469,9 @@ def plot_cross_val_results(
     indicator,
     nested_scores,
     wandb,
-    refit='r2'
+    refit='r2',
+    output_file=None,
+    show=True
 ):
     """Plots cross validated estimates.
 
@@ -499,12 +509,16 @@ def plot_cross_val_results(
     plt.ylabel("Predicted " + indicator.lower())
     if wandb is not None:
         wandb.log({'{}'.format(indicator): wandb.Image(plt)})
-    plt.show(block=False)
-
+    if output_file:
+        plt.savefig(fname=output_file)
+    if show:
+        plt.show(block=False)
 
 
 def rf_feature_importance(
-    cv, X, y, n_features=30, size=(10, 15)
+    cv, X, y, n_features=30, size=(10, 15),
+    output_file=None,
+    show=True
 ):
     """ Plots the feature importances for random forest regressor.
 
@@ -541,8 +555,10 @@ def rf_feature_importance(
     )
     plt.grid()
     plt.gca().invert_yaxis()
-    plt.show()
-
+    if output_file:
+        plt.savefig(fname=output_file)
+    if show:
+        plt.show(block=False)
 
 def xgb_feature_importance(
     cv, X, y, n_features=30, size=(10, 15)

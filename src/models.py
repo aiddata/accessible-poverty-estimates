@@ -31,23 +31,27 @@ osm_date = config["main"]["osm_date"]
 
 data_dir = os.path.join(project_dir, 'data')
 
-sys.path.insert(0, project_dir)
+sys.path.insert(0, os.path.join(project_dir, 'src'))
 
 
 
 import model_utils
 import data_utils
 
-# import importlib
-# importlib.reload(model_utils)
-# importlib.reload(data_utils)
+import importlib
+importlib.reload(model_utils)
+importlib.reload(data_utils)
 
 
 # %matplotlib inline
 # %load_ext autoreload
 # %autoreload 2
 
+
+show_plots = False
+
 os.makedirs(os.path.join(data_dir, 'models'), exist_ok=True)
+os.makedirs(os.path.join(data_dir, 'results'), exist_ok=True)
 
 # Scoring metrics
 scoring = {
@@ -83,6 +87,7 @@ final_df = pd.read_csv(final_path)
 
 src_label = "dhs-buffers"
 
+id_field = "DHSID"
 
 # new osm data
 osm_roads_file = os.path.join(data_dir, 'osm/features/{}_roads_{}.csv'.format(src_label, osm_date))
@@ -90,7 +95,6 @@ osm_buildings_file = os.path.join(data_dir, 'osm/features/{}_buildings_{}.csv'.f
 osm_pois_file = os.path.join(data_dir, 'osm/features/{}_pois_{}.csv'.format(src_label, osm_date))
 osm_traffic_file = os.path.join(data_dir, 'osm/features/{}_traffic_{}.csv'.format(src_label, osm_date))
 osm_transport_file = os.path.join(data_dir, 'osm/features/{}_transport_{}.csv'.format(src_label, osm_date))
-id_field = "DHSID"
 
 
 # Load OSM datasets
@@ -147,7 +151,7 @@ print(len(all_data_cols))
 
 
 
-spatial_df = osm_df.merge(geoquery_df, on="DHSID", how="left")
+spatial_df = osm_df.merge(geoquery_df, on=id_field, how="left")
 
 
 all_data_df = spatial_df[[id_field] + all_data_cols]
@@ -174,10 +178,19 @@ data_utils.plot_hist(
     all_data_df['gpw_v4r11_count.2015.sum'],
     title='Distribution of Total Population',
     x_label='Total Population',
-    y_label='Number of Clusters'
+    y_label='Number of Clusters',
+    output_file=os.path.join(data_dir, 'results', f'pop_hist.png'),
+    show=show_plots
 )
 
-data_utils.plot_regplot(all_data_df, 'Wealth Index', 'Population', 'gpw_v4r11_count.2015.sum')
+data_utils.plot_regplot(
+    all_data_df,
+    'Wealth Index',
+    'Population',
+    'gpw_v4r11_count.2015.sum',
+    output_file=os.path.join(data_dir, 'results', f'pop_wealth_corr.png'),
+    show=show_plots
+)
 
 
 # -----------------------------------------------------------------------------
@@ -187,17 +200,30 @@ data_utils.plot_regplot(
     data=all_data_df,
     x_label='Wealth Index',
     y_label='Average Nightlight Intensity',
-    y_var='viirs.2017.mean'
+    y_var='viirs.2017.mean',
+    output_file=os.path.join(data_dir, 'results', f'ntl_wealth_regplot.png'),
+    show=show_plots
 )
 
 data_utils.plot_corr(
     data=all_data_df,
     features_cols=ntl_cols,
     indicator='Wealth Index',
-    max_n=4,
-    figsize=(8,6)
+    method='pearsons',
+    figsize=(8,6),
+    output_file=os.path.join(data_dir, 'results', f'ntl_cols_pearsons_corr.png'),
+    show=show_plots
 )
 
+data_utils.plot_corr(
+    data=all_data_df,
+    features_cols=ntl_cols,
+    indicator='Wealth Index',
+    method='spearman',
+    figsize=(8,6),
+    output_file=os.path.join(data_dir, 'results', f'ntl_cols_spearman_corr.png'),
+    show=show_plots
+)
 
 ntl_predictions = model_utils.evaluate_model(
     data=all_data_df,
@@ -211,7 +237,9 @@ ntl_predictions = model_utils.evaluate_model(
     n_iter=10,
     plot_importance=True,
     verbose=2,
-    clust_str=id_field
+    clust_str=id_field,
+    output_file=os.path.join(data_dir, 'results', f'ntl_model_'),
+    show=show_plots
 )
 
 
@@ -226,10 +254,23 @@ data_utils.plot_corr(
     data=all_data_df,
     features_cols=osm_ntl_cols,
     indicator='Wealth Index',
+    method='pearsons',
     max_n=50,
-    figsize=(10,13)
+    figsize=(10,13),
+    output_file=os.path.join(data_dir, 'results', f'osm_cols_pearsons_corr.png'),
+    show=show_plots
 )
 
+data_utils.plot_corr(
+    data=all_data_df,
+    features_cols=osm_ntl_cols,
+    indicator='Wealth Index',
+    method='spearman',
+    max_n=50,
+    figsize=(10,13),
+    output_file=os.path.join(data_dir, 'results', f'osm_cols_spearman_corr.png'),
+    show=show_plots
+)
 
 osm_cv, osm_predictions = model_utils.evaluate_model(
     data=all_data_df,
@@ -266,12 +307,27 @@ dump(osm_best, osm_model_path)
 # -----------------------------------------------------------------------------
 # NTL + OSM + spatial models
 
+
 data_utils.plot_corr(
     data=all_data_df,
     features_cols=all_data_cols,
     indicator='Wealth Index',
+    method='pearsons',
     max_n=50,
-    figsize=(10,13)
+    figsize=(10,13),
+    output_file=os.path.join(data_dir, 'results', f'allcols_pearsons_corr.png'),
+    show=show_plots
+)
+
+data_utils.plot_corr(
+    data=all_data_df,
+    features_cols=all_data_cols,
+    indicator='Wealth Index',
+    method='spearman',
+    max_n=50,
+    figsize=(10,13),
+    output_file=os.path.join(data_dir, 'results', f'allcols_spearman_corr.png'),
+    show=show_plots
 )
 
 

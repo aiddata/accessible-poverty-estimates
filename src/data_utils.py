@@ -186,7 +186,15 @@ def percentile_ranking(series):
 
 #### Plotting Helper Functions ####
 
-def plot_hist(data, title, x_label, y_label, bins=30):
+def plot_hist(
+    data,
+    title,
+    x_label,
+    y_label,
+    bins=30,
+    output_file=None,
+    show=True
+):
     """Plots histogram for the given data
 
     Parameters
@@ -202,18 +210,24 @@ def plot_hist(data, title, x_label, y_label, bins=30):
     bins : int
         Number of bins for histogram
     """
+    plt.figure()
     plt.hist(data, bins=bins)
     plt.title(title)
     plt.xlabel(x_label)
     plt.ylabel(y_label)
-    plt.show()
+    if output_file:
+        plt.savefig(fname=output_file)
+    if show:
+        plt.show(block=False)
 
 
 def plot_regplot(
     data,
     x_label='Wealth Index',
     y_label='Average Nightlight Intensity',
-    y_var='ntl_mean'
+    y_var='ntl_mean',
+    output_file=None,
+    show=True
 ):
     """Produces the regression plot for the given data
 
@@ -230,6 +244,7 @@ def plot_regplot(
     y_label : str
         Label of the y-axis
     """
+    plt.figure()
     ax = sns.regplot(
         x=x_label,
         y=y_var,
@@ -255,16 +270,21 @@ def plot_regplot(
     )
     plt.xlabel(x_label)
     plt.ylabel(y_label)
-    plt.show()
+    if output_file:
+        plt.savefig(fname=output_file)
+    if show:
+        plt.show(block=False)
 
 
 def plot_corr(
     data,
     features_cols,
     indicator="Wealth Index",
+    method="pearsons",
     figsize=(5, 6),
     max_n=30,
-    output_file=None
+    output_file=None,
+    show=True
 ):
     """Produces a barplot of the Spearman rank correlation and Pearson's correlation
     for a group of values in descending order
@@ -285,36 +305,34 @@ def plot_corr(
         The desired pathway to output the plot
     """
     n = len(features_cols)
-    spearman = []
-    pearsons = []
+    if method == 'pearsons':
+        name = 'Pearsons'
+        func = pearsonr
+    elif method == 'spearman':
+        name = 'Spearman'
+        func = spearmanr
+    else:
+        raise ValueError(f'Invalid method provided ({method})')
+
+    values = []
     for feature in features_cols:
-        spearman.append(
-            ( feature, spearmanr(data[feature], data[indicator])[0] )
+        values.append(
+            ( feature, func(data[feature], data[indicator])[0] )
         )
-        pearsons.append(
-            ( feature, pearsonr(data[feature], data[indicator])[0] )
-        )
-    spearman = sorted(spearman, key=lambda x: abs(x[1]))
-    pearsons = sorted(pearsons, key=lambda x: abs(x[1]))
-    #
+
+    values = sorted(values, key=lambda x: abs(x[1]))
+
     plt.figure(figsize=figsize)
-    plt.title( "Spearman Correlation Coefficient for {}".format(indicator) )
+    plt.title( f"{name} Correlation Coefficient for {indicator}" )
     plt.barh(
-        [x[0] for x in spearman[n - max_n :]],
-        [x[1] for x in spearman[n - max_n :]],
-    )
-    plt.grid()
-    #
-    plt.figure(figsize=figsize)
-    plt.title( "Pearsons Correlation Coefficient for {}".format(indicator) )
-    plt.barh(
-        [x[0] for x in pearsons[n - max_n :]],
-        [x[1] for x in pearsons[n - max_n :]],
+        [x[0] for x in values[n - max_n :]],
+        [x[1] for x in values[n - max_n :]],
     )
     plt.grid()
     if output_file:
         plt.savefig(fname=output_file)
-    plt.show(block=False)
+    if show:
+        plt.show(block=False)
 
 
 
