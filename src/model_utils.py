@@ -9,6 +9,7 @@ import random
 import seaborn as sns
 from scipy import stats
 from math import sqrt
+from joblib import dump, load
 
 from sklearn.decomposition import PCA
 from sklearn.pipeline import Pipeline
@@ -253,11 +254,23 @@ def get_param_grid(model_type='ridge'):
     #the following random forest hyperparameters are explained in the paper
     elif model_type == "random_forest":
         param_grid = {
-            "regressor__n_estimators": [256,300],
-            "regressor__max_features": ["sqrt"],
-            "regressor__max_depth": [20],
-            "regressor__min_samples_split": [4,6],
-            "regressor__min_samples_leaf": [2,4],
+            # "regressor__n_estimators": stats.randint(200, 2000),
+            # "regressor__max_features": ["auto", "sqrt", "log2"],
+            # "regressor__max_depth": stats.randint(3, 10),
+            # "regressor__min_samples_split": stats.randint(2, 10),
+            # "regressor__min_samples_leaf": stats.randint(1, 10),
+            # "regressor__bootstrap": [True, False],
+            # "regressor__n_estimators": [256,300],
+            # "regressor__max_features": ["sqrt"],
+            # "regressor__max_depth": [20],
+            # "regressor__min_samples_split": [4,6],
+            # "regressor__min_samples_leaf": [2,4],
+            # "regressor__bootstrap": [True]
+            "regressor__n_estimators": [2000],
+            "regressor__max_features": [.33],
+            "regressor__max_depth": [10],
+            "regressor__min_samples_split": [2],
+            "regressor__min_samples_leaf": [4],
             "regressor__bootstrap": [True]
         }
     elif model_type == "xgboost":
@@ -591,53 +604,53 @@ def xgb_feature_importance(
     plt.show()
 
 
-def rf_feature_importance_dataframe(
-        cv, X, y
-    ):
-        """ Returns the feature importances for random forest regressor.
+def rf_feature_importance_dataframe(cv, X, y):
+    """ Returns the feature importances for random forest regressor.
 
-        Parameters
-        ----------
-        cv :
-        X : pandas DataFrame, numpy array, or 2D list
-            Contains the feature matrix for training
-        y : pandas Series or list
-            Contains the target vector to predict
-        """
-
-        feat_impt = {}
-        for z in range(len(X.columns)):
-            feat_impt[
-                X.columns[z]
-            ] = cv.best_estimator_.named_steps[
-                "regressor"
-            ].feature_importances_[
-                z
-            ]
-        df = pd.DataFrame(
-            {"Feature Importance": feat_impt}
-        ).sort_values(
-            by="Feature Importance", ascending=False
-        )
-        return df
+    Parameters
+    ----------
+    cv :
+    X : pandas DataFrame, numpy array, or 2D list
+        Contains the feature matrix for training
+    y : pandas Series or list
+        Contains the target vector to predict
+    """
+    feat_impt = {}
+    for z in range(len(X.columns)):
+        feat_impt[X.columns[z]] = cv.best_estimator_.named_steps["regressor"].feature_importances_[z]
+    df = pd.DataFrame(
+        {"feature_importance": feat_impt}
+    ).sort_values(
+        by="feature_importance", ascending=False
+    )
+    return df
 
 
-def rf_permutation_importance_dataframe(
-        cv, X, y
-    ):
-        """ Returns the permutation importances for random forest regressor.
+def rf_permutation_importance_dataframe(cv, X, y):
+    """ Returns the permutation importances for random forest regressor.
 
-        Parameters
-        ----------
-        cv :
-        X : pandas DataFrame, numpy array, or 2D list
-            Contains the feature matrix for training
-        y : pandas Series or list
-            Contains the target vector to predict
-        """
+    Parameters
+    ----------
+    cv :
+    X : pandas DataFrame, numpy array, or 2D list
+        Contains the feature matrix for training
+    y : pandas Series or list
+        Contains the target vector to predict
+    """
+    results = permutation_importance(cv.best_estiator_names_steps, X, y)
+    raw_scores = results.importances
+    df = pd.DataFrame(index=X.columns, data=raw_scores, columns='Raw Permutation Importance')
+    return df
 
 
-        results = permutation_importance(cv.best_estiator_names_steps, X, y)
-        raw_scores = results.importances
-        df = pd.DataFrame(index=X.columns, data=raw_scores, columns='Raw Permutation Importance')
-        return df
+def save_model(cv, df, features, indicator, model_path):
+    # define X,y for all data
+    X = df[features]
+    y = df[indicator].tolist()
+
+    # refit cv model with all data
+    best = cv.best_estimator_.fit(X, y)
+
+    # save model
+    dump(best, model_path)
+
