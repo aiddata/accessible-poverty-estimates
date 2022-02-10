@@ -39,56 +39,31 @@ import model_utils
 import data_utils
 
 
-import importlib
-importlib.reload(model_utils)
-importlib.reload(data_utils)
 
-
-# %matplotlib inline
-# %load_ext autoreload
-# %autoreload 2
-
-
-show_plots = False
-
-os.makedirs(os.path.join(data_dir, 'models'), exist_ok=True)
-os.makedirs(os.path.join(data_dir, 'results'), exist_ok=True)
-
-# Scoring metrics
-scoring = {
-    'r2': data_utils.pearsonr2,
-    'rmse': data_utils.rmse
-}
-
-
-# -------------------------------------
-
-
-# Indicators of interest
 # indicators = [
 #     'Wealth Index',
 #     'Education completed (years)',
 #     'Access to electricity',
 #     'Access to water (minutes)'
 # ]
-indicators = [
-    'Wealth Index'
-]
+indicators = ['Wealth Index']
+
+id_field = "DHSID"
 
 
+# -------------------------------------
 # load in dhs data
-final_path =  os.path.join(data_dir, 'dhs_data.csv')
-final_df = pd.read_csv(final_path)
 
+dhs_path =  os.path.join(data_dir, 'dhs_data.csv')
+dhs_df = pd.read_csv(dhs_path)
+dhs_cols = [id_field] + indicators
+dhs_df = dhs_df[dhs_cols]
 
 
 # -------------------------------------
 # OSM data prep
 
-
 src_label = "dhs-buffers"
-
-id_field = "DHSID"
 
 # new osm data
 osm_roads_file = os.path.join(data_dir, 'osm/features/{}_roads_{}.csv'.format(src_label, osm_date))
@@ -107,27 +82,22 @@ transport = pd.read_csv(osm_transport_file)
 
 osm_df_list = [roads, buildings, pois, traffic, transport]
 
-osm_df = pd.concat(osm_df_list, join="inner", axis=1)
+raw_osm_df = pd.concat(osm_df_list, join="inner", axis=1)
 
-osm_df = osm_df.loc[:, ~osm_df.columns.duplicated()]
+raw_osm_df = raw_osm_df.loc[:, ~raw_osm_df.columns.duplicated()]
 
-osm_df = osm_df[[i for i in osm_df.columns if "_roads_nearest-osmid" not in i]]
-
-
-print("Shape of osm dataframe: {}".format(osm_df.shape))
-
-# Get list of columns
-osm_cols = list(osm_df.columns[1:])
-
-osm_cols = [i for i in osm_df if osm_df[i].min() != osm_df[i].max() and i != id_field]
-osm_df = osm_df[[id_field] + osm_cols]
-
-print("Shape of osm dataframe after drops: {}".format(osm_df.shape))
-print('osm_cols:', osm_cols)
+raw_osm_df = raw_osm_df[[i for i in raw_osm_df.columns if "_roads_nearest-osmid" not in i]]
 
 
-# only subset of OSM features related to basic all building/road footprints
-footprint_cols = [i for i in osm_cols if i.startswith(('all_roads_', 'all_buildings'))]
+print("Shape of raw OSM dataframe: {}".format(raw_osm_df.shape))
+
+osm_drop_cols = [i for i in raw_osm_df if raw_osm_df[i].min() == raw_osm_df[i].max()]
+
+print("Dropping OSM columns (no variance): ", osm_drop_cols)
+
+osm_df = raw_osm_df.drop(columns=osm_drop_cols)
+
+print("Shape of OSM dataframe after drops: {}".format(osm_df.shape))
 
 
 
@@ -139,9 +109,6 @@ geoquery_path = os.path.join(data_dir, 'merge_phl_dhs_buffer.csv')
 geoquery_df = pd.read_csv(geoquery_path)
 geoquery_df.fillna(-999, inplace=True)
 
-# print(geoquery_df.columns.to_list())
-
-all_geoquery_cols = [i for i in geoquery_df.columns if len(i.split('.')) == 3]
 
 for c1 in set([i[:i.index('categorical')] for i in geoquery_df.columns if 'categorical' in i]):
     for c2 in [i for i in geoquery_df.columns if i.startswith(c1) and not i.endswith('count')]:
@@ -150,9 +117,36 @@ for c1 in set([i[:i.index('categorical')] for i in geoquery_df.columns if 'categ
 for y in range(2013, 2020):
     geoquery_df[f'esa_landcover.{y}.categorical_cropland'] = geoquery_df[[f'esa_landcover.{y}.categorical_irrigated_cropland', f'esa_landcover.{y}.categorical_rainfed_cropland', f'esa_landcover.{y}.categorical_mosaic_cropland']].sum(axis=1)
 
+
+spatial_df = osm_df.merge(geoquery_df, on=id_field, how="left")
+
+all_data_df = spatial_df.merge(dhs_df, on=id_field, how='left')
+
+
+all_data_df = all_data_df.loc[all_data_df['Wealth Index'].notnull()].copy()
+
+for i in all_data_df.columns:
+    na = all_data_df[i].isna().sum()
+    if na > 0:
+        print(i, all_data_df[i].isna().sum())
+
+
+
+# -------------------------------------
+# prepare feature lists
+
+
+all_osm_cols = [i for i in osm_df.columns if i != id_field]
+
 all_geoquery_cols = [i for i in geoquery_df.columns if len(i.split('.')) == 3]
 
-# sub_geoquery_cols = ['udel_precip_v501_mean.2015.mean', 'udel_precip_v501_sum.2015.sum',  'udel_air_temp_v501_mean.2015.mean',  'srtm_slope_500m.na.mean', 'srtm_elevation_500m.na.mean', 'oco2.2015.mean', 'ltdr_avhrr_ndvi_v5_yearly.2015.mean', 'gpw_v4r11_density.2015.mean', 'gpw_v4r11_count.2015.sum',  'esa_landcover.2015.categorical_urban', 'esa_landcover.2015.categorical_water_bodies', 'esa_landcover.2015.categorical_forest', 'esa_landcover.2015.categorical_cropland', 'distance_to_coast_236.na.mean', 'dist_to_water.na.mean', 'accessibility_to_cities_2015_v1.0.mean']
+
+
+ntl_cols = ['viirs.2017.mean', 'viirs.2017.min', 'viirs.2017.max', 'viirs.2017.sum']
+
+sub_osm_cols = [i for i in all_osm_cols if i.startswith(('all_buildings_', 'all_roads_')) and i != 'all_roads_count']
+
+
 sub_geoquery_cols = ['srtm_slope_500m.na.mean', 'srtm_elevation_500m.na.mean', 'distance_to_coast_236.na.mean', 'dist_to_water.na.mean', 'accessibility_to_cities_2015_v1.0.mean', 'gpw_v4r11_density.2015.mean', 'gpw_v4r11_count.2015.sum']
 
 for y in range(2015,2018):
@@ -166,39 +160,53 @@ for y in range(2015,2018):
 
 
 
-ntl_cols = ['viirs.2017.mean', 'viirs.2017.min', 'viirs.2017.max', 'viirs.2017.sum']
-
-
-all_osm_cols = osm_cols
-sub_osm_cols = [i for i in osm_cols if i.startswith(('all_buildings_', 'all_roads_')) and i != 'all_roads_count']
-
-
 all_data_cols = all_osm_cols + all_geoquery_cols
 sub_data_cols = sub_osm_cols + sub_geoquery_cols
 
 
-spatial_df = osm_df.merge(geoquery_df, on=id_field, how="left")
+
+final_data_df = all_data_df[[id_field, 'Wealth Index'] + all_data_cols]
 
 
-all_data_df = spatial_df[[id_field] + all_data_cols]
-
-all_data_df = all_data_df.merge(final_df[[id_field, 'Wealth Index']], on=id_field, how='left')
-
-all_data_path = os.path.join(data_dir, 'all_data.csv')
-all_data_df.to_csv(all_data_path)
+final_data_path = os.path.join(data_dir, 'final_data.csv')
+final_data_df.to_csv(final_data_path)
 
 
+# all_used_data_cols = {
+#     "ntl_cols": ntl_cols,
+#     "all_osm_cols": all_osm_cols,
+#     "all_osm_ntl_cols": all_osm_cols + ntl_cols,
+#     "sub_osm_ntl_cols": sub_osm_cols + ntl_cols,
+#     "sub_data_cols": sub_data_cols
+# }
 
-all_data_df = all_data_df.loc[all_data_df['Wealth Index'].notnull()].copy()
 
-for i in all_data_df.columns:
-    na = all_data_df[i].isna().sum()
-    if na > 0:
-        print(i, all_data_df[i].isna().sum())
+# -----------------------------------------------------------------------------
 
 
+# import importlib
+# importlib.reload(model_utils)
+# importlib.reload(data_utils)
+
+
+# %matplotlib inline
+# %load_ext autoreload
+# %autoreload 2
+
+
+show_plots = False
+
+os.makedirs(os.path.join(data_dir, 'models'), exist_ok=True)
+os.makedirs(os.path.join(data_dir, 'results'), exist_ok=True)
+
+# Scoring metrics
+scoring = {
+    'r2': data_utils.pearsonr2,
+    'rmse': data_utils.rmse
+}
 
 search_type = 'grid'
+
 
 # -----------------------------------------------------------------------------
 # Explore population distribution and relationships
