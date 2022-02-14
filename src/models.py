@@ -142,16 +142,16 @@ all_geoquery_cols = [i for i in geoquery_df.columns if len(i.split('.')) == 3]
 
 
 
-ntl_cols = ['viirs.2017.mean', 'viirs.2017.min', 'viirs.2017.max', 'viirs.2017.sum']
+ntl_cols = ['viirs.2017.mean', 'viirs.2017.min', 'viirs.2017.max', 'viirs.2017.sum', 'viirs.2017.median']
 
 sub_osm_cols = [i for i in all_osm_cols if i.startswith(('all_buildings_', 'all_roads_')) and i != 'all_roads_count']
 
 
-sub_geoquery_cols = ['srtm_slope_500m.na.mean', 'srtm_elevation_500m.na.mean', 'distance_to_coast_236.na.mean', 'dist_to_water.na.mean', 'accessibility_to_cities_2015_v1.0.mean', 'gpw_v4r11_density.2015.mean', 'gpw_v4r11_count.2015.sum']
+sub_geoquery_cols = ['srtm_slope_500m.na.mean', 'srtm_elevation_500m.na.mean', 'distance_to_coast_236.na.mean', 'dist_to_water.na.mean', 'accessibility_to_cities_2015_v1.0.mean', 'gpw_v4r11_density.2015.mean', 'gpw_v4r11_count.2015.sum', 'gpw_v4r11_density.2020.mean', 'gpw_v4r11_count.2020.sum']
 
 for y in range(2015,2018):
     sub_geoquery_cols.extend(
-        [f'viirs.{y}.mean', f'viirs.{y}.min', f'viirs.{y}.max', f'viirs.{y}.sum',
+        [f'viirs.{y}.mean', f'viirs.{y}.min', f'viirs.{y}.max', f'viirs.{y}.sum', f'viirs.{y}.median',
         f'udel_precip_v501_mean.{y}.mean', f'udel_precip_v501_sum.{y}.sum',  f'udel_air_temp_v501_mean.{y}.mean',
         f'oco2.{y}.mean',
         f'ltdr_avhrr_ndvi_v5_yearly.{y}.mean',
@@ -212,7 +212,7 @@ search_type = 'grid'
 # Explore population distribution and relationships
 
 data_utils.plot_hist(
-    all_data_df['gpw_v4r11_count.2015.sum'],
+    final_data_df['gpw_v4r11_count.2015.sum'],
     title='Distribution of Total Population',
     x_label='Total Population',
     y_label='Number of Clusters',
@@ -221,7 +221,7 @@ data_utils.plot_hist(
 )
 
 data_utils.plot_regplot(
-    all_data_df,
+    final_data_df,
     'Wealth Index',
     'Population',
     'gpw_v4r11_count.2015.sum',
@@ -234,7 +234,7 @@ data_utils.plot_regplot(
 # NTL only
 
 data_utils.plot_regplot(
-    data=all_data_df,
+    data=final_data_df,
     x_label='Wealth Index',
     y_label='Average Nightlight Intensity',
     y_var='viirs.2017.mean',
@@ -243,7 +243,7 @@ data_utils.plot_regplot(
 )
 
 data_utils.plot_corr(
-    data=all_data_df,
+    data=final_data_df,
     features_cols=ntl_cols,
     indicator='Wealth Index',
     method='pearsons',
@@ -253,7 +253,7 @@ data_utils.plot_corr(
 )
 
 data_utils.plot_corr(
-    data=all_data_df,
+    data=final_data_df,
     features_cols=ntl_cols,
     indicator='Wealth Index',
     method='spearman',
@@ -263,7 +263,7 @@ data_utils.plot_corr(
 )
 
 ntl_cv, ntl_predictions = model_utils.evaluate_model(
-    data=all_data_df,
+    data=final_data_df,
     feature_cols=ntl_cols,
     indicator_cols=indicators,
     scoring=scoring,
@@ -279,7 +279,7 @@ ntl_cv, ntl_predictions = model_utils.evaluate_model(
     show=show_plots
 )
 
-model_utils.save_model(ntl_cv, all_data_df, ntl_cols, 'Wealth Index', os.path.join(data_dir, 'models/ntl_only_best.joblib'))
+model_utils.save_model(ntl_cv, final_data_df, ntl_cols, 'Wealth Index', os.path.join(data_dir, 'models/ntl_only_best.joblib'))
 
 
 # -----------------------------------------------------------------------------
@@ -287,7 +287,7 @@ model_utils.save_model(ntl_cv, all_data_df, ntl_cols, 'Wealth Index', os.path.jo
 
 
 data_utils.plot_corr(
-    data=all_data_df,
+    data=final_data_df,
     features_cols=all_osm_cols,
     indicator='Wealth Index',
     method='pearsons',
@@ -298,7 +298,7 @@ data_utils.plot_corr(
 )
 
 data_utils.plot_corr(
-    data=all_data_df,
+    data=final_data_df,
     features_cols=all_osm_cols,
     indicator='Wealth Index',
     method='spearman',
@@ -309,7 +309,7 @@ data_utils.plot_corr(
 )
 
 osm_only_cv, osm_only_predictions = model_utils.evaluate_model(
-    data=all_data_df,
+    data=final_data_df,
     feature_cols=all_osm_cols,
     indicator_cols=indicators,
     clust_str=id_field,
@@ -326,7 +326,7 @@ osm_only_cv, osm_only_predictions = model_utils.evaluate_model(
     show=show_plots
 )
 
-model_utils.save_model(osm_only_cv, all_data_df, all_osm_cols, 'Wealth Index', os.path.join(data_dir, 'models/osm_only_best.joblib'))
+model_utils.save_model(osm_only_cv, final_data_df, all_osm_cols, 'Wealth Index', os.path.join(data_dir, 'models/osm_only_best.joblib'))
 
 
 # -----------------------------------------------------------------------------
@@ -336,7 +336,7 @@ model_utils.save_model(osm_only_cv, all_data_df, all_osm_cols, 'Wealth Index', o
 all_osm_ntl_cols = all_osm_cols + ntl_cols
 
 data_utils.plot_corr(
-    data=all_data_df,
+    data=final_data_df,
     features_cols=all_osm_ntl_cols,
     indicator='Wealth Index',
     method='pearsons',
@@ -347,7 +347,7 @@ data_utils.plot_corr(
 )
 
 data_utils.plot_corr(
-    data=all_data_df,
+    data=final_data_df,
     features_cols=all_osm_ntl_cols,
     indicator='Wealth Index',
     method='spearman',
@@ -358,7 +358,7 @@ data_utils.plot_corr(
 )
 
 all_osm_cv, all_osm_predictions = model_utils.evaluate_model(
-    data=all_data_df,
+    data=final_data_df,
     feature_cols=all_osm_ntl_cols,
     indicator_cols=indicators,
     clust_str=id_field,
@@ -375,7 +375,7 @@ all_osm_cv, all_osm_predictions = model_utils.evaluate_model(
     show=show_plots
 )
 
-model_utils.save_model(all_osm_cv, all_data_df, all_osm_ntl_cols, 'Wealth Index', os.path.join(data_dir, 'models/all_osm_ntl_best.joblib'))
+model_utils.save_model(all_osm_cv, final_data_df, all_osm_ntl_cols, 'Wealth Index', os.path.join(data_dir, 'models/all_osm_ntl_best.joblib'))
 
 
 # -----------------------------------------------------------------------------
@@ -385,7 +385,7 @@ model_utils.save_model(all_osm_cv, all_data_df, all_osm_ntl_cols, 'Wealth Index'
 sub_osm_ntl_cols = sub_osm_cols + ntl_cols
 
 data_utils.plot_corr(
-    data=all_data_df,
+    data=final_data_df,
     features_cols=sub_osm_ntl_cols,
     indicator='Wealth Index',
     method='pearsons',
@@ -396,7 +396,7 @@ data_utils.plot_corr(
 )
 
 data_utils.plot_corr(
-    data=all_data_df,
+    data=final_data_df,
     features_cols=sub_osm_ntl_cols,
     indicator='Wealth Index',
     method='spearman',
@@ -407,7 +407,7 @@ data_utils.plot_corr(
 )
 
 sub_osm_cv, sub_osm_predictions = model_utils.evaluate_model(
-    data=all_data_df,
+    data=final_data_df,
     feature_cols=sub_osm_ntl_cols,
     indicator_cols=indicators,
     clust_str=id_field,
@@ -424,7 +424,7 @@ sub_osm_cv, sub_osm_predictions = model_utils.evaluate_model(
     show=show_plots
 )
 
-model_utils.save_model(sub_osm_cv, all_data_df, sub_osm_ntl_cols, 'Wealth Index', os.path.join(data_dir, 'models/sub_osm_best.joblib'))
+model_utils.save_model(sub_osm_cv, final_data_df, sub_osm_ntl_cols, 'Wealth Index', os.path.join(data_dir, 'models/sub_osm_best.joblib'))
 
 
 # -----------------------------------------------------------------------------
@@ -432,7 +432,7 @@ model_utils.save_model(sub_osm_cv, all_data_df, sub_osm_ntl_cols, 'Wealth Index'
 
 
 data_utils.plot_corr(
-    data=all_data_df,
+    data=final_data_df,
     features_cols=sub_geoquery_cols,
     indicator='Wealth Index',
     method='pearsons',
@@ -443,7 +443,7 @@ data_utils.plot_corr(
 )
 
 data_utils.plot_corr(
-    data=all_data_df,
+    data=final_data_df,
     features_cols=sub_geoquery_cols,
     indicator='Wealth Index',
     method='spearman',
@@ -454,7 +454,7 @@ data_utils.plot_corr(
 )
 
 subgeo_cv, subgeo_predictions = model_utils.evaluate_model(
-    data=all_data_df,
+    data=final_data_df,
     feature_cols=sub_geoquery_cols,
     indicator_cols=indicators,
     clust_str=id_field,
@@ -471,7 +471,7 @@ subgeo_cv, subgeo_predictions = model_utils.evaluate_model(
     show=show_plots
 )
 
-model_utils.save_model(subgeo_cv, all_data_df, sub_geoquery_cols, 'Wealth Index', os.path.join(data_dir, 'models/sub_geoquery_best.joblib'))
+model_utils.save_model(subgeo_cv, final_data_df, sub_geoquery_cols, 'Wealth Index', os.path.join(data_dir, 'models/sub_geoquery_best.joblib'))
 
 
 # -----------------------------------------------------------------------------
@@ -479,7 +479,7 @@ model_utils.save_model(subgeo_cv, all_data_df, sub_geoquery_cols, 'Wealth Index'
 
 
 data_utils.plot_corr(
-    data=all_data_df,
+    data=final_data_df,
     features_cols=sub_data_cols,
     indicator='Wealth Index',
     method='pearsons',
@@ -490,7 +490,7 @@ data_utils.plot_corr(
 )
 
 data_utils.plot_corr(
-    data=all_data_df,
+    data=final_data_df,
     features_cols=sub_data_cols,
     indicator='Wealth Index',
     method='spearman',
@@ -502,7 +502,7 @@ data_utils.plot_corr(
 
 
 sub_cv, sub_predictions = model_utils.evaluate_model(
-    data=all_data_df,
+    data=final_data_df,
     feature_cols=sub_data_cols,
     indicator_cols=indicators,
     clust_str=id_field,
@@ -520,7 +520,7 @@ sub_cv, sub_predictions = model_utils.evaluate_model(
 )
 
 
-model_utils.save_model(sub_cv, all_data_df, sub_data_cols, 'Wealth Index', os.path.join(data_dir, 'models/sub_best.joblib'))
+model_utils.save_model(sub_cv, final_data_df, sub_data_cols, 'Wealth Index', os.path.join(data_dir, 'models/sub_best.joblib'))
 
 
 
@@ -541,7 +541,7 @@ print(f"Sub GeoQuery best estimator: {subgeo_cv.best_estimator_}")
 
 #return a dictionary that identifes a a list of variables for which each variables has a correlation above the specified threshold
 #will only return variables that had at least one other variable with the specified correlation threshold
-correlated_ivs, corr_matrix = data_utils.corr_finder(all_data_df, .85)
+correlated_ivs, corr_matrix = data_utils.corr_finder(final_data_df, .85)
 
 #subset data based on correlation but make sure that specifically desired covariates are still within the group.
 #ensure that even if road/building data can have a low correlation with each other, only one from each group is used per model evaluation
@@ -559,7 +559,7 @@ new_features = [i for i in sub_data_cols if i not in to_remove_list]
 
 
 #create a dataframe based on feature importance the df is ordered from most important to least important feature.
-reduction_df = model_utils.rf_feature_importance_dataframe(sub_cv, all_data_df[new_features], all_data_df[indicators])
+reduction_df = model_utils.rf_feature_importance_dataframe(sub_cv, final_data_df[new_features], final_data_df[indicators])
 
 ## subset data based on desired feature importance feature importance
 thresh = .01
@@ -574,7 +574,7 @@ important_features = [i for i in new_features if i not in remove_importance]
 important_features = ['all_roads_length', 'all_roads_nearestdist', 'all_buildings_ratio', 'distance_to_coast_236.na.mean', 'accessibility_to_cities_2015_v1.0.mean', 'gpw_v4r11_density.2015.mean', 'viirs.2017.min', 'udel_precip_v501_sum.2017.sum', 'udel_air_temp_v501_mean.2017.mean', 'esa_landcover.2017.categorical_water_bodies', 'esa_landcover.2017.categorical_cropland',  'oco2.2017.mean', 'ltdr_avhrr_ndvi_v5_yearly.2017.mean',  'viirs.2017.mean',  'esa_landcover.2017.categorical_urban', ]
 
 final_cv, final_predictions = model_utils.evaluate_model(
-    data=all_data_df,
+    data=final_data_df,
     feature_cols=important_features,
     indicator_cols=indicators,
     search_type="grid",
@@ -592,4 +592,4 @@ final_cv, final_predictions = model_utils.evaluate_model(
 )
 
 
-model_utils.save_model(final_cv, all_data_df, important_features, 'Wealth Index', os.path.join(data_dir, 'models/final_best.joblib'))
+model_utils.save_model(final_cv, final_data_df, important_features, 'Wealth Index', os.path.join(data_dir, 'models/final_best.joblib'))
