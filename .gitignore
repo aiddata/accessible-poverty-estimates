@@ -5,3 +5,4 @@ data/*
 !data/merge_phl_dhs_buffer.csv
 !data/models
 !data/crosswalks
+!data/results

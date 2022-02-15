@@ -55,9 +55,9 @@ id_field = "DHSID"
 # load in dhs data
 
 dhs_path =  os.path.join(data_dir, 'dhs_data.csv')
-dhs_df = pd.read_csv(dhs_path)
-dhs_cols = [id_field] + indicators
-dhs_df = dhs_df[dhs_cols]
+raw_dhs_df = pd.read_csv(dhs_path)
+dhs_cols = [id_field, 'latitude', 'longitude'] + indicators
+dhs_df = raw_dhs_df[dhs_cols]
 
 
 # -------------------------------------
@@ -136,7 +136,7 @@ for i in all_data_df.columns:
 # prepare feature lists
 
 
-all_osm_cols = [i for i in osm_df.columns if i != id_field]
+all_osm_cols = [i for i in osm_df.columns if i not in dhs_cols]
 
 all_geoquery_cols = [i for i in geoquery_df.columns if len(i.split('.')) == 3]
 
@@ -147,7 +147,7 @@ ntl_cols = ['viirs.2017.mean', 'viirs.2017.min', 'viirs.2017.max', 'viirs.2017.s
 sub_osm_cols = [i for i in all_osm_cols if i.startswith(('all_buildings_', 'all_roads_')) and i != 'all_roads_count']
 
 
-sub_geoquery_cols = ['srtm_slope_500m.na.mean', 'srtm_elevation_500m.na.mean', 'distance_to_coast_236.na.mean', 'dist_to_water.na.mean', 'accessibility_to_cities_2015_v1.0.mean', 'gpw_v4r11_density.2015.mean', 'gpw_v4r11_count.2015.sum', 'gpw_v4r11_density.2020.mean', 'gpw_v4r11_count.2020.sum']
+sub_geoquery_cols = ['srtm_slope_500m.na.mean', 'srtm_elevation_500m.na.mean', 'distance_to_coast_236.na.mean', 'dist_to_water.na.mean', 'accessibility_to_cities_2015_v1.0.mean', 'gpw_v4r11_density.2015.mean', 'gpw_v4r11_count.2015.sum',  'globalwindatlas_windspeed.na.mean', 'distance_to_gemdata_201708.na.mean', 'dist_to_onshore_petroleum_v12.na.mean']
 
 for y in range(2015,2018):
     sub_geoquery_cols.extend(
@@ -160,12 +160,12 @@ for y in range(2015,2018):
 
 
 
-all_data_cols = all_osm_cols + all_geoquery_cols
-sub_data_cols = sub_osm_cols + sub_geoquery_cols
+all_data_cols = all_osm_cols + all_geoquery_cols + ['longitude', 'latitude']
+sub_data_cols = sub_osm_cols + sub_geoquery_cols + ['longitude', 'latitude']
 
 
 
-final_data_df = all_data_df[[id_field, 'Wealth Index'] + all_data_cols]
+final_data_df = all_data_df[dhs_cols + all_osm_cols + all_geoquery_cols]
 
 
 final_data_path = os.path.join(data_dir, 'final_data.csv')
@@ -379,6 +379,52 @@ model_utils.save_model(all_osm_cv, final_data_df, all_osm_ntl_cols, 'Wealth Inde
 
 
 # -----------------------------------------------------------------------------
+# all OSM + NTL + GeoQuery
+
+
+data_utils.plot_corr(
+    data=final_data_df,
+    features_cols=all_data_cols,
+    indicator='Wealth Index',
+    method='pearsons',
+    max_n=50,
+    figsize=(10,13),
+    output_file=os.path.join(data_dir, 'results', f'12_all_cols_pearsons_corr.png'),
+    show=show_plots
+)
+
+data_utils.plot_corr(
+    data=final_data_df,
+    features_cols=all_data_cols,
+    indicator='Wealth Index',
+    method='spearman',
+    max_n=50,
+    figsize=(10,13),
+    output_file=os.path.join(data_dir, 'results', f'13_all_cols_spearman_corr.png'),
+    show=show_plots
+)
+
+all_cv, all_predictions = model_utils.evaluate_model(
+    data=final_data_df,
+    feature_cols=all_data_cols,
+    indicator_cols=indicators,
+    clust_str=id_field,
+    wandb=None,
+    scoring=scoring,
+    model_type='random_forest',
+    refit='r2',
+    search_type=search_type,
+    n_splits=5,
+    n_iter=10,
+    plot_importance=True,
+    verbose=2,
+    output_file=os.path.join(data_dir, 'results', f'14_all_model_'),
+    show=show_plots
+)
+
+model_utils.save_model(all_cv, final_data_df, all_data_cols, 'Wealth Index', os.path.join(data_dir, 'models/all_best.joblib'))
+
+# -----------------------------------------------------------------------------
 # sub OSM + NTL
 
 
@@ -391,7 +437,7 @@ data_utils.plot_corr(
     method='pearsons',
     max_n=50,
     figsize=(10,13),
-    output_file=os.path.join(data_dir, 'results', f'12_sub_osm_ntl_pearsons_corr.png'),
+    output_file=os.path.join(data_dir, 'results', f'15_sub_osm_ntl_pearsons_corr.png'),
     show=show_plots
 )
 
@@ -402,7 +448,7 @@ data_utils.plot_corr(
     method='spearman',
     max_n=50,
     figsize=(10,13),
-    output_file=os.path.join(data_dir, 'results', f'13_sub_osm_ntl_spearman_corr.png'),
+    output_file=os.path.join(data_dir, 'results', f'16_sub_osm_ntl_spearman_corr.png'),
     show=show_plots
 )
 
@@ -420,7 +466,7 @@ sub_osm_cv, sub_osm_predictions = model_utils.evaluate_model(
     n_iter=10,
     plot_importance=True,
     verbose=2,
-    output_file=os.path.join(data_dir, 'results', f'14_sub_osm_ntl_model_'),
+    output_file=os.path.join(data_dir, 'results', f'17_sub_osm_ntl_model_'),
     show=show_plots
 )
 
@@ -438,7 +484,7 @@ data_utils.plot_corr(
     method='pearsons',
     max_n=50,
     figsize=(10,13),
-    output_file=os.path.join(data_dir, 'results', f'15_sub_geoquery_pearsons_corr.png'),
+    output_file=os.path.join(data_dir, 'results', f'18_sub_geoquery_pearsons_corr.png'),
     show=show_plots
 )
 
@@ -449,7 +495,7 @@ data_utils.plot_corr(
     method='spearman',
     max_n=50,
     figsize=(10,13),
-    output_file=os.path.join(data_dir, 'results', f'16_sub_geoquery_spearman_corr.png'),
+    output_file=os.path.join(data_dir, 'results', f'19_sub_geoquery_spearman_corr.png'),
     show=show_plots
 )
 
@@ -467,7 +513,7 @@ subgeo_cv, subgeo_predictions = model_utils.evaluate_model(
     n_iter=10,
     plot_importance=True,
     verbose=2,
-    output_file=os.path.join(data_dir, 'results', f'17_sub_geoquery_model_'),
+    output_file=os.path.join(data_dir, 'results', f'20_sub_geoquery_model_'),
     show=show_plots
 )
 
@@ -485,7 +531,7 @@ data_utils.plot_corr(
     method='pearsons',
     max_n=50,
     figsize=(10,13),
-    output_file=os.path.join(data_dir, 'results', f'18_sub_pearsons_corr.png'),
+    output_file=os.path.join(data_dir, 'results', f'21_sub_pearsons_corr.png'),
     show=show_plots
 )
 
@@ -496,7 +542,7 @@ data_utils.plot_corr(
     method='spearman',
     max_n=50,
     figsize=(10,13),
-    output_file=os.path.join(data_dir, 'results', f'19_sub_spearman_corr.png'),
+    output_file=os.path.join(data_dir, 'results', f'22_sub_spearman_corr.png'),
     show=show_plots
 )
 
@@ -515,7 +561,7 @@ sub_cv, sub_predictions = model_utils.evaluate_model(
     n_iter=10,
     plot_importance=True,
     verbose=2,
-    output_file=os.path.join(data_dir, 'results', f'20_sub_model_'),
+    output_file=os.path.join(data_dir, 'results', f'23_sub_model_'),
     show=show_plots
 )
 
@@ -523,29 +569,51 @@ sub_cv, sub_predictions = model_utils.evaluate_model(
 model_utils.save_model(sub_cv, final_data_df, sub_data_cols, 'Wealth Index', os.path.join(data_dir, 'models/sub_best.joblib'))
 
 
-
-
 # -----------------------------------------------------------------------------
 
 
-print(f"NTL best estimator: {ntl_cv.best_estimator_}")
-print(f"OSM only best estimator: {osm_only_cv.best_estimator_}")
-print(f"All OSM best estimator: {all_osm_cv.best_estimator_}")
-print(f"Sub OSM best estimator: {sub_osm_cv.best_estimator_}")
-print(f"Sub best estimator: {sub_cv.best_estimator_}")
-print(f"Sub GeoQuery best estimator: {subgeo_cv.best_estimator_}")
 
+compare_cols = ['minor_roads_count', 'minor_roads_nearestdist', 'major_roads_nearestdist',  'services_pois_count', 'entertainment_pois_count', 'lodging_pois_count', 'landmark_pois_count', 'viirs.2017.median', 'globalwindatlas_windspeed.na.mean', 'distance_to_gemdata_201708.na.mean', 'dist_to_onshore_petroleum_v12.na.mean', 'distance_to_drugdata_201708.na.mean',  'diamond_distance_201708.na.mean', 'ambient_air_pollution_2013_o3.2013.mean', 'wdpa_iucn_cat_201704.na.count', 'gpw_v4r11_density.2020.mean', 'esa_landcover.2015.categorical_mosaic_cropland']
+
+# distance_to_gemdata_201708 = real
+# globalwindatlas_windspeed = real
+# dist_to_onshore_petroleum_v12 = real
+
+# distance_to_drugdata_201708 = northwest
+# diamond_distance_201708 = southwest
+# ambient_air_pollution_2013_o3 = southeast
+
+compare_cv, compare_predictions = model_utils.evaluate_model(
+    data=final_data_df,
+    feature_cols=compare_cols,
+    indicator_cols=indicators,
+    clust_str=id_field,
+    wandb=None,
+    scoring=scoring,
+    model_type='random_forest',
+    refit='r2',
+    search_type=search_type,
+    n_splits=5,
+    n_iter=10,
+    plot_importance=True,
+    verbose=2,
+    output_file=os.path.join(data_dir, 'results', f'best_compare_model_'),
+    show=show_plots
+)
 
 # -----------------------------------------------------------------------------
 # feature reduction
 
 #return a dictionary that identifes a a list of variables for which each variables has a correlation above the specified threshold
 #will only return variables that had at least one other variable with the specified correlation threshold
-correlated_ivs, corr_matrix = data_utils.corr_finder(final_data_df, .85)
+correlated_ivs, corr_matrix = data_utils.corr_finder(final_data_df[sub_data_cols], .75)
+
+for i,j in correlated_ivs.items():
+    print(i,j)
 
 #subset data based on correlation but make sure that specifically desired covariates are still within the group.
 #ensure that even if road/building data can have a low correlation with each other, only one from each group is used per model evaluation
-remove_corrs = correlated_ivs['viirs.2016.mean']  + correlated_ivs['gpw_v4r11_count.2015.sum']  + correlated_ivs['all_roads_length'] + correlated_ivs['all_buildings_ratio']
+remove_corrs = correlated_ivs['viirs.2016.median'] + correlated_ivs['viirs.2016.max'] + correlated_ivs['gpw_v4r11_count.2015.sum']  + correlated_ivs['all_roads_length'] + correlated_ivs['all_buildings_ratio']
 to_keep = ['viirs.2016.mean','all_buildings_totalarea', 'all_buildings_count', 'all_roads_nearestdist', 'gpw_v4r11_count.2015.sum']
 to_remove_dict = {
     'correlation': [label for label in remove_corrs if label not in to_keep],
@@ -562,7 +630,7 @@ new_features = [i for i in sub_data_cols if i not in to_remove_list]
 reduction_df = model_utils.rf_feature_importance_dataframe(sub_cv, final_data_df[new_features], final_data_df[indicators])
 
 ## subset data based on desired feature importance feature importance
-thresh = .01
+thresh = .004
 remove_importance = []
 for row, ser in reduction_df.iterrows():
     for idx, val in ser.iteritems():
@@ -571,7 +639,14 @@ for row, ser in reduction_df.iterrows():
 
 
 important_features = [i for i in new_features if i not in remove_importance]
-important_features = ['all_roads_length', 'all_roads_nearestdist', 'all_buildings_ratio', 'distance_to_coast_236.na.mean', 'accessibility_to_cities_2015_v1.0.mean', 'gpw_v4r11_density.2015.mean', 'viirs.2017.min', 'udel_precip_v501_sum.2017.sum', 'udel_air_temp_v501_mean.2017.mean', 'esa_landcover.2017.categorical_water_bodies', 'esa_landcover.2017.categorical_cropland',  'oco2.2017.mean', 'ltdr_avhrr_ndvi_v5_yearly.2017.mean',  'viirs.2017.mean',  'esa_landcover.2017.categorical_urban', ]
+
+
+# 'distance_to_coast_236.na.mean', 'globalwindatlas_windspeed.na.mean', 'distance_to_gemdata_201708.na.mean', 'dist_to_onshore_petroleum_v12.na.mean', 'accessibility_to_cities_2015_v1.0.mean', gpw_v4r11_density.2015.mean', 'gpw_v4r11_count.2015.sum',  'esa_landcover.2016.categorical_urban', 'all_roads_nearestdist',  'srtm_elevation_500m.na.mean', 'esa_landcover.2016.categorical_cropland', 'srtm_slope_500m.na.mean','all_buildings_avgarea', 'esa_landcover.2016.categorical_water_bodies', 'esa_landcover.2016.categorical_forest', 'udel_air_temp_v501_mean.2016.mean', 'udel_precip_v501_mean.2016.mean', 'udel_precip_v501_sum.2016.sum', 'ltdr_avhrr_ndvi_v5_yearly.2016.mean', 'oco2.2016.mean',
+
+important_features = ['longitude', 'latitude', 'all_roads_length', 'all_buildings_ratio', 'dist_to_water.na.mean', 'viirs.2016.median', 'viirs.2016.max', 'worldpop_pop_count_1km_mosaic.2016.mean']
+
+correlated_ivs, corr_matrix = data_utils.corr_finder(final_data_df[important_features], .65)
+
 
 final_cv, final_predictions = model_utils.evaluate_model(
     data=final_data_df,
@@ -587,9 +662,25 @@ final_cv, final_predictions = model_utils.evaluate_model(
     n_iter=10,
     plot_importance=True,
     verbose=2,
-    output_file=os.path.join(data_dir, 'results', f'21_final_model_'),
+    output_file=os.path.join(data_dir, 'results', f'final_model_'),
     show=show_plots
 )
 
 
 model_utils.save_model(final_cv, final_data_df, important_features, 'Wealth Index', os.path.join(data_dir, 'models/final_best.joblib'))
+
+
+
+# -----------------------------------------------------------------------------
+
+
+print(f"NTL best score: {ntl_cv.best_score_}")
+print(f"OSM only best score: {osm_only_cv.best_score_}")
+print(f"OSM+NTL best score: {all_osm_cv.best_score_}")
+print(f"All best score: {all_cv.best_score_}")
+print(f"Sub OSM+NTL best score: {sub_osm_cv.best_score_}")
+print(f"Sub GeoQuery best score: {subgeo_cv.best_score_}")
+print(f"Sub All best score: {sub_cv.best_score_}")
+print(f"Compare best score: {compare_cv.best_score_}")
+print(f"Final best score: {final_cv.best_score_}")
+
