@@ -69,10 +69,8 @@ os.makedirs(osm_features_dir, exist_ok=True)
 
 # DHS CLUSTERS
 
-geom_path = os.path.join(data_dir, 'dhs_buffers.geojson')
-
-
 # load buffers/geom created during data prep
+geom_path = os.path.join(data_dir, 'outputs', dhs_round, 'dhs_buffers.geojson')
 buffers_gdf = gpd.read_file(geom_path)
 
 # calculate area of each buffer
