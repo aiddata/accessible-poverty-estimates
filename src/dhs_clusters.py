@@ -38,6 +38,8 @@ country_utm_epsg_code = config[project]['country_utm_epsg_code']
 
 data_dir = os.path.join(project_dir, 'data')
 
+os.makedirs(os.path.join(data_dir, 'outputs', dhs_round), exist_ok=True)
+
 
 # ---------------------------------------------------------
 # prepare DHS cluster indicators

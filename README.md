@@ -39,11 +39,13 @@ Builds on work published by [Thinking Machines Data Science](https://github.com/
 3. Download DHS data
 
 4. Download OSM data
+    - Note: If you are considering using older snapshots of the OSM database to align with DHS round years, historical coverage of OSM may be limited and impede model performance. For most developing countries, the amount of true historical coverage lacking in older snapshots is likely to be far greater than the amount of actual building/road/etc development since the last DHS round. Neither is ideal, but we expect using more recent OSM data will be more realistic overall. Please consider your particular use case and use your judgement to determine what is best for your application.
 
 5. Setup `config.ini`
 
 6. Run `dhs_clusters.py` to prepare DHS data
 
 7. Run `osm_features.py` to prepare OSM data
+    - Note: If you are adapting this code for another country, be sure to update the OSM crosswalk files before this step.
 
 8. Run `models.py` to train models and produce figures.
