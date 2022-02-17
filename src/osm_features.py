@@ -55,6 +55,7 @@ project_dir = config[project]["project_dir"]
 dhs_round = config[project]['dhs_round']
 country_utm_epsg_code = config[project]['country_utm_epsg_code']
 
+country_name = config[project]["country_name"]
 osm_date = config[project]["osm_date"]
 geom_id = config[project]["geom_id"]
 geom_label = config[project]["geom_label"]
@@ -86,8 +87,8 @@ buffers_gdf = buffers_gdf.to_crs("EPSG:4326") # WGS84
 
 print("Running pois...")
 
-osm_pois_shp_path = os.path.join(data_dir, 'osm/philippines-{}-free.shp/gis_osm_pois_free_1.shp'.format(osm_date))
-osm_pois_a_shp_path = os.path.join(data_dir, 'osm/philippines-{}-free.shp/gis_osm_pois_a_free_1.shp'.format(osm_date))
+osm_pois_shp_path = os.path.join(data_dir, f'osm/{country_name}-{osm_date}-free.shp/gis_osm_pois_free_1.shp')
+osm_pois_a_shp_path = os.path.join(data_dir, f'osm/{country_name}-{osm_date}-free.shp/gis_osm_pois_a_free_1.shp')
 
 raw_pois_geo = gpd.read_file(osm_pois_shp_path)
 raw_pois_a_geo = gpd.read_file(osm_pois_a_shp_path)
@@ -169,8 +170,8 @@ pois_features.to_csv(pois_features_path, index=False, encoding="utf-8")
 
 print("Running traffic...")
 
-osm_traffic_shp_path = os.path.join(data_dir, 'osm/philippines-{}-free.shp/gis_osm_traffic_free_1.shp'.format(osm_date))
-osm_traffic_a_shp_path = os.path.join(data_dir, 'osm/philippines-{}-free.shp/gis_osm_traffic_a_free_1.shp'.format(osm_date))
+osm_traffic_shp_path = os.path.join(data_dir, f'osm/{country_name}-{osm_date}-free.shp/gis_osm_traffic_free_1.shp')
+osm_traffic_a_shp_path = os.path.join(data_dir, f'osm/{country_name}-{osm_date}-free.shp/gis_osm_traffic_a_free_1.shp')
 
 raw_traffic_geo = gpd.read_file(osm_traffic_shp_path)
 raw_traffic_a_geo = gpd.read_file(osm_traffic_a_shp_path)
@@ -252,8 +253,8 @@ traffic_features.to_csv(traffic_features_path, index=False, encoding="utf-8")
 
 print("Running transport...")
 
-osm_transport_shp_path = os.path.join(data_dir, 'osm/philippines-{}-free.shp/gis_osm_transport_free_1.shp'.format(osm_date))
-osm_transport_a_shp_path = os.path.join(data_dir, 'osm/philippines-{}-free.shp/gis_osm_transport_a_free_1.shp'.format(osm_date))
+osm_transport_shp_path = os.path.join(data_dir, f'osm/{country_name}-{osm_date}-free.shp/gis_osm_transport_free_1.shp')
+osm_transport_a_shp_path = os.path.join(data_dir, f'osm/{country_name}-{osm_date}-free.shp/gis_osm_transport_a_free_1.shp')
 
 raw_transport_geo = gpd.read_file(osm_transport_shp_path)
 raw_transport_a_geo = gpd.read_file(osm_transport_a_shp_path)
@@ -337,7 +338,7 @@ transport_features.to_csv(transport_features_path, index=False, encoding="utf-8"
 
 print("Running buildings...")
 
-osm_buildings_shp_path = os.path.join(data_dir, 'osm/philippines-{}-free.shp/gis_osm_buildings_a_free_1.shp'.format(osm_date))
+osm_buildings_shp_path = os.path.join(data_dir, f'osm/{country_name}-{osm_date}-free.shp/gis_osm_buildings_a_free_1.shp')
 buildings_geo_raw = gpd.read_file(osm_buildings_shp_path)
 
 """
@@ -440,7 +441,7 @@ buildings_features["all_buildings_avgarea"].fillna(0, inplace=True)
 buildings_features = buildings_features.merge(buffers_gdf[[geom_id, 'buffer_area']], on=geom_id, how="left")
 buildings_features["all_buildings_ratio"] = buildings_features["all_buildings_totalarea"] / buildings_features["buffer_area"]
 
-buildings_features_path = os.path.join(osm_features_dir, '{}_buildings_{}.csv'.format(geom_label, osm_date))
+buildings_features_path = os.path.join(osm_features_dir, f'{geom_label}_buildings_{osm_date}.csv')
 buildings_features.to_csv(buildings_features_path, index=False, encoding="utf-8")
 
 
@@ -451,7 +452,7 @@ buildings_features.to_csv(buildings_features_path, index=False, encoding="utf-8"
 
 print("Running roads...")
 
-osm_roads_shp_path = os.path.join(data_dir, 'osm/philippines-{}-free.shp/gis_osm_roads_free_1.shp'.format(osm_date))
+osm_roads_shp_path = os.path.join(data_dir, f'osm/{country_name}-{osm_date}-free.shp/gis_osm_roads_free_1.shp')
 roads_geo = gpd.read_file(osm_roads_shp_path)
 
 # get each road length
