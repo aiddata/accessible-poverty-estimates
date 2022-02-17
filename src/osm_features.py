@@ -47,25 +47,37 @@ if 'config.ini' not in os.listdir():
 config = configparser.ConfigParser()
 config.read('config.ini')
 
-project_dir = config["main"]["project_dir"]
-osm_date = config["main"]["osm_date"]
+
+project = config["main"]["project"]
+
+project_dir = config[project]["project_dir"]
+
+dhs_round = config[project]['dhs_round']
+country_utm_epsg_code = config[project]['country_utm_epsg_code']
+
+osm_date = config[project]["osm_date"]
+geom_id = config[project]["geom_id"]
+geom_label = config[project]["geom_label"]
+
 
 data_dir = os.path.join(project_dir, 'data')
 
+osm_features_dir = os.path.join(data_dir, 'outputs', dhs_round, 'osm_features')
+os.makedirs(osm_features_dir, exist_ok=True)
 
-os.makedirs(os.path.join(data_dir, 'osm/features'), exist_ok=True)
+
 
 # DHS CLUSTERS
-geom_label = "dhs-buffers"
+
 geom_path = os.path.join(data_dir, 'dhs_buffers.geojson')
-geom_id = "DHSID"
+
 
 # load buffers/geom created during data prep
 buffers_gdf = gpd.read_file(geom_path)
 
 # calculate area of each buffer
-# convert to UTM 51N (meters) first, then back to WGS84 (degrees)
-buffers_gdf = buffers_gdf.to_crs("EPSG:32651") # UTM 51N
+# convert to UTM first, then back to WGS84 (degrees)
+buffers_gdf = buffers_gdf.to_crs(f"EPSG:{country_utm_epsg_code}")
 buffers_gdf["buffer_area"] = buffers_gdf.area
 buffers_gdf = buffers_gdf.to_crs("EPSG:4326") # WGS84
 
@@ -145,16 +157,11 @@ for group in pois_group_list:
     buffers_gdf_pois = buffers_gdf_pois.merge(z2, left_index=True, right_index=True)
 
 # output final features
-pois_feature_cols = [geom_id] + [i for i in buffers_gdf_pois.columns if "_pois_" in i]
-pois_features = buffers_gdf_pois[pois_feature_cols].copy(deep=True)
-pois_features_path = os.path.join(data_dir, 'osm/features/{}_pois_{}.csv'.format(geom_label, osm_date))
-pois_features.to_csv(pois_features_path, index=False, encoding="utf-8")
-
 pois_feature_cols = [i for i in buffers_gdf_pois.columns if "_pois_" in i]
 pois_cols = [geom_id] + pois_feature_cols
 pois_features = buffers_gdf_pois[pois_cols].copy(deep=True)
 pois_features['all_pois_count'] = pois_features[pois_feature_cols].sum(axis=1)
-pois_features_path = os.path.join(data_dir, 'osm/features/{}_pois_{}.csv'.format(geom_label, osm_date))
+pois_features_path = os.path.join(osm_features_dir, '{}_pois_{}.csv'.format(geom_label, osm_date))
 pois_features.to_csv(pois_features_path, index=False, encoding="utf-8")
 
 
@@ -238,7 +245,7 @@ traffic_feature_cols = [i for i in buffers_gdf_traffic.columns if "_traffic_" in
 traffic_cols = [geom_id] + traffic_feature_cols
 traffic_features = buffers_gdf_traffic[traffic_cols].copy(deep=True)
 traffic_features['all_traffic_count'] = traffic_features[traffic_feature_cols].sum(axis=1)
-traffic_features_path = os.path.join(data_dir, 'osm/features/{}_traffic_{}.csv'.format(geom_label, osm_date))
+traffic_features_path = os.path.join(osm_features_dir, '{}_traffic_{}.csv'.format(geom_label, osm_date))
 traffic_features.to_csv(traffic_features_path, index=False, encoding="utf-8")
 
 # ---------------------------------------------------------
@@ -321,7 +328,7 @@ transport_feature_cols = [i for i in buffers_gdf_transport.columns if "_transpor
 transport_cols = [geom_id] + transport_feature_cols
 transport_features = buffers_gdf_transport[transport_cols].copy(deep=True)
 transport_features['all_transport_count'] = transport_features[transport_feature_cols].sum(axis=1)
-transport_features_path = os.path.join(data_dir, 'osm/features/{}_transport_{}.csv'.format(geom_label, osm_date))
+transport_features_path = os.path.join(osm_features_dir, '{}_transport_{}.csv'.format(geom_label, osm_date))
 transport_features.to_csv(transport_features_path, index=False, encoding="utf-8")
 
 
@@ -378,8 +385,8 @@ if "all" not in buildings_group_list:
     buildings_geo = buildings_geo.loc[buildings_geo["group"].isin(buildings_group_list)]
 
 # calculate area of each building
-# convert to UTM 51N (meters) first, then back to WGS84 (degrees)
-buildings_geo = buildings_geo.to_crs("EPSG:32651") # UTM 51N
+# convert to UTM first, then back to WGS84 (degrees)
+buildings_geo = buildings_geo.to_crs(f"EPSG:{country_utm_epsg_code}")
 buildings_geo["area"] = buildings_geo.area
 buildings_geo = buildings_geo.to_crs("EPSG:4326") # WGS84
 
@@ -435,7 +442,7 @@ buildings_features["all_buildings_avgarea"].fillna(0, inplace=True)
 buildings_features = buildings_features.merge(buffers_gdf[[geom_id, 'buffer_area']], on=geom_id, how="left")
 buildings_features["all_buildings_ratio"] = buildings_features["all_buildings_totalarea"] / buildings_features["buffer_area"]
 
-buildings_features_path = os.path.join(data_dir, 'osm/features/{}_buildings_{}.csv'.format(geom_label, osm_date))
+buildings_features_path = os.path.join(osm_features_dir, '{}_buildings_{}.csv'.format(geom_label, osm_date))
 buildings_features.to_csv(buildings_features_path, index=False, encoding="utf-8")
 
 
@@ -450,8 +457,8 @@ osm_roads_shp_path = os.path.join(data_dir, 'osm/philippines-{}-free.shp/gis_osm
 roads_geo = gpd.read_file(osm_roads_shp_path)
 
 # get each road length
-# convert to UTM 51N (meters) first, then back to WGS84 (degrees)
-roads_geo = roads_geo.to_crs("EPSG:32651") # UTM 51N
+# convert to UTM first, then back to WGS84 (degrees)
+roads_geo = roads_geo.to_crs(f"EPSG:{country_utm_epsg_code}")
 roads_geo["road_length"] = roads_geo.geometry.length
 roads_geo = roads_geo.to_crs("EPSG:4326") # WGS84
 
@@ -581,5 +588,5 @@ roads_features['all_roads_count'] = roads_features[[i for i in roads_feature_col
 roads_features['all_roads_nearestdist'] = roads_features[[i for i in roads_feature_cols if i.endswith("_roads_nearestdist")]].min(axis=1)
 # roads_features['all_roads_nearest-osmid'] =
 
-roads_features_path = os.path.join(data_dir, 'osm/features/{}_roads_{}.csv'.format(geom_label, osm_date))
+roads_features_path = os.path.join(osm_features_dir, '{}_roads_{}.csv'.format(geom_label, osm_date))
 roads_features.to_csv(roads_features_path, index=False, encoding="utf-8")

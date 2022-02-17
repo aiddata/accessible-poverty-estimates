@@ -26,14 +26,33 @@ if 'config.ini' not in os.listdir():
 config = configparser.ConfigParser()
 config.read('config.ini')
 
-project_dir = config["main"]["project_dir"]
-osm_date = config["main"]["osm_date"]
+
+project = config["main"]["project"]
+
+project_dir = config[project]["project_dir"]
+
+dhs_round = config[project]['dhs_round']
+country_utm_epsg_code = config[project]['country_utm_epsg_code']
+
+osm_date = config[project]["osm_date"]
+geom_id = config[project]["geom_id"]
+geom_label = config[project]["geom_label"]
+
+geoquery_data_file_name = config[project]["geoquery_data_file_name"]
+
 
 data_dir = os.path.join(project_dir, 'data')
 
+osm_features_dir = os.path.join(data_dir, 'outputs', dhs_round, 'osm_features')
+
+models_dir = os.path.join(data_dir, 'outputs', dhs_round, 'models')
+results_dir = os.path.join(data_dir, 'outputs', dhs_round, 'results')
+
+os.makedirs(models_dir, exist_ok=True)
+os.makedirs(results_dir, exist_ok=True)
+
+
 sys.path.insert(0, os.path.join(project_dir, 'src'))
-
-
 
 import model_utils
 import data_utils
@@ -48,29 +67,26 @@ import data_utils
 # ]
 indicators = ['Wealth Index']
 
-id_field = "DHSID"
 
 
 # -------------------------------------
 # load in dhs data
 
-dhs_path =  os.path.join(data_dir, 'dhs_data.csv')
+dhs_path =  os.path.join(data_dir, 'outputs', dhs_round, 'dhs_data.csv')
 raw_dhs_df = pd.read_csv(dhs_path)
-dhs_cols = [id_field, 'latitude', 'longitude'] + indicators
+dhs_cols = [geom_id, 'latitude', 'longitude'] + indicators
 dhs_df = raw_dhs_df[dhs_cols]
 
 
 # -------------------------------------
 # OSM data prep
 
-src_label = "dhs-buffers"
-
 # new osm data
-osm_roads_file = os.path.join(data_dir, 'osm/features/{}_roads_{}.csv'.format(src_label, osm_date))
-osm_buildings_file = os.path.join(data_dir, 'osm/features/{}_buildings_{}.csv'.format(src_label, osm_date))
-osm_pois_file = os.path.join(data_dir, 'osm/features/{}_pois_{}.csv'.format(src_label, osm_date))
-osm_traffic_file = os.path.join(data_dir, 'osm/features/{}_traffic_{}.csv'.format(src_label, osm_date))
-osm_transport_file = os.path.join(data_dir, 'osm/features/{}_transport_{}.csv'.format(src_label, osm_date))
+osm_roads_file = os.path.join(osm_features_dir, '{}_roads_{}.csv'.format(geom_label, osm_date))
+osm_buildings_file = os.path.join(osm_features_dir, '{}_buildings_{}.csv'.format(geom_label, osm_date))
+osm_pois_file = os.path.join(osm_features_dir, '{}_pois_{}.csv'.format(geom_label, osm_date))
+osm_traffic_file = os.path.join(osm_features_dir, '{}_traffic_{}.csv'.format(geom_label, osm_date))
+osm_transport_file = os.path.join(osm_features_dir, '{}_transport_{}.csv'.format(geom_label, osm_date))
 
 
 # Load OSM datasets
@@ -105,7 +121,7 @@ print("Shape of OSM dataframe after drops: {}".format(osm_df.shape))
 # geoquery spatial data prep
 
 # join GeoQuery spatial data to osm_data
-geoquery_path = os.path.join(data_dir, 'merge_phl_dhs_buffer.csv')
+geoquery_path = os.path.join(data_dir, f'{geoquery_data_file_name}.csv')
 geoquery_df = pd.read_csv(geoquery_path)
 geoquery_df.fillna(-999, inplace=True)
 
@@ -118,9 +134,9 @@ for y in range(2013, 2020):
     geoquery_df[f'esa_landcover.{y}.categorical_cropland'] = geoquery_df[[f'esa_landcover.{y}.categorical_irrigated_cropland', f'esa_landcover.{y}.categorical_rainfed_cropland', f'esa_landcover.{y}.categorical_mosaic_cropland']].sum(axis=1)
 
 
-spatial_df = osm_df.merge(geoquery_df, on=id_field, how="left")
+spatial_df = osm_df.merge(geoquery_df, on=geom_id, how="left")
 
-all_data_df = spatial_df.merge(dhs_df, on=id_field, how='left')
+all_data_df = spatial_df.merge(dhs_df, on=geom_id, how='left')
 
 
 all_data_df = all_data_df.loc[all_data_df['Wealth Index'].notnull()].copy()
@@ -230,7 +246,7 @@ data_utils.plot_hist(
     title='Distribution of Total Population',
     x_label='Total Population',
     y_label='Number of Clusters',
-    output_file=os.path.join(data_dir, 'results', f'0_pop_hist.png'),
+    output_file=os.path.join(results_dir, f'0_pop_hist.png'),
     show=show_plots
 )
 
@@ -239,7 +255,7 @@ data_utils.plot_regplot(
     'Wealth Index',
     'Population',
     'gpw_v4r11_count.2015.sum',
-    output_file=os.path.join(data_dir, 'results', f'1_pop_wealth_corr.png'),
+    output_file=os.path.join(results_dir, f'1_pop_wealth_corr.png'),
     show=show_plots
 )
 
@@ -252,7 +268,7 @@ data_utils.plot_regplot(
     x_label='Wealth Index',
     y_label='Average Nightlight Intensity',
     y_var='viirs.2017.mean',
-    output_file=os.path.join(data_dir, 'results', f'2_ntl_wealth_regplot.png'),
+    output_file=os.path.join(results_dir, f'2_ntl_wealth_regplot.png'),
     show=show_plots
 )
 
@@ -262,7 +278,7 @@ data_utils.plot_corr(
     indicator='Wealth Index',
     method='pearsons',
     figsize=(8,6),
-    output_file=os.path.join(data_dir, 'results', f'3_ntl_cols_pearsons_corr.png'),
+    output_file=os.path.join(results_dir, f'3_ntl_cols_pearsons_corr.png'),
     show=show_plots
 )
 
@@ -272,7 +288,7 @@ data_utils.plot_corr(
     indicator='Wealth Index',
     method='spearman',
     figsize=(8,6),
-    output_file=os.path.join(data_dir, 'results', f'4_ntl_cols_spearman_corr.png'),
+    output_file=os.path.join(results_dir, f'4_ntl_cols_spearman_corr.png'),
     show=show_plots
 )
 
@@ -288,12 +304,12 @@ ntl_cv, ntl_predictions = model_utils.evaluate_model(
     n_iter=10,
     plot_importance=True,
     verbose=2,
-    clust_str=id_field,
-    output_file=os.path.join(data_dir, 'results', f'5_ntl_model_'),
+    clust_str=geom_id,
+    output_file=os.path.join(results_dir, f'5_ntl_model_'),
     show=show_plots
 )
 
-model_utils.save_model(ntl_cv, final_data_df, ntl_cols, 'Wealth Index', os.path.join(data_dir, 'models/ntl_only_best.joblib'))
+model_utils.save_model(ntl_cv, final_data_df, ntl_cols, 'Wealth Index', os.path.join(models_dir, 'ntl_only_best.joblib'))
 
 
 # -----------------------------------------------------------------------------
@@ -307,7 +323,7 @@ data_utils.plot_corr(
     method='pearsons',
     max_n=50,
     figsize=(10,13),
-    output_file=os.path.join(data_dir, 'results', f'6_osm_only_pearsons_corr.png'),
+    output_file=os.path.join(results_dir, f'6_osm_only_pearsons_corr.png'),
     show=show_plots
 )
 
@@ -318,7 +334,7 @@ data_utils.plot_corr(
     method='spearman',
     max_n=50,
     figsize=(10,13),
-    output_file=os.path.join(data_dir, 'results', f'7_osm_only_spearman_corr.png'),
+    output_file=os.path.join(results_dir, f'7_osm_only_spearman_corr.png'),
     show=show_plots
 )
 
@@ -326,7 +342,7 @@ osm_only_cv, osm_only_predictions = model_utils.evaluate_model(
     data=final_data_df,
     feature_cols=all_osm_cols,
     indicator_cols=indicators,
-    clust_str=id_field,
+    clust_str=geom_id,
     wandb=None,
     scoring=scoring,
     model_type='random_forest',
@@ -336,11 +352,11 @@ osm_only_cv, osm_only_predictions = model_utils.evaluate_model(
     n_iter=10,
     plot_importance=True,
     verbose=2,
-    output_file=os.path.join(data_dir, 'results', f'8_osm_only_model_'),
+    output_file=os.path.join(results_dir, f'8_osm_only_model_'),
     show=show_plots
 )
 
-model_utils.save_model(osm_only_cv, final_data_df, all_osm_cols, 'Wealth Index', os.path.join(data_dir, 'models/osm_only_best.joblib'))
+model_utils.save_model(osm_only_cv, final_data_df, all_osm_cols, 'Wealth Index', os.path.join(models_dir, 'osm_only_best.joblib'))
 
 
 # -----------------------------------------------------------------------------
@@ -356,7 +372,7 @@ data_utils.plot_corr(
     method='pearsons',
     max_n=50,
     figsize=(10,13),
-    output_file=os.path.join(data_dir, 'results', f'9_all_osm_cols_pearsons_corr.png'),
+    output_file=os.path.join(results_dir, f'9_all_osm_cols_pearsons_corr.png'),
     show=show_plots
 )
 
@@ -367,7 +383,7 @@ data_utils.plot_corr(
     method='spearman',
     max_n=50,
     figsize=(10,13),
-    output_file=os.path.join(data_dir, 'results', f'10_all_osm_cols_spearman_corr.png'),
+    output_file=os.path.join(results_dir, f'10_all_osm_cols_spearman_corr.png'),
     show=show_plots
 )
 
@@ -375,7 +391,7 @@ all_osm_cv, all_osm_predictions = model_utils.evaluate_model(
     data=final_data_df,
     feature_cols=all_osm_ntl_cols,
     indicator_cols=indicators,
-    clust_str=id_field,
+    clust_str=geom_id,
     wandb=None,
     scoring=scoring,
     model_type='random_forest',
@@ -385,11 +401,11 @@ all_osm_cv, all_osm_predictions = model_utils.evaluate_model(
     n_iter=10,
     plot_importance=True,
     verbose=2,
-    output_file=os.path.join(data_dir, 'results', f'11_all_osm_ntl_model_'),
+    output_file=os.path.join(results_dir, f'11_all_osm_ntl_model_'),
     show=show_plots
 )
 
-model_utils.save_model(all_osm_cv, final_data_df, all_osm_ntl_cols, 'Wealth Index', os.path.join(data_dir, 'models/all_osm_ntl_best.joblib'))
+model_utils.save_model(all_osm_cv, final_data_df, all_osm_ntl_cols, 'Wealth Index', os.path.join(models_dir, 'all_osm_ntl_best.joblib'))
 
 
 # -----------------------------------------------------------------------------
@@ -403,7 +419,7 @@ data_utils.plot_corr(
     method='pearsons',
     max_n=50,
     figsize=(10,13),
-    output_file=os.path.join(data_dir, 'results', f'12_all_cols_pearsons_corr.png'),
+    output_file=os.path.join(results_dir, f'12_all_cols_pearsons_corr.png'),
     show=show_plots
 )
 
@@ -414,7 +430,7 @@ data_utils.plot_corr(
     method='spearman',
     max_n=50,
     figsize=(10,13),
-    output_file=os.path.join(data_dir, 'results', f'13_all_cols_spearman_corr.png'),
+    output_file=os.path.join(results_dir, f'13_all_cols_spearman_corr.png'),
     show=show_plots
 )
 
@@ -422,7 +438,7 @@ all_cv, all_predictions = model_utils.evaluate_model(
     data=final_data_df,
     feature_cols=all_data_cols,
     indicator_cols=indicators,
-    clust_str=id_field,
+    clust_str=geom_id,
     wandb=None,
     scoring=scoring,
     model_type='random_forest',
@@ -432,11 +448,11 @@ all_cv, all_predictions = model_utils.evaluate_model(
     n_iter=10,
     plot_importance=True,
     verbose=2,
-    output_file=os.path.join(data_dir, 'results', f'14_all_model_'),
+    output_file=os.path.join(results_dir, f'14_all_model_'),
     show=show_plots
 )
 
-model_utils.save_model(all_cv, final_data_df, all_data_cols, 'Wealth Index', os.path.join(data_dir, 'models/all_best.joblib'))
+model_utils.save_model(all_cv, final_data_df, all_data_cols, 'Wealth Index', os.path.join(models_dir, 'all_best.joblib'))
 
 # -----------------------------------------------------------------------------
 # sub OSM + NTL
@@ -451,7 +467,7 @@ data_utils.plot_corr(
     method='pearsons',
     max_n=50,
     figsize=(10,13),
-    output_file=os.path.join(data_dir, 'results', f'15_sub_osm_ntl_pearsons_corr.png'),
+    output_file=os.path.join(results_dir, f'15_sub_osm_ntl_pearsons_corr.png'),
     show=show_plots
 )
 
@@ -462,7 +478,7 @@ data_utils.plot_corr(
     method='spearman',
     max_n=50,
     figsize=(10,13),
-    output_file=os.path.join(data_dir, 'results', f'16_sub_osm_ntl_spearman_corr.png'),
+    output_file=os.path.join(results_dir, f'16_sub_osm_ntl_spearman_corr.png'),
     show=show_plots
 )
 
@@ -470,7 +486,7 @@ sub_osm_cv, sub_osm_predictions = model_utils.evaluate_model(
     data=final_data_df,
     feature_cols=sub_osm_ntl_cols,
     indicator_cols=indicators,
-    clust_str=id_field,
+    clust_str=geom_id,
     wandb=None,
     scoring=scoring,
     model_type='random_forest',
@@ -480,11 +496,11 @@ sub_osm_cv, sub_osm_predictions = model_utils.evaluate_model(
     n_iter=10,
     plot_importance=True,
     verbose=2,
-    output_file=os.path.join(data_dir, 'results', f'17_sub_osm_ntl_model_'),
+    output_file=os.path.join(results_dir, f'17_sub_osm_ntl_model_'),
     show=show_plots
 )
 
-model_utils.save_model(sub_osm_cv, final_data_df, sub_osm_ntl_cols, 'Wealth Index', os.path.join(data_dir, 'models/sub_osm_best.joblib'))
+model_utils.save_model(sub_osm_cv, final_data_df, sub_osm_ntl_cols, 'Wealth Index', os.path.join(models_dir, 'sub_osm_best.joblib'))
 
 
 # -----------------------------------------------------------------------------
@@ -498,7 +514,7 @@ data_utils.plot_corr(
     method='pearsons',
     max_n=50,
     figsize=(10,13),
-    output_file=os.path.join(data_dir, 'results', f'18_sub_geoquery_pearsons_corr.png'),
+    output_file=os.path.join(results_dir, f'18_sub_geoquery_pearsons_corr.png'),
     show=show_plots
 )
 
@@ -509,7 +525,7 @@ data_utils.plot_corr(
     method='spearman',
     max_n=50,
     figsize=(10,13),
-    output_file=os.path.join(data_dir, 'results', f'19_sub_geoquery_spearman_corr.png'),
+    output_file=os.path.join(results_dir, f'19_sub_geoquery_spearman_corr.png'),
     show=show_plots
 )
 
@@ -517,7 +533,7 @@ subgeo_cv, subgeo_predictions = model_utils.evaluate_model(
     data=final_data_df,
     feature_cols=sub_geoquery_cols,
     indicator_cols=indicators,
-    clust_str=id_field,
+    clust_str=geom_id,
     wandb=None,
     scoring=scoring,
     model_type='random_forest',
@@ -527,11 +543,11 @@ subgeo_cv, subgeo_predictions = model_utils.evaluate_model(
     n_iter=10,
     plot_importance=True,
     verbose=2,
-    output_file=os.path.join(data_dir, 'results', f'20_sub_geoquery_model_'),
+    output_file=os.path.join(results_dir, f'20_sub_geoquery_model_'),
     show=show_plots
 )
 
-model_utils.save_model(subgeo_cv, final_data_df, sub_geoquery_cols, 'Wealth Index', os.path.join(data_dir, 'models/sub_geoquery_best.joblib'))
+model_utils.save_model(subgeo_cv, final_data_df, sub_geoquery_cols, 'Wealth Index', os.path.join(models_dir, 'sub_geoquery_best.joblib'))
 
 
 # -----------------------------------------------------------------------------
@@ -545,7 +561,7 @@ data_utils.plot_corr(
     method='pearsons',
     max_n=50,
     figsize=(10,13),
-    output_file=os.path.join(data_dir, 'results', f'21_sub_pearsons_corr.png'),
+    output_file=os.path.join(results_dir, f'21_sub_pearsons_corr.png'),
     show=show_plots
 )
 
@@ -556,7 +572,7 @@ data_utils.plot_corr(
     method='spearman',
     max_n=50,
     figsize=(10,13),
-    output_file=os.path.join(data_dir, 'results', f'22_sub_spearman_corr.png'),
+    output_file=os.path.join(results_dir, f'22_sub_spearman_corr.png'),
     show=show_plots
 )
 
@@ -565,7 +581,7 @@ sub_cv, sub_predictions = model_utils.evaluate_model(
     data=final_data_df,
     feature_cols=sub_data_cols,
     indicator_cols=indicators,
-    clust_str=id_field,
+    clust_str=geom_id,
     wandb=None,
     scoring=scoring,
     model_type='random_forest',
@@ -575,12 +591,12 @@ sub_cv, sub_predictions = model_utils.evaluate_model(
     n_iter=10,
     plot_importance=True,
     verbose=2,
-    output_file=os.path.join(data_dir, 'results', f'23_sub_model_'),
+    output_file=os.path.join(results_dir, f'23_sub_model_'),
     show=show_plots
 )
 
 
-model_utils.save_model(sub_cv, final_data_df, sub_data_cols, 'Wealth Index', os.path.join(data_dir, 'models/sub_best.joblib'))
+model_utils.save_model(sub_cv, final_data_df, sub_data_cols, 'Wealth Index', os.path.join(models_dir, 'sub_best.joblib'))
 
 
 # -----------------------------------------------------------------------------
@@ -601,7 +617,7 @@ compare_cv, compare_predictions = model_utils.evaluate_model(
     data=final_data_df,
     feature_cols=compare_cols,
     indicator_cols=indicators,
-    clust_str=id_field,
+    clust_str=geom_id,
     wandb=None,
     scoring=scoring,
     model_type='random_forest',
@@ -611,7 +627,7 @@ compare_cv, compare_predictions = model_utils.evaluate_model(
     n_iter=10,
     plot_importance=True,
     verbose=2,
-    output_file=os.path.join(data_dir, 'results', f'best_compare_model_'),
+    output_file=os.path.join(results_dir, f'best_compare_model_'),
     show=show_plots
 )
 
@@ -667,7 +683,7 @@ final_cv, final_predictions = model_utils.evaluate_model(
     feature_cols=important_features,
     indicator_cols=indicators,
     search_type="grid",
-    clust_str=id_field,
+    clust_str=geom_id,
     wandb=None,
     scoring=scoring,
     model_type='random_forest',
@@ -676,12 +692,12 @@ final_cv, final_predictions = model_utils.evaluate_model(
     n_iter=10,
     plot_importance=True,
     verbose=2,
-    output_file=os.path.join(data_dir, 'results', f'final_model_'),
+    output_file=os.path.join(results_dir, f'final_model_'),
     show=show_plots
 )
 
 
-model_utils.save_model(final_cv, final_data_df, important_features, 'Wealth Index', os.path.join(data_dir, 'models/final_best.joblib'))
+model_utils.save_model(final_cv, final_data_df, important_features, 'Wealth Index', os.path.join(models_dir, 'final_best.joblib'))
 
 
 

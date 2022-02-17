@@ -14,10 +14,10 @@ Prepare DHS data
 
 import os
 import configparser
+import glob
 
 import pandas as pd
 import geopandas as gpd
-
 
 
 if 'config.ini' not in os.listdir():
@@ -26,7 +26,14 @@ if 'config.ini' not in os.listdir():
 config = configparser.ConfigParser()
 config.read('config.ini')
 
-project_dir = config["main"]["project_dir"]
+project = config["main"]["project"]
+
+project_dir = config[project]["project_dir"]
+
+dhs_round = config[project]['dhs_round']
+dhs_hh_file_name = config[project]['dhs_hh_file_name']
+dhs_geo_file_name = config[project]['dhs_geo_file_name']
+country_utm_epsg_code = config[project]['country_utm_epsg_code']
 
 
 data_dir = os.path.join(project_dir, 'data')
@@ -35,8 +42,8 @@ data_dir = os.path.join(project_dir, 'data')
 # ---------------------------------------------------------
 # prepare DHS cluster indicators
 
-dhs_file = os.path.join(data_dir, 'dhs/PH_2017_DHS_03022021_2055_109036/PHHR71DT/PHHR71FL.DTA') #'dhs/PH_2017_DHS_03022021_2055_109036/PHHR71DT/PHHR71FL.DTA')
-dhs_dict_file = os.path.join(data_dir,  'dhs/PH_2017_DHS_03022021_2055_109036/PHHR71DT/PHHR71FL.DO') #'PH_2017_DHS_03022021_2055_109036/PHHR71DT/PHHR71FL.DO')
+dhs_file = glob.glob(os.path.join(data_dir, 'dhs', f'{dhs_round}*', dhs_hh_file_name, '*.DTA' ))[0]
+dhs_dict_file = glob.glob(os.path.join(data_dir, 'dhs', f'{dhs_round}*', dhs_hh_file_name, '*.DO' ))[0]
 
 dhs = pd.read_stata(dhs_file, convert_categoricals=False)
 
@@ -49,14 +56,14 @@ hv206       - Has electricity
 hv204       - Access to water (minutes)
 hv226       - Type of cooking fuel
 hv208       - Has television
-"""            #hv226 and hv 206 add by sasan
+"""
 
 var_titles = {
 
 }
 
 var_list = ["hv001", "hv271"]
-hh_data = dhs[var_list]
+hh_data = dhs[var_list].copy(deep=True)
 
 # 996 = water is on property
 if "hv204" in var_list:
@@ -90,10 +97,6 @@ cluster_data.columns = [
     # 'Type of cooking fuel'
 ]
 
-# save aggregated cluster indicators
-dhs_out_path = os.path.join(data_dir, "dhs_indicators.csv")
-cluster_data.to_csv(dhs_out_path, encoding="utf-8", index=False)
-
 
 #  ---------------------------------------------------------
 # read in IR file along with the label file
@@ -124,7 +127,7 @@ cluster_data.to_csv(dhs_out_path, encoding="utf-8", index=False)
 # # ---------------------------------------------------------
 # prepare DHS cluster geometries
 
-shp_path = os.path.join(data_dir, 'dhs/PH_2017_DHS_03022021_2055_109036/PHGE71FL/PHGE71FL.shp')#PH_2017_DHS_03022021_2055_109036/PHGE71FL/PHGE71FL.shp')
+shp_path = glob.glob(os.path.join(data_dir, 'dhs', f'{dhs_round}*', dhs_geo_file_name, '*.shp' ))[0]
 raw_gdf = gpd.read_file(shp_path)
 
 # drop locations without coordinates
@@ -152,31 +155,11 @@ def buffer(geom, urban_rural):
 
 
 gdf = raw_gdf.copy(deep=True)
-# convert to UTM 51N first (meters) then back to WGS84 (degrees)
-gdf = gdf.to_crs("EPSG:32651") # UTM 51N
+# convert to UTM first (meters) then back to WGS84 (degrees)
+gdf = gdf.to_crs(f"EPSG:{country_utm_epsg_code}")
 # generate buffer
 gdf.geometry = gdf.apply(lambda x: buffer(x.geometry, x.URBAN_RURA), axis=1)
 gdf = gdf.to_crs("EPSG:4326") # WGS84
-
-# save buffer geometry as geojson
-geo_path = os.path.join(data_dir, 'dhs_buffers.geojson')
-gdf.to_file(geo_path, driver='GeoJSON')
-
-
-#----------------------------------------------------------
-# join DHS spatial covars
-
-# covars_path = os.path.join(data_dir, 'dhs/PH_2017_DHS_03022021_2055_109036/PHGC72FL/PHGC72FL.csv')
-# covar_data = pd.read_csv(covars_path)
-# gdf_merge = gdf_merge.merge(covar_data, on="DHSID", how="left")
-
-# gdf_merge["DHSCLUST"] = gdf_merge["DHSCLUST"].astype(int)
-
-#merge geospatial data with dhs ir indicators
-
-# gdf_merge = gdf_merge.merge(ir_data, left_on="DHSCLUST", right_on="Cluster number", how="inner")
-# gdf_merge.drop("Cluster number_y", axis=1)
-# gdf_merge.rename(columns={'Cluster number_x':'Cluster number'},inplace=True)
 
 
 # ---------------------------------------------------------
@@ -188,5 +171,11 @@ gdf_merge = gdf.merge(cluster_data, left_on="DHSCLUST", right_on="Cluster number
 
 # output all dhs cluster data to CSV
 final_df = gdf_merge[[i for i in gdf_merge.columns if i != "geometry"]]
-final_path =  os.path.join(data_dir, 'dhs_data.csv')
+final_path =  os.path.join(data_dir, 'outputs', dhs_round, 'dhs_data.csv')
 final_df.to_csv(final_path, index=False, encoding='utf-8')
+
+
+# save buffer geometry as geojson
+geo_path = os.path.join(data_dir, 'outputs', dhs_round, 'dhs_buffers.geojson')
+gdf[['DHSID', 'geometry']].to_file(geo_path, driver='GeoJSON')
+
