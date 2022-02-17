@@ -13,7 +13,6 @@ import os
 import sys
 import configparser
 import warnings
-from joblib import dump, load
 
 import pandas as pd
 
@@ -44,12 +43,6 @@ geoquery_data_file_name = config[project]["geoquery_data_file_name"]
 data_dir = os.path.join(project_dir, 'data')
 
 osm_features_dir = os.path.join(data_dir, 'outputs', dhs_round, 'osm_features')
-
-models_dir = os.path.join(data_dir, 'outputs', dhs_round, 'models')
-results_dir = os.path.join(data_dir, 'outputs', dhs_round, 'results')
-
-os.makedirs(models_dir, exist_ok=True)
-os.makedirs(results_dir, exist_ok=True)
 
 
 sys.path.insert(0, os.path.join(project_dir, 'src'))
@@ -121,14 +114,16 @@ print("Shape of OSM dataframe after drops: {}".format(osm_df.shape))
 # geoquery spatial data prep
 
 # join GeoQuery spatial data to osm_data
-geoquery_path = os.path.join(data_dir, f'{geoquery_data_file_name}.csv')
+geoquery_path = os.path.join(data_dir, 'outputs', dhs_round, f'{geoquery_data_file_name}.csv')
 geoquery_df = pd.read_csv(geoquery_path)
 geoquery_df.fillna(-999, inplace=True)
 
 
 for c1 in set([i[:i.index('categorical')] for i in geoquery_df.columns if 'categorical' in i]):
     for c2 in [i for i in geoquery_df.columns if i.startswith(c1) and not i.endswith('count')]:
-        geoquery_df[c2] = geoquery_df[c2] / geoquery_df[c1 + 'categorical_count']
+        if c1 + 'categorical_count' in geoquery_df.columns:
+            geoquery_df[c2] = geoquery_df[c2] / geoquery_df[c1 + 'categorical_count']
+
 
 for y in range(2013, 2020):
     geoquery_df[f'esa_landcover.{y}.categorical_cropland'] = geoquery_df[[f'esa_landcover.{y}.categorical_irrigated_cropland', f'esa_landcover.{y}.categorical_rainfed_cropland', f'esa_landcover.{y}.categorical_mosaic_cropland']].sum(axis=1)
@@ -198,8 +193,8 @@ sub_data_cols = sub_osm_cols + sub_geoquery_cols #+ ['longitude', 'latitude']
 final_data_df = all_data_df[dhs_cols + all_osm_cols + all_geoquery_cols]
 
 
-final_data_path = os.path.join(data_dir, 'final_data.csv')
-final_data_df.to_csv(final_data_path)
+final_data_path = os.path.join(data_dir, 'outputs', dhs_round, 'final_data.csv')
+final_data_df.to_csv(final_data_path, index=False)
 
 
 # all_used_data_cols = {
@@ -226,8 +221,11 @@ final_data_df.to_csv(final_data_path)
 
 show_plots = False
 
-os.makedirs(os.path.join(data_dir, 'models'), exist_ok=True)
-os.makedirs(os.path.join(data_dir, 'results'), exist_ok=True)
+models_dir = os.path.join(data_dir, 'outputs', dhs_round, 'models')
+results_dir = os.path.join(data_dir, 'outputs', dhs_round, 'results')
+
+os.makedirs(models_dir, exist_ok=True)
+os.makedirs(results_dir, exist_ok=True)
 
 # Scoring metrics
 scoring = {
