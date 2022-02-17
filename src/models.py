@@ -147,12 +147,26 @@ ntl_cols = ['viirs.2017.mean', 'viirs.2017.min', 'viirs.2017.max', 'viirs.2017.s
 sub_osm_cols = [i for i in all_osm_cols if i.startswith(('all_buildings_', 'all_roads_')) and i != 'all_roads_count']
 
 
-sub_geoquery_cols = ['srtm_slope_500m.na.mean', 'srtm_elevation_500m.na.mean', 'distance_to_coast_236.na.mean', 'dist_to_water.na.mean', 'accessibility_to_cities_2015_v1.0.mean', 'gpw_v4r11_density.2015.mean', 'gpw_v4r11_count.2015.sum',  'globalwindatlas_windspeed.na.mean', 'distance_to_gemdata_201708.na.mean', 'dist_to_onshore_petroleum_v12.na.mean']
+# sub_geoquery_cols = ['srtm_slope_500m.na.mean', 'srtm_elevation_500m.na.mean', 'distance_to_coast_236.na.mean', 'dist_to_water.na.mean', 'accessibility_to_cities_2015_v1.0.mean', 'gpw_v4r11_density.2015.mean', 'gpw_v4r11_count.2015.sum',  'globalwindatlas_windspeed.na.mean', 'distance_to_gemdata_201708.na.mean', 'dist_to_onshore_petroleum_v12.na.mean']
+
+# for y in range(2015,2018):
+#     sub_geoquery_cols.extend(
+#         [f'viirs.{y}.mean', f'viirs.{y}.min', f'viirs.{y}.max', f'viirs.{y}.sum', f'viirs.{y}.median',
+#         f'udel_precip_v501_mean.{y}.mean', f'udel_precip_v501_sum.{y}.sum',  f'udel_air_temp_v501_mean.{y}.mean',
+#         f'oco2.{y}.mean',
+#         f'ltdr_avhrr_ndvi_v5_yearly.{y}.mean',
+#         f'esa_landcover.{y}.categorical_urban', f'esa_landcover.{y}.categorical_water_bodies', f'esa_landcover.{y}.categorical_forest', f'esa_landcover.{y}.categorical_cropland']
+#     )
+
+
+
+sub_geoquery_cols = ['srtm_slope_500m.na.mean', 'srtm_elevation_500m.na.mean', 'dist_to_water.na.mean', 'accessibility_to_cities_2015_v1.0.mean', 'gpw_v4r11_density.2015.mean']
 
 for y in range(2015,2018):
     sub_geoquery_cols.extend(
         [f'viirs.{y}.mean', f'viirs.{y}.min', f'viirs.{y}.max', f'viirs.{y}.sum', f'viirs.{y}.median',
         f'udel_precip_v501_mean.{y}.mean', f'udel_precip_v501_sum.{y}.sum',  f'udel_air_temp_v501_mean.{y}.mean',
+        f'worldpop_pop_count_1km_mosaic.{y}.mean',
         f'oco2.{y}.mean',
         f'ltdr_avhrr_ndvi_v5_yearly.{y}.mean',
         f'esa_landcover.{y}.categorical_urban', f'esa_landcover.{y}.categorical_water_bodies', f'esa_landcover.{y}.categorical_forest', f'esa_landcover.{y}.categorical_cropland']
@@ -161,7 +175,7 @@ for y in range(2015,2018):
 
 
 all_data_cols = all_osm_cols + all_geoquery_cols + ['longitude', 'latitude']
-sub_data_cols = sub_osm_cols + sub_geoquery_cols + ['longitude', 'latitude']
+sub_data_cols = sub_osm_cols + sub_geoquery_cols #+ ['longitude', 'latitude']
 
 
 
@@ -677,10 +691,11 @@ model_utils.save_model(final_cv, final_data_df, important_features, 'Wealth Inde
 print(f"NTL best score: {ntl_cv.best_score_}")
 print(f"OSM only best score: {osm_only_cv.best_score_}")
 print(f"OSM+NTL best score: {all_osm_cv.best_score_}")
-print(f"All best score: {all_cv.best_score_}")
 print(f"Sub OSM+NTL best score: {sub_osm_cv.best_score_}")
 print(f"Sub GeoQuery best score: {subgeo_cv.best_score_}")
 print(f"Sub All best score: {sub_cv.best_score_}")
-print(f"Compare best score: {compare_cv.best_score_}")
 print(f"Final best score: {final_cv.best_score_}")
+
+print(f"All best score: {all_cv.best_score_}")
+print(f"Compare best score: {compare_cv.best_score_}")
 
