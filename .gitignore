@@ -1,8 +1,8 @@
 __pycache__/
-data/*
-!data/osm/features
-!data/extract_job.json
-!data/merge_phl_dhs_buffer.csv
-!data/models
-!data/crosswalks
-!data/results
+data/boundaries
+data/dhs
+data/osm
+data/outputs/*/osm_features
+data/outputs/*/dhs*
+data/outputs/*/final_data.csv
+data/outputs/*/models
