@@ -40,7 +40,7 @@ Builds on work published by [Thinking Machines Data Science](https://github.com/
     - Unzip the download in the `data/dhs` directory of this repo
 
 4. Download OSM data
-    - Navigate to country page on [GeoFabrik](https://download.geofabrik.de)
+    - Navigate to country page on [Geofabrik](https://download.geofabrik.de)
         - e.g., https://download.geofabrik.de/asia/philippines.html
     - Click the "raw directory index" link
     - Download the OSM data (shp.zip file) with your desired timestamp (e.g., "philippines-210101-free.shp.zip")
