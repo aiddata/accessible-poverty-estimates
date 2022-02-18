@@ -607,8 +607,98 @@ model_utils.save_model(sub_cv, final_data_df, sub_data_cols, 'Wealth Index', os.
 
 
 # -----------------------------------------------------------------------------
+# final set of reduced features
 
 
+final_features = ['longitude', 'latitude', 'all_roads_length', 'all_buildings_ratio', 'dist_to_water.na.mean', f'viirs.{ntl_year}.median', f'viirs.{ntl_year}.max', f'worldpop_pop_count_1km_mosaic.{ntl_year}.mean']
+
+
+final_cv, final_predictions = model_utils.evaluate_model(
+    data=final_data_df,
+    feature_cols=final_features,
+    indicator_cols=indicators,
+    search_type="grid",
+    clust_str=geom_id,
+    wandb=None,
+    scoring=scoring,
+    model_type='random_forest',
+    refit='r2',
+    n_splits=5,
+    n_iter=10,
+    plot_importance=True,
+    verbose=2,
+    output_file=os.path.join(results_dir, f'final_model_'),
+    show=show_plots
+)
+
+
+model_utils.save_model(final_cv, final_data_df, final_features, 'Wealth Index', os.path.join(models_dir, 'final_best.joblib'))
+
+
+# -----------------------------------------------------------------------------
+
+print('Best scores (r2):')
+
+print(f"NTL: {ntl_cv.best_score_}")
+print(f"ALL OSM: {osm_only_cv.best_score_}")
+print(f"All OSM + NTL: {all_osm_cv.best_score_}")
+print(f"GeoQuery (inc. NTL): {subgeo_cv.best_score_}")
+print(f"Subset OSM + NTL: {sub_osm_cv.best_score_}")
+print(f"Subset OSM + GeoQuery: {sub_cv.best_score_}")
+print(f"Optimized: {final_cv.best_score_}")
+
+print('')
+print(f"All OSM + Expanded GeoQuery + lon/lat: {all_cv.best_score_}")
+
+
+
+# -----------------------------------------------------------------------------
+
+exit()
+
+# -----------------------------------------------------------------------------
+# exploratory feature reduction
+
+#return a dictionary that identifes a a list of variables for which each variables has a correlation above the specified threshold
+#will only return variables that had at least one other variable with the specified correlation threshold
+correlated_ivs, corr_matrix = data_utils.corr_finder(final_data_df[sub_data_cols], .75)
+
+for i,j in correlated_ivs.items():
+    print(i,j)
+
+#subset data based on correlation but make sure that specifically desired covariates are still within the group.
+#ensure that even if road/building data can have a low correlation with each other, only one from each group is used per model evaluation
+remove_corrs = correlated_ivs['viirs.2016.median'] + correlated_ivs['viirs.2016.max'] + correlated_ivs['gpw_v4r11_count.2015.sum']  + correlated_ivs['all_roads_length'] + correlated_ivs['all_buildings_ratio']
+to_keep = ['viirs.2016.mean','all_buildings_totalarea', 'all_buildings_count', 'all_roads_nearestdist', 'gpw_v4r11_count.2015.sum']
+to_remove_dict = {
+    'correlation': [label for label in remove_corrs if label not in to_keep],
+    'manual': [],
+    # 'osm': [i for i in osm_cols if not i.startswith(('all_buildings_', 'all_roads_'))]
+}
+to_remove_list = [j for i in to_remove_dict.values() for j in i]
+
+new_features = [i for i in sub_data_cols if i not in to_remove_list]
+
+#create a dataframe based on feature importance the df is ordered from most important to least important feature.
+reduction_df = model_utils.rf_feature_importance_dataframe(sub_cv, final_data_df[new_features], final_data_df[indicators])
+
+## subset data based on desired feature importance feature importance
+thresh = .004
+remove_importance = []
+for row, ser in reduction_df.iterrows():
+    for idx, val in ser.iteritems():
+        if (val < thresh): #if the variable correlates past/at the threshold
+            remove_importance.append(row)
+
+
+important_features = [i for i in new_features if i not in remove_importance]
+
+refined_correlated_ivs, refined_corr_matrix = data_utils.corr_finder(final_data_df[important_features], .65)
+
+
+
+# -----------------------------------------------------------------------------
+# over-fit comparison for philippines
 
 compare_cols = ['minor_roads_count', 'minor_roads_nearestdist', 'major_roads_nearestdist',  'services_pois_count', 'entertainment_pois_count', 'lodging_pois_count', 'landmark_pois_count', 'viirs.2017.median', 'globalwindatlas_windspeed.na.mean', 'distance_to_gemdata_201708.na.mean', 'dist_to_onshore_petroleum_v12.na.mean', 'distance_to_drugdata_201708.na.mean',  'diamond_distance_201708.na.mean', 'ambient_air_pollution_2013_o3.2013.mean', 'wdpa_iucn_cat_201704.na.count', 'gpw_v4r11_density.2020.mean', 'esa_landcover.2015.categorical_mosaic_cropland']
 
@@ -637,88 +727,3 @@ compare_cv, compare_predictions = model_utils.evaluate_model(
     output_file=os.path.join(results_dir, f'best_compare_model_'),
     show=show_plots
 )
-
-# -----------------------------------------------------------------------------
-# feature reduction
-
-#return a dictionary that identifes a a list of variables for which each variables has a correlation above the specified threshold
-#will only return variables that had at least one other variable with the specified correlation threshold
-correlated_ivs, corr_matrix = data_utils.corr_finder(final_data_df[sub_data_cols], .75)
-
-for i,j in correlated_ivs.items():
-    print(i,j)
-
-#subset data based on correlation but make sure that specifically desired covariates are still within the group.
-#ensure that even if road/building data can have a low correlation with each other, only one from each group is used per model evaluation
-remove_corrs = correlated_ivs['viirs.2016.median'] + correlated_ivs['viirs.2016.max'] + correlated_ivs['gpw_v4r11_count.2015.sum']  + correlated_ivs['all_roads_length'] + correlated_ivs['all_buildings_ratio']
-to_keep = ['viirs.2016.mean','all_buildings_totalarea', 'all_buildings_count', 'all_roads_nearestdist', 'gpw_v4r11_count.2015.sum']
-to_remove_dict = {
-    'correlation': [label for label in remove_corrs if label not in to_keep],
-    'manual': [],
-    # 'osm': [i for i in osm_cols if not i.startswith(('all_buildings_', 'all_roads_'))]
-}
-to_remove_list = [j for i in to_remove_dict.values() for j in i]
-
-
-new_features = [i for i in sub_data_cols if i not in to_remove_list]
-
-
-#create a dataframe based on feature importance the df is ordered from most important to least important feature.
-reduction_df = model_utils.rf_feature_importance_dataframe(sub_cv, final_data_df[new_features], final_data_df[indicators])
-
-## subset data based on desired feature importance feature importance
-thresh = .004
-remove_importance = []
-for row, ser in reduction_df.iterrows():
-    for idx, val in ser.iteritems():
-        if (val < thresh): #if the variable correlates past/at the threshold
-            remove_importance.append(row)
-
-
-important_features = [i for i in new_features if i not in remove_importance]
-
-
-# 'distance_to_coast_236.na.mean', 'globalwindatlas_windspeed.na.mean', 'distance_to_gemdata_201708.na.mean', 'dist_to_onshore_petroleum_v12.na.mean', 'accessibility_to_cities_2015_v1.0.mean', gpw_v4r11_density.2015.mean', 'gpw_v4r11_count.2015.sum',  'esa_landcover.2016.categorical_urban', 'all_roads_nearestdist',  'srtm_elevation_500m.na.mean', 'esa_landcover.2016.categorical_cropland', 'srtm_slope_500m.na.mean','all_buildings_avgarea', 'esa_landcover.2016.categorical_water_bodies', 'esa_landcover.2016.categorical_forest', 'udel_air_temp_v501_mean.2016.mean', 'udel_precip_v501_mean.2016.mean', 'udel_precip_v501_sum.2016.sum', 'ltdr_avhrr_ndvi_v5_yearly.2016.mean', 'oco2.2016.mean',
-
-important_features = ['longitude', 'latitude', 'all_roads_length', 'all_buildings_ratio', 'dist_to_water.na.mean', f'viirs.{ntl_year}.median', f'viirs.{ntl_year}.max', f'worldpop_pop_count_1km_mosaic.{ntl_year}.mean']
-
-correlated_ivs, corr_matrix = data_utils.corr_finder(final_data_df[important_features], .65)
-
-
-final_cv, final_predictions = model_utils.evaluate_model(
-    data=final_data_df,
-    feature_cols=important_features,
-    indicator_cols=indicators,
-    search_type="grid",
-    clust_str=geom_id,
-    wandb=None,
-    scoring=scoring,
-    model_type='random_forest',
-    refit='r2',
-    n_splits=5,
-    n_iter=10,
-    plot_importance=True,
-    verbose=2,
-    output_file=os.path.join(results_dir, f'final_model_'),
-    show=show_plots
-)
-
-
-model_utils.save_model(final_cv, final_data_df, important_features, 'Wealth Index', os.path.join(models_dir, 'final_best.joblib'))
-
-
-
-# -----------------------------------------------------------------------------
-
-
-print(f"NTL best score: {ntl_cv.best_score_}")
-print(f"OSM only best score: {osm_only_cv.best_score_}")
-print(f"OSM+NTL best score: {all_osm_cv.best_score_}")
-print(f"Sub OSM+NTL best score: {sub_osm_cv.best_score_}")
-print(f"Sub GeoQuery best score: {subgeo_cv.best_score_}")
-print(f"Sub All best score: {sub_cv.best_score_}")
-print(f"Final best score: {final_cv.best_score_}")
-
-print(f"All best score: {all_cv.best_score_}")
-print(f"Compare best score: {compare_cv.best_score_}")
-
