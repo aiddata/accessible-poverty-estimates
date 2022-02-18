@@ -24,8 +24,8 @@ config = configparser.ConfigParser()
 config.read('config.ini')
 
 project = config["main"]["project"]
+project_dir = config["main"]["project_dir"]
 
-project_dir = config[project]["project_dir"]
 dhs_round = config[project]['dhs_round']
 country_name = config[project]["country_name"]
 osm_date = config[project]["osm_date"]

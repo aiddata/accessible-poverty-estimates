@@ -49,8 +49,7 @@ config.read('config.ini')
 
 
 project = config["main"]["project"]
-
-project_dir = config[project]["project_dir"]
+project_dir = config["main"]["project_dir"]
 
 dhs_round = config[project]['dhs_round']
 country_utm_epsg_code = config[project]['country_utm_epsg_code']

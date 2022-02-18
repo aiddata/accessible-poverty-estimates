@@ -27,8 +27,7 @@ config = configparser.ConfigParser()
 config.read('config.ini')
 
 project = config["main"]["project"]
-
-project_dir = config[project]["project_dir"]
+project_dir = config["main"]["project_dir"]
 
 dhs_round = config[project]['dhs_round']
 dhs_hh_file_name = config[project]['dhs_hh_file_name']
