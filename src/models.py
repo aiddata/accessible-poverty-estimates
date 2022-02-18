@@ -13,6 +13,7 @@ import os
 import sys
 import configparser
 import warnings
+import json
 
 import pandas as pd
 
@@ -38,6 +39,12 @@ geom_id = config[project]["geom_id"]
 geom_label = config[project]["geom_label"]
 
 geoquery_data_file_name = config[project]["geoquery_data_file_name"]
+
+
+ntl_year = config[project]["ntl_year"]
+
+geospatial_variable_years = json.loads(config[project]['geospatial_variable_years'])
+
 
 
 data_dir = os.path.join(project_dir, 'data')
@@ -125,7 +132,9 @@ for c1 in set([i[:i.index('categorical')] for i in geoquery_df.columns if 'categ
             geoquery_df[c2] = geoquery_df[c2] / geoquery_df[c1 + 'categorical_count']
 
 
-for y in range(2013, 2020):
+
+esa_landcover_years = set([i.split('.')[1] for i in geoquery_df.columns.to_list() if 'esa_landcover' in i])
+for y in esa_landcover_years:
     geoquery_df[f'esa_landcover.{y}.categorical_cropland'] = geoquery_df[[f'esa_landcover.{y}.categorical_irrigated_cropland', f'esa_landcover.{y}.categorical_rainfed_cropland', f'esa_landcover.{y}.categorical_mosaic_cropland']].sum(axis=1)
 
 
@@ -153,7 +162,7 @@ all_geoquery_cols = [i for i in geoquery_df.columns if len(i.split('.')) == 3]
 
 
 
-ntl_cols = ['viirs.2017.mean', 'viirs.2017.min', 'viirs.2017.max', 'viirs.2017.sum', 'viirs.2017.median']
+ntl_cols = [f'viirs.{ntl_year}.mean', f'viirs.{ntl_year}.min', f'viirs.{ntl_year}.max', f'viirs.{ntl_year}.sum', f'viirs.{ntl_year}.median']
 
 sub_osm_cols = [i for i in all_osm_cols if i.startswith(('all_buildings_', 'all_roads_')) and i != 'all_roads_count']
 
@@ -173,7 +182,7 @@ sub_osm_cols = [i for i in all_osm_cols if i.startswith(('all_buildings_', 'all_
 
 sub_geoquery_cols = ['srtm_slope_500m.na.mean', 'srtm_elevation_500m.na.mean', 'dist_to_water.na.mean', 'accessibility_to_cities_2015_v1.0.mean', 'gpw_v4r11_density.2015.mean']
 
-for y in range(2015,2018):
+for y in geospatial_variable_years:
     sub_geoquery_cols.extend(
         [f'viirs.{y}.mean', f'viirs.{y}.min', f'viirs.{y}.max', f'viirs.{y}.sum', f'viirs.{y}.median',
         f'udel_precip_v501_mean.{y}.mean', f'udel_precip_v501_sum.{y}.sum',  f'udel_air_temp_v501_mean.{y}.mean',
@@ -183,7 +192,7 @@ for y in range(2015,2018):
         f'esa_landcover.{y}.categorical_urban', f'esa_landcover.{y}.categorical_water_bodies', f'esa_landcover.{y}.categorical_forest', f'esa_landcover.{y}.categorical_cropland']
     )
 
-
+sub_geoquery_cols = [i for i in sub_geoquery_cols if i in all_data_df]
 
 all_data_cols = all_osm_cols + all_geoquery_cols + ['longitude', 'latitude']
 sub_data_cols = sub_osm_cols + sub_geoquery_cols #+ ['longitude', 'latitude']
@@ -240,7 +249,7 @@ search_type = 'grid'
 # Explore population distribution and relationships
 
 data_utils.plot_hist(
-    final_data_df['gpw_v4r11_count.2015.sum'],
+    final_data_df[f'worldpop_pop_count_1km_mosaic.{ntl_year}.mean'],
     title='Distribution of Total Population',
     x_label='Total Population',
     y_label='Number of Clusters',
@@ -252,7 +261,7 @@ data_utils.plot_regplot(
     final_data_df,
     'Wealth Index',
     'Population',
-    'gpw_v4r11_count.2015.sum',
+    f'worldpop_pop_count_1km_mosaic.{ntl_year}.mean',
     output_file=os.path.join(results_dir, f'1_pop_wealth_corr.png'),
     show=show_plots
 )
@@ -265,7 +274,7 @@ data_utils.plot_regplot(
     data=final_data_df,
     x_label='Wealth Index',
     y_label='Average Nightlight Intensity',
-    y_var='viirs.2017.mean',
+    y_var=f'viirs.{ntl_year}.mean',
     output_file=os.path.join(results_dir, f'2_ntl_wealth_regplot.png'),
     show=show_plots
 )
@@ -671,7 +680,7 @@ important_features = [i for i in new_features if i not in remove_importance]
 
 # 'distance_to_coast_236.na.mean', 'globalwindatlas_windspeed.na.mean', 'distance_to_gemdata_201708.na.mean', 'dist_to_onshore_petroleum_v12.na.mean', 'accessibility_to_cities_2015_v1.0.mean', gpw_v4r11_density.2015.mean', 'gpw_v4r11_count.2015.sum',  'esa_landcover.2016.categorical_urban', 'all_roads_nearestdist',  'srtm_elevation_500m.na.mean', 'esa_landcover.2016.categorical_cropland', 'srtm_slope_500m.na.mean','all_buildings_avgarea', 'esa_landcover.2016.categorical_water_bodies', 'esa_landcover.2016.categorical_forest', 'udel_air_temp_v501_mean.2016.mean', 'udel_precip_v501_mean.2016.mean', 'udel_precip_v501_sum.2016.sum', 'ltdr_avhrr_ndvi_v5_yearly.2016.mean', 'oco2.2016.mean',
 
-important_features = ['longitude', 'latitude', 'all_roads_length', 'all_buildings_ratio', 'dist_to_water.na.mean', 'viirs.2016.median', 'viirs.2016.max', 'worldpop_pop_count_1km_mosaic.2016.mean']
+important_features = ['longitude', 'latitude', 'all_roads_length', 'all_buildings_ratio', 'dist_to_water.na.mean', f'viirs.{ntl_year}.median', f'viirs.{ntl_year}.max', f'worldpop_pop_count_1km_mosaic.{ntl_year}.mean']
 
 correlated_ivs, corr_matrix = data_utils.corr_finder(final_data_df[important_features], .65)
 
