@@ -78,6 +78,8 @@ buffers_gdf = gpd.read_file(geom_path)
 # convert to UTM first, then back to WGS84 (degrees)
 buffers_gdf = buffers_gdf.to_crs(f"EPSG:{country_utm_epsg_code}")
 buffers_gdf["buffer_area"] = buffers_gdf.area
+buffers_gdf['longitude'] = buffers_gdf.centroid.x
+buffers_gdf['latitude'] = buffers_gdf.centroid.y
 buffers_gdf = buffers_gdf.to_crs("EPSG:4326") # WGS84
 
 
@@ -93,18 +95,7 @@ osm_pois_a_shp_path = os.path.join(data_dir, f'osm/{country_name}-{osm_date}-fre
 raw_pois_geo = gpd.read_file(osm_pois_shp_path)
 raw_pois_a_geo = gpd.read_file(osm_pois_a_shp_path)
 
-pois_geo = pd.concat([raw_pois_geo, raw_pois_a_geo])
-
-"""
-# manually generate crosswalk
-#   first prep CSV with all types - can combine multiple OSM timesteps (see below)
-#   then in Excel/whatever, assign group to each type/fclass
-
-type_df = pd.DataFrame({"type": list(set(pois_geo["fclass"]))})
-type_df["group"]= 0
-type_df.to_csv(os.path.join(project_dir, "OSM/crosswalks/pois_type_crosswalk.csv"), index=False, encoding="utf-8")
-
-"""
+pois_geo_raw = pd.concat([raw_pois_geo, raw_pois_a_geo])
 
 # load crosswalk for types and assign any not grouped to "other"
 pois_type_crosswalk_path = os.path.join(data_dir, 'crosswalks/pois_type_crosswalk.csv')
@@ -112,7 +103,7 @@ pois_type_crosswalk_df = pd.read_csv(pois_type_crosswalk_path)
 pois_type_crosswalk_df.loc[pois_type_crosswalk_df["group"] == "0", "group"] = "other"
 
 # merge new classification and assign any features without a type to unclassifid
-pois_geo = pois_geo.merge(pois_type_crosswalk_df, left_on="fclass", right_on="type", how="left")
+pois_geo = pois_geo_raw.merge(pois_type_crosswalk_df, left_on="fclass", right_on="type", how="left")
 
 pois_geo.loc[pois_geo["fclass"].isna(), "group"] = "unclassified"
 
@@ -176,19 +167,7 @@ osm_traffic_a_shp_path = os.path.join(data_dir, f'osm/{country_name}-{osm_date}-
 raw_traffic_geo = gpd.read_file(osm_traffic_shp_path)
 raw_traffic_a_geo = gpd.read_file(osm_traffic_a_shp_path)
 
-traffic_geo = pd.concat([raw_traffic_geo, raw_traffic_a_geo])
-
-
-"""
-# manually generate crosswalk
-#   first prep CSV with all types - can combine multiple OSM timesteps (see below)
-#   then in Excel/whatever, assign group to each type/fclass
-
-type_df = pd.DataFrame({"type": list(set(traffic_geo["fclass"]))})
-type_df["group"]= 0
-type_df.to_csv(os.path.join(project_dir, "OSM/crosswalks/traffic_type_crosswalk.csv"), index=False, encoding="utf-8")
-
-"""
+traffic_geo_raw = pd.concat([raw_traffic_geo, raw_traffic_a_geo])
 
 # load crosswalk for types and assign any not grouped to "other"
 traffic_type_crosswalk_path = os.path.join(data_dir, 'crosswalks/traffic_type_crosswalk.csv')
@@ -196,7 +175,7 @@ traffic_type_crosswalk_df = pd.read_csv(traffic_type_crosswalk_path)
 traffic_type_crosswalk_df.loc[traffic_type_crosswalk_df["group"] == "0", "group"] = "other"
 
 # merge new classification and assign any features without a type to unclassifid
-traffic_geo = traffic_geo.merge(traffic_type_crosswalk_df, left_on="fclass", right_on="type", how="left")
+traffic_geo = traffic_geo_raw.merge(traffic_type_crosswalk_df, left_on="fclass", right_on="type", how="left")
 
 traffic_geo.loc[traffic_geo["fclass"].isna(), "group"] = "unclassified"
 
@@ -259,19 +238,7 @@ osm_transport_a_shp_path = os.path.join(data_dir, f'osm/{country_name}-{osm_date
 raw_transport_geo = gpd.read_file(osm_transport_shp_path)
 raw_transport_a_geo = gpd.read_file(osm_transport_a_shp_path)
 
-transport_geo = pd.concat([raw_transport_geo, raw_transport_a_geo])
-
-
-"""
- manually generate crosswalk
-   first prep CSV with all types - can combine multiple OSM timesteps (see below)
-   then in Excel/whatever, assign group to each type/fclass
-
-type_df = pd.DataFrame({"type": list(set(transport_geo["fclass"]))})
-type_df["group"]= 0
-type_df.to_csv(os.path.join(project_dir, "OSM/crosswalks/transport_type_crosswalk.csv"), index=False, encoding="utf-8")
-
-"""
+transport_geo_raw = pd.concat([raw_transport_geo, raw_transport_a_geo])
 
 # load crosswalk for types and assign any not grouped to "other"
 transport_type_crosswalk_path = os.path.join(data_dir, 'crosswalks/transport_type_crosswalk.csv')
@@ -279,7 +246,7 @@ transport_type_crosswalk_df = pd.read_csv(transport_type_crosswalk_path)
 transport_type_crosswalk_df.loc[transport_type_crosswalk_df["group"] == "0", "group"] = "other"
 
 # merge new classification and assign any features without a type to unclassifid
-transport_geo = transport_geo.merge(transport_type_crosswalk_df, left_on="fclass", right_on="type", how="left")
+transport_geo = transport_geo_raw.merge(transport_type_crosswalk_df, left_on="fclass", right_on="type", how="left")
 
 transport_geo.loc[transport_geo["fclass"].isna(), "group"] = "unclassified"
 
@@ -341,33 +308,21 @@ print("Running buildings...")
 osm_buildings_shp_path = os.path.join(data_dir, f'osm/{country_name}-{osm_date}-free.shp/gis_osm_buildings_a_free_1.shp')
 buildings_geo_raw = gpd.read_file(osm_buildings_shp_path)
 
-"""
-manually generate crosswalk
-first prep CSV with all types - can combine multiple OSM timesteps (see below)
-then in Excel/whatever, assign group to each type/fclass
-
-type_df = pd.DataFrame({"type": list(set(buildings_geo["type"]))})
-type_df["group"]= 0
-type_df.to_csv(os.path.join(project_dir, "OSM/crosswalks/building_type_crosswalk.csv"), index=False, encoding="utf-8")
-
-"""
-
 # load crosswalk for building types and assign any not grouped to "other"
 building_type_crosswalk_path = os.path.join(data_dir, 'crosswalks/buildings_type_crosswalk.csv')
 building_type_crosswalk_df = pd.read_csv(building_type_crosswalk_path)
 building_type_crosswalk_df.loc[building_type_crosswalk_df["group"] == "0", "group"] = "other"
 
 # merge new classification and assign any buildings without a type to unclassifid
-buildings_geo_raw = buildings_geo_raw.merge(building_type_crosswalk_df, on="type", how="left")
+buildings_geo = buildings_geo_raw.merge(building_type_crosswalk_df, on="type", how="left")
 
-buildings_geo_raw.loc[buildings_geo_raw["type"].isna(), "group"] = "unclassified"
+buildings_geo.loc[buildings_geo["type"].isna(), "group"] = "unclassified"
 
 group_field = "group"
 
 # # show breakdown of groups
-print(buildings_geo_raw.group.value_counts())
+print(buildings_geo.group.value_counts())
 
-buildings_geo = buildings_geo_raw.copy(deep=True)
 
 # split by building types
 # group_list = ["residential"]
@@ -376,7 +331,7 @@ buildings_group_list = [i for i in set(buildings_geo["group"]) if i not in ["oth
 
 buildings_group_list = [i for i in buildings_group_list if str(i) != 'nan']  #removes nan from building_group_list - Sasan
 
-buildings_group_list = buildings_group_list + ['all'] #add a section for all buildings into group lost
+buildings_group_list = buildings_group_list #+ ['all'] #add a section for all buildings into group list
 
 
 
@@ -434,12 +389,14 @@ buildings_features = buffers_gdf_buildings[buildings_cols].copy(deep=True)
 # buildings_features = pd.read_csv(buildings_features_path)
 # buildings_feature_cols = buildings_features.columns.to_list()
 
-buildings_features["all_buildings_count"] = buildings_features[[i for i in buildings_feature_cols if i.endswith('_buildings_count')]].sum(axis=1)
-buildings_features["all_buildings_totalarea"] = buildings_features[[i for i in buildings_feature_cols if i.endswith('_buildings_totalarea')]].sum(axis=1)
-buildings_features["all_buildings_avgarea"] = buildings_features["all_buildings_totalarea"] / buildings_features["all_buildings_count"]
-buildings_features["all_buildings_avgarea"].fillna(0, inplace=True)
-buildings_features = buildings_features.merge(buffers_gdf[[geom_id, 'buffer_area']], on=geom_id, how="left")
-buildings_features["all_buildings_ratio"] = buildings_features["all_buildings_totalarea"] / buildings_features["buffer_area"]
+if 'all' not in buildings_group_list:
+    buildings_features["all_buildings_count"] = buildings_features[[i for i in buildings_feature_cols if i.endswith('_buildings_count')]].sum(axis=1)
+    buildings_features["all_buildings_totalarea"] = buildings_features[[i for i in buildings_feature_cols if i.endswith('_buildings_totalarea')]].sum(axis=1)
+    buildings_features["all_buildings_avgarea"] = buildings_features["all_buildings_totalarea"] / buildings_features["all_buildings_count"]
+    buildings_features["all_buildings_avgarea"].fillna(0, inplace=True)
+    buildings_features = buildings_features.merge(buffers_gdf[[geom_id, 'buffer_area']], on=geom_id, how="left")
+    buildings_features["all_buildings_ratio"] = buildings_features["all_buildings_totalarea"] / buildings_features["buffer_area"]
+
 
 buildings_features_path = os.path.join(osm_features_dir, f'{geom_label}_buildings_{osm_date}.csv')
 buildings_features.to_csv(buildings_features_path, index=False, encoding="utf-8")
@@ -453,25 +410,13 @@ buildings_features.to_csv(buildings_features_path, index=False, encoding="utf-8"
 print("Running roads...")
 
 osm_roads_shp_path = os.path.join(data_dir, f'osm/{country_name}-{osm_date}-free.shp/gis_osm_roads_free_1.shp')
-roads_geo = gpd.read_file(osm_roads_shp_path)
+roads_raw_geo = gpd.read_file(osm_roads_shp_path)
 
 # get each road length
 # convert to UTM first, then back to WGS84 (degrees)
-roads_geo = roads_geo.to_crs(f"EPSG:{country_utm_epsg_code}")
-roads_geo["road_length"] = roads_geo.geometry.length
-roads_geo = roads_geo.to_crs("EPSG:4326") # WGS84
-
-
-"""
-# manually generate crosswalk
-#   first prep CSV with all types - can combine multiple OSM timesteps (see below)
-#   then in Excel/whatever, assign group to each type/fclass
-
-type_df = pd.DataFrame({"type": list(set(roads_geo["fclass"]))})
-type_df["group"]= 0
-type_df.to_csv(os.path.join(project_dir, "OSM/crosswalks/roads_type_crosswalk.csv"), index=False, encoding="utf-8")
-
-"""
+roads_raw_geo = roads_raw_geo.to_crs(f"EPSG:{country_utm_epsg_code}")
+roads_raw_geo["road_length"] = roads_raw_geo.geometry.length
+roads_raw_geo = roads_raw_geo.to_crs("EPSG:4326") # WGS84
 
 # load crosswalk for types and assign any not grouped to "other"
 roads_type_crosswalk_path = os.path.join(data_dir, 'crosswalks/roads_type_crosswalk.csv')
@@ -479,7 +424,7 @@ roads_type_crosswalk_df = pd.read_csv(roads_type_crosswalk_path)
 roads_type_crosswalk_df.loc[roads_type_crosswalk_df["group"] == "0", "group"] = "other"
 
 # merge new classification and assign any features without a type to unclassifid
-roads_geo = roads_geo.merge(roads_type_crosswalk_df, left_on="fclass", right_on="type", how="left")
+roads_geo = roads_raw_geo.merge(roads_type_crosswalk_df, left_on="fclass", right_on="type", how="left")
 
 roads_geo.loc[roads_geo["fclass"].isna(), "group"] = "unclassified"
 
@@ -502,10 +447,7 @@ roads_group_list = [i for i,j in roads_geo[group_field].value_counts().to_dict()
 #find distance to nearest road (based on vertices of roads)
 
 
-# generate centroids of buffers
 cluster_centroids = buffers_gdf.copy(deep=True)
-cluster_centroids.geometry = cluster_centroids.apply(lambda x: Point(x.longitude, x.latitude), axis=1)
-cluster_centroids = gpd.GeoDataFrame(cluster_centroids)
 
 src_points = cluster_centroids.apply(lambda x: (x.longitude, x.latitude), axis=1).to_list()
 
