@@ -13,13 +13,13 @@ Builds on work published by [Thinking Machines Data Science](https://github.com/
 2. Create Conda environment
 
 	- To create a new environment:
-        From scratch
+        - From scratch
         ```
         conda create -n osm-rf python=3.9 -c conda-forge
         conda activate osm-rf
         conda install -c conda-forge --file requirements.txt
         ```
-        From env file
+        - From env file
 		```
 		conda env create -f environment.yml
         conda activate osm-rf
