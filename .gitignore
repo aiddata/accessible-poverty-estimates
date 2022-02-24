@@ -6,3 +6,4 @@ data/osm/*
 !data/osm/README.md
 data/outputs/*/dhs*
 data/outputs/*/final_data.csv
+data/ecopia_data/
