@@ -1,39 +1,50 @@
-"""
-python 3.9
-
-portions of code and methodology based on https://github.com/thinkingmachines/ph-poverty-mapping
+'''
+Extract features for machine learning models from vector (OSM/Ecopia) data
 
 
-Extract features features OSM data
+# -------------------------------------
 
-download OSM data from
-http://download.geofabrik.de/asia/philippines.html#
+# convert OSM building/roads shapefiles to spatialite databases first
+# all files are in 4326, utm codes in original file names just indicate utm zone splits of data
 
 
-buildings (polygons)
-types : residential, damaged, commercial, industrial, education, health
-For each type, we calculated
-    - the total number of buildings (count poly features intersecting with buffer)
-    - the total area of buildings (sum of area of poly features which intersect with buffer)
-    - the mean area of buildings (avg area of poly features which intersect with buffer)
-    - the proportion of the cluster area occupied by the buildings (ratio of total area of buildings which intersect with buffer to buffer area)
+ogr2ogr -f SQLite -dsco SPATIALITE=YES africa_ghana_road.sqlite africa_ghana_road_4326/africa_ghana_road_4326.shp
 
-pois (points)
-types: 100+ different types
-For each type, we calculated
-    - the total number of each POI within a proximity of the area (point in poly)
+# merge multiple files into one
+ogr2ogr -f SQLite -dsco SPATIALITE=YES africa_ghana_building.sqlite africa_ghana_building_32630/africa_ghana_building_32630.shp
+ogr2ogr -f SQLite -update -append africa_ghana_building.sqlite africa_ghana_building_32631/africa_ghana_building_32631.shp -nln merge
 
-roads (lines)
-types: primary, trunk, paved, unpaved, intersection
-for each type of road, we calculated
-    - the distance to the closest road (point to line vertice dist)
-    - total number of roads (count line features which intersect with buffer)
-    - total road length (length of lines which intersect with buffer)
+# to deal with multipolygon issues
+ogr2ogr -f SQLite -nlt PROMOTE_TO_MULTI -dsco SPATIALITE=YES africa_ghana_road.sqlite africa_ghana_road_4326/africa_ghana_road_4326.shp
 
-"""
+# set generic table name
+ogr2ogr -f SQLite -nlt PROMOTE_TO_MULTI -nln DATA_TABLE -dsco SPATIALITE=YES africa_ghana_road.sqlite africa_ghana_road_4326/africa_ghana_road_4326.shp
+
+# full example for osm buildings/road data
+country=kenya
+osm_data=220101
+dir=data/osm/${country}-${osm_data}-free.shp
+ogr2ogr -f SQLite -nlt PROMOTE_TO_MULTI -nln DATA_TABLE -dsco SPATIALITE=YES ${dir}/gis_osm_buildings_a_free_1.sqlite ${dir}//gis_osm_buildings_a_free_1.shp
+ogr2ogr -f SQLite -nlt PROMOTE_TO_MULTI -nln DATA_TABLE -dsco SPATIALITE=YES ${dir}/gis_osm_roads_free_1.sqlite ${dir}//gis_osm_roads_free_1.shp
+
+
+# -------------------------------------
+
+# add steps to build latest spatialite from source?
+#
+
+# spatialite info:
+#   https://www.gaia-gis.it/fossil/libspatialite/index
+
+
+'''
 
 import os
 import configparser
+import time
+import datetime
+import warnings
+import sqlite3
 
 import pandas as pd
 import geopandas as gpd
@@ -75,11 +86,95 @@ buffers_gdf = gpd.read_file(geom_path)
 
 # calculate area of each buffer
 # convert to UTM first, then back to WGS84 (degrees)
-buffers_gdf = buffers_gdf.to_crs(f"EPSG:{country_utm_epsg_code}")
+buffers_gdf = buffers_gdf.to_crs(epsg=country_utm_epsg_code)
 buffers_gdf["buffer_area"] = buffers_gdf.area
+buffers_gdf = buffers_gdf.to_crs("EPSG:4326") # WGS84
 buffers_gdf['longitude'] = buffers_gdf.centroid.x
 buffers_gdf['latitude'] = buffers_gdf.centroid.y
-buffers_gdf = buffers_gdf.to_crs("EPSG:4326") # WGS84
+buffers_gdf['centroid_wkt'] = buffers_gdf.geometry.centroid.apply(lambda x: x.wkt)
+
+
+
+
+
+# =============================================================================
+# generic functions
+
+def build_gpkg_connection(sqlite_path):
+
+    # create connection and load spatialite extension
+    conn = sqlite3.connect(sqlite_path)
+
+    # enable SpatialLite extension
+    conn.enable_load_extension(True)
+
+    # to find existing path:
+    # > whereis mod_spatialite.so
+    # was version 4.3.0
+    # default_shared_lib = '/usr/lib/x86_64-linux-gnu/mod_spatialite.so'
+
+    # built v5.0.1 from source
+    custom_shared_lib = '/usr/local/lib/mod_spatialite.so'
+
+    # could not get libspatialite working either via apt install or conda install
+    # libspatialite_path = os.path.join(os.environ["CONDA_PREFIX"], 'lib/libspatialite.so')
+
+
+    # conn.load_extension(default_shared_lib)
+    conn.load_extension(custom_shared_lib)
+    # conn.load_extension(libspatialite_path)
+
+    # initialise spatial table support
+    conn.execute('SELECT InitSpatialMetadata(1)')
+    conn.execute('SELECT CreateMissingSystemTables(1)')
+    conn.execute('SELECT EnableGpkgAmphibiousMode()')
+
+    # conn.execute('SELECT CreateSpatialIndex("africa_ghana_road_4326", "geom");')
+
+
+    conn.execute("SELECT CreateMissingSystemTables(1);").fetchall()
+    try:
+        conn.execute("CREATE VIRTUAL TABLE KNN2 USING VirtualKNN2();")
+    except:
+        pass
+
+
+    return conn
+
+
+def _task_wrapper(func, args):
+    try:
+        result = func(*args)
+        return (0, "Success", args, result)
+    except Exception as e:
+        # raise
+        return (1, repr(e), args, None)
+
+
+def run_tasks(func, flist, parallel, max_workers=None, chunksize=1):
+    # run all downloads (parallel and serial options)
+    wrapper_list = [(func, i) for i in flist]
+    if parallel:
+        # https://docs.python.org/3/library/concurrent.futures.html
+        from concurrent.futures import ProcessPoolExecutor
+        if max_workers is None:
+            import multiprocessing
+            max_workers = multiprocessing.cpu_count()
+            warnings.warn(f"Parallel set to True (mpi4py is not installed) but max_workers not specified. Defaulting to CPU count ({max_workers})")
+        with ProcessPoolExecutor(max_workers=max_workers) as executor:
+            results_gen = executor.map(_task_wrapper, *zip(*wrapper_list), chunksize=chunksize)
+        results = list(results_gen)
+    else:
+        results = []
+        # for i in flist:
+            # results.append(func(*i))
+        for i in wrapper_list:
+            results.append(_task_wrapper(*i))
+    return results
+
+
+# =============================================================================
+# generate features
 
 
 # ---------------------------------------------------------
@@ -298,161 +393,290 @@ transport_features.to_csv(transport_features_path, index=False, encoding="utf-8"
 
 
 # ---------------------------------------------------------
-# # buildings
-# # for each type of building (and all buildings combined)
-# # count of buildings in each buffer, average areas of buildings in each buffer, total area of building in each buffer, ratio of building area to total area of buffer
+# buildings
 
-print("Running buildings...")
+buffers_gdf_buildings = buffers_gdf.copy(deep=True)
 
-osm_buildings_shp_path = os.path.join(data_dir, f'osm/{country_name}-{osm_date}-free.shp/gis_osm_buildings_a_free_1.shp')
-buildings_geo_raw = gpd.read_file(osm_buildings_shp_path)
+building_path = os.path.join(data_dir, f'osm/{country_name}-{osm_date}-free.shp/gis_osm_buildings_a_free_1.sqlite')
+building_table_name = 'DATA_TABLE'
+
+
+sqlite_building_conn = build_gpkg_connection(building_path)
+# sqlite_building_conn.execute("SELECT tbl_name FROM sqlite_master WHERE type = 'table'").fetchall()
+# sqlite_building_conn.execute(f'PRAGMA table_info({building_table_name})').fetchall()
+
 
 # load crosswalk for building types and assign any not grouped to "other"
 building_type_crosswalk_path = os.path.join(data_dir, 'crosswalks/buildings_type_crosswalk.csv')
 building_type_crosswalk_df = pd.read_csv(building_type_crosswalk_path)
 building_type_crosswalk_df.loc[building_type_crosswalk_df["group"] == "0", "group"] = "other"
+building_type_crosswalk_df = building_type_crosswalk_df.loc[building_type_crosswalk_df.type.notna()]
 
-# merge new classification and assign any buildings without a type to unclassifid
-buildings_geo = buildings_geo_raw.merge(building_type_crosswalk_df, on="type", how="left")
+building_group_lists = building_type_crosswalk_df.groupby('group').agg({'type':list}).reset_index()
 
-buildings_geo.loc[buildings_geo["type"].isna(), "group"] = "unclassified"
-
-group_field = "group"
-
-# # show breakdown of groups
-print(buildings_geo.group.value_counts())
-
-
-# split by building types
-# group_list = ["residential"]
-# group_list = ["all"] + [i for i in set(buildings_geo["group"]) if i not in ["other", "unclassified"]]
-buildings_group_list = [i for i in set(buildings_geo["group"]) if i not in ["other", "unclassified"]]
-
-buildings_group_list = [i for i in buildings_group_list if str(i) != 'nan']  #removes nan from building_group_list - Sasan
-
-buildings_group_list = buildings_group_list #+ ['all'] #add a section for all buildings into group list
+for i in building_group_lists.itertuples():
+    _, group, type_list = i
+    q = f'''
+        SELECT ogc_fid
+        FROM {building_table_name}
+        WHERE type in {tuple(type_list)}
+        '''
+    r = pd.read_sql(q, sqlite_building_conn)
+    print(group, len(r))
 
 
 
-if "all" not in buildings_group_list:
-    buildings_geo = buildings_geo.loc[buildings_geo["group"].isin(buildings_group_list)]
 
-# calculate area of each building
-# convert to UTM first, then back to WGS84 (degrees)
-buildings_geo = buildings_geo.to_crs(f"EPSG:{country_utm_epsg_code}")
-buildings_geo["area"] = buildings_geo.area
-buildings_geo = buildings_geo.to_crs("EPSG:4326") # WGS84
+# # geopandas approach
+# osm_buildings_shp_path = os.path.join(data_dir, f'osm/{country_name}-{osm_date}-free.shp/gis_osm_buildings_a_free_1.shp')
+# buildings_geo_raw = gpd.read_file(osm_buildings_shp_path)
+# group_field = "group"
+
+# # merge new classification and assign any buildings without a type to unclassifid
+# buildings_geo = buildings_geo_raw.merge(building_type_crosswalk_df, on="type", how="left")
+
+# buildings_group_list = [i for i in set(buildings_geo[group_field]) if i not in ["other", "unclassified"]]
+
+# if "all" not in buildings_group_list:
+#     buildings_geo = buildings_geo.loc[buildings_geo[group_field].isin(buildings_group_list)]
+
+# # calculate area of each building
+# # convert to UTM first, then back to WGS84 (degrees)
+# buildings_geo = buildings_geo.to_crs(f"EPSG:{country_utm_epsg_code}")
+# buildings_geo["area"] = buildings_geo.area
+# buildings_geo = buildings_geo.to_crs("EPSG:4326") # WGS84
+
+# # copy of buffers gdf to use for output
+# buffers_gdf_buildings = buffers_gdf.copy(deep=True)
+
+# for group in buildings_group_list:
+#     print(group)
+# for i in building_group_lists.itertuples():
+#     _, group, type_list = i
+#     print(f'Buildings ({group})')
+#     # subet by group
+#     if group == "all":
+#         buildings_geo_subset = buildings_geo.copy(deep=True)
+#     else:
+#         buildings_geo_subset = buildings_geo.loc[buildings_geo[group_field] == group].reset_index().copy(deep=True)
+#     # query to find buildings in each buffer
+#     bquery = buildings_geo_subset.sindex.query_bulk(buffers_gdf.geometry)
+#     # building dataframe where each column contains a cluster and one building in it (can have multiple rows per cluster)
+#     bquery_df = pd.DataFrame({"cluster": bquery[0], "building": bquery[1]})
+#     # add building data to spatial query dataframe
+#     bquery_full = bquery_df.merge(buildings_geo_subset, left_on="building", right_index=True, how="left")
+#     # aggregate spatial query df with building info, by cluster
+#     bquery_agg = bquery_full.groupby("cluster").agg({
+#         "area": ["count", "mean", "sum"]
+#     })
+#     # rename agg df
+#     basic_building_cols = ["buildings_count", "buildings_avgarea", "buildings_totalarea"]
+#     bquery_agg.columns = ["{}_{}".format(group, i) for i in basic_building_cols]
+#     # join cluster back to original buffer_geo dataframe with columns for specific building type queries
+#     z1 = buffers_gdf.merge(bquery_agg, left_index=True, right_on="cluster", how="left")
+#     # not each cluster will have relevant buildings, set those to zero
+#     z1.fillna(0, inplace=True)
+#     # calculate ratio for building type
+#     z1["{}_buildings_ratio".format(group)] = z1["{}_buildings_totalarea".format(group)] / z1["buffer_area"]
+#     # set index and drop unnecessary columns
+#     if z1.index.name != "cluster": z1.set_index("cluster", inplace=True)
+#     z2 = z1[bquery_agg.columns.to_list() + ["{}_buildings_ratio".format(group)]]
+#     # merge group columns back to main cluster dataframe
+#     buffers_gdf_buildings = buffers_gdf_buildings.merge(z2, left_index=True, right_index=True)
 
 
-# copy of buffers gdf to use for output
-buffers_gdf_buildings = buffers_gdf.copy(deep=True)
-
-for group in buildings_group_list:
-    print(group)
-    # subet by group
-    if group == "all":
-        buildings_geo_subset = buildings_geo.copy(deep=True)
-    else:
-        buildings_geo_subset = buildings_geo.loc[buildings_geo[group_field] == group].reset_index().copy(deep=True)
-    # query to find buildings in each buffer
-    bquery = buildings_geo_subset.sindex.query_bulk(buffers_gdf.geometry)
-    # building dataframe where each column contains a cluster and one building in it (can have multiple rows per cluster)
-    bquery_df = pd.DataFrame({"cluster": bquery[0], "building": bquery[1]})
-    # add building data to spatial query dataframe
-    bquery_full = bquery_df.merge(buildings_geo_subset, left_on="building", right_index=True, how="left")
-    # aggregate spatial query df with building info, by cluster
-    bquery_agg = bquery_full.groupby("cluster").agg({
-        "area": ["count", "mean", "sum"]
-    })
-    # rename agg df
-    basic_building_cols = ["buildings_count", "buildings_avgarea", "buildings_totalarea"]
-    bquery_agg.columns = ["{}_{}".format(group, i) for i in basic_building_cols]
-    # join cluster back to original buffer_geo dataframe with columns for specific building type queries
-    z1 = buffers_gdf.merge(bquery_agg, left_index=True, right_on="cluster", how="left")
-    # not each cluster will have relevant buildings, set those to zero
-    z1.fillna(0, inplace=True)
-    # calculate ratio for building type
-    z1["{}_buildings_ratio".format(group)] = z1["{}_buildings_totalarea".format(group)] / z1["buffer_area"]
-    # set index and drop unnecessary columns
-    if z1.index.name != "cluster": z1.set_index("cluster", inplace=True)
-    z2 = z1[bquery_agg.columns.to_list() + ["{}_buildings_ratio".format(group)]]
-    # merge group columns back to main cluster dataframe
-    buffers_gdf_buildings = buffers_gdf_buildings.merge(z2, left_index=True, right_index=True)
 
 
-# output final features
-buildings_feature_cols = [i for i in buffers_gdf_buildings.columns if "_buildings_" in i]
-buildings_cols = [geom_id] + buildings_feature_cols
+# spatialite approach
+for i in building_group_lists.itertuples():
+    _, group, type_list = i
+    print(f'Buildings ({group})')
+    buffers_gdf_buildings[f"{group}_buildings_count"] = None
+    buffers_gdf_buildings[f"{group}_buildings_totalarea"] = None
+    buffers_gdf_buildings[f"{group}_buildings_avgarea"] = None
+    buffers_gdf_buildings[f"{group}_buildings_ratio"] = None
+
+    task_list = []
+
+    for _, row in buffers_gdf_buildings.iterrows():
+
+        int_wkt = row['geometry'].wkt
+
+        q = f'''
+            SELECT ogc_fid, AsText(st_intersection(geometry, GeomFromText("{int_wkt}"))) AS geometry
+            FROM {building_table_name}
+            WHERE type in {tuple(type_list)} AND st_intersects(geometry, GeomFromText("{int_wkt}"))
+            '''
+
+        task = (row[geom_id], q)
+        task_list.append(task)
+
+
+    def run_query(id, q):
+        return id, pd.read_sql(q, sqlite_building_conn)
+
+
+    ts = time.time()
+
+    results_list = run_tasks(run_query, task_list, parallel=True, max_workers=12, chunksize=1)
+
+    te = time.time()
+    run_time = int(te - ts)
+    print('\tquery runtime:', str(datetime.timedelta(seconds=run_time)))
+
+    for _, _, _, results in results_list:
+        row_id, result_df = results
+        df = result_df.copy(deep=True)
+        df['geometry'] = gpd.GeoSeries.from_wkt(df.geometry)
+        gdf = gpd.GeoDataFrame(df, geometry='geometry')
+        gdf = gdf.set_crs(epsg=4326)
+        gdf = gdf.to_crs(epsg=country_utm_epsg_code)
+
+        # gdf['length'] = gdf.length
+        # total_length = gdf.length.sum()
+        buffer_area = buffers_gdf_buildings.loc[buffers_gdf_buildings[geom_id] == row_id, 'buffer_area'].values[0]
+
+        buffers_gdf_buildings.loc[buffers_gdf_buildings[geom_id] == row_id, f"{group}_buildings_count"] = gdf.shape[0]
+        buffers_gdf_buildings.loc[buffers_gdf_buildings[geom_id] == row_id, f"{group}_buildings_totalarea"] = gdf.area.sum()
+        buffers_gdf_buildings.loc[buffers_gdf_buildings[geom_id] == row_id, f"{group}_buildings_avgarea"] = gdf.area.mean()
+        buffers_gdf_buildings.loc[buffers_gdf_buildings[geom_id] == row_id, f"{group}_buildings_ratio"] = gdf.area.sum() / buffer_area
+
+
+
+# use group results to generate "all" results
+group = 'all'
+buffers_gdf_buildings[f"{group}_buildings_count"] = buffers_gdf_buildings[[f"{g}_buildings_count" for g  in building_group_lists['group']]].sum(axis=1)
+buffers_gdf_buildings[f"{group}_buildings_totalarea"] = buffers_gdf_buildings[[f"{g}_buildings_totalarea" for g  in building_group_lists['group']]].sum(axis=1)
+buffers_gdf_buildings[f"{group}_buildings_avgarea"] = buffers_gdf_buildings[f"{group}_buildings_totalarea"] / buffers_gdf_buildings[f"{group}_buildings_count"]
+buffers_gdf_buildings[f"{group}_buildings_ratio"] = buffers_gdf_buildings[f"{group}_buildings_totalarea"] / buffers_gdf_buildings['buffer_area']
+
+
+
+
+buildings_cols = [geom_id] + [i for i in buffers_gdf_buildings.columns if '_buildings_' in i]
 buildings_features = buffers_gdf_buildings[buildings_cols].copy(deep=True)
-
-# buildings_features = pd.read_csv(buildings_features_path)
-# buildings_feature_cols = buildings_features.columns.to_list()
-
-if 'all' not in buildings_group_list:
-    buildings_features["all_buildings_count"] = buildings_features[[i for i in buildings_feature_cols if i.endswith('_buildings_count')]].sum(axis=1)
-    buildings_features["all_buildings_totalarea"] = buildings_features[[i for i in buildings_feature_cols if i.endswith('_buildings_totalarea')]].sum(axis=1)
-    buildings_features["all_buildings_avgarea"] = buildings_features["all_buildings_totalarea"] / buildings_features["all_buildings_count"]
-    buildings_features["all_buildings_avgarea"].fillna(0, inplace=True)
-    buildings_features = buildings_features.merge(buffers_gdf[[geom_id, 'buffer_area']], on=geom_id, how="left")
-    buildings_features["all_buildings_ratio"] = buildings_features["all_buildings_totalarea"] / buildings_features["buffer_area"]
+buildings_features.fillna(0, inplace=True)
 
 
 buildings_features_path = os.path.join(osm_features_dir, f'{geom_label}_buildings_{osm_date}.csv')
 buildings_features.to_csv(buildings_features_path, index=False, encoding="utf-8")
 
 
+sqlite_building_conn.close()
+
+
+
+
+
 # ---------------------------------------------------------
-# roads
-# for each type of road
-# distance to closest road from cluster centroid, total number of roads in each cluster, and total length of roads in each cluster
+# road metrics
 
-print("Running roads...")
 
-osm_roads_shp_path = os.path.join(data_dir, f'osm/{country_name}-{osm_date}-free.shp/gis_osm_roads_free_1.shp')
-roads_raw_geo = gpd.read_file(osm_roads_shp_path)
+road_path = os.path.join(data_dir, f'osm/{country_name}-{osm_date}-free.shp/gis_osm_roads_free_1.sqlite')
 
-# get each road length
-# convert to UTM first, then back to WGS84 (degrees)
-roads_raw_geo = roads_raw_geo.to_crs(f"EPSG:{country_utm_epsg_code}")
-roads_raw_geo["road_length"] = roads_raw_geo.geometry.length
-roads_raw_geo = roads_raw_geo.to_crs("EPSG:4326") # WGS84
+road_table_name = 'DATA_TABLE'
+
+sqlite_road_conn = build_gpkg_connection(road_path)
+# sqlite_road_conn.execute("SELECT tbl_name FROM sqlite_master WHERE type = 'table'").fetchall()
+# sqlite_road_conn.execute(f'PRAGMA table_info({road_table_name})').fetchall()
+
 
 # load crosswalk for types and assign any not grouped to "other"
 roads_type_crosswalk_path = os.path.join(data_dir, 'crosswalks/roads_type_crosswalk.csv')
 roads_type_crosswalk_df = pd.read_csv(roads_type_crosswalk_path)
 roads_type_crosswalk_df.loc[roads_type_crosswalk_df["group"] == "0", "group"] = "other"
+roads_type_crosswalk_df = roads_type_crosswalk_df.loc[roads_type_crosswalk_df.type.notna()]
+
+road_group_lists = roads_type_crosswalk_df.groupby('group').agg({'type':list}).reset_index()
+
+for i in road_group_lists.itertuples():
+    _, group, type_list = i
+    if len(type_list) == 1:
+        type_list.append('unused_random_string')
+    q = f'''
+        SELECT ogc_fid
+        FROM {road_table_name}
+        WHERE fclass in {tuple(type_list)}
+        '''
+    r = pd.read_sql(q, sqlite_road_conn)
+    print(group, len(r))
+
+
+
+
+# -------------------------------------
+# distance to nearest road
+
+# ========
+# spatialite approach for nearest road
+# ========
+
+# def gen_knn_query_string(id, wkt, type_list, table_name):
+#     q = f'''SELECT d.osm_id AS osm_id, d.fclass AS fclass, k.distance_m AS dist_m, k.distance_crs AS dist_crs
+#     FROM KNN2 AS k
+#     JOIN {table_name} AS d ON (d.ogc_fid = k.fid)
+#     WHERE d.fclass IN {tuple(type_list)} AND f_table_name = '{table_name}' AND ref_geometry = PointFromText("{wkt}") AND radius = 0.5 AND max_items = 1024
+#     '''
+#     return [id, q]
+
+
+# def find_nearest(id, q):
+#     results = pd.read_sql(q, sqlite_road_conn)
+#     if len(results) == 0:
+#         return id, None, None
+#     else:
+#         return id, results.iloc[0]['osm_id'], results.iloc[0]['dist_m']
+
+
+# nearest_roads_gdf_spatialite = buffers_gdf.copy(deep=True)
+
+# for i in road_group_lists.itertuples():
+#     _, group, type_list = i
+#     print(f'Roads nearest({group})')
+
+#     knn_task_list = [gen_knn_query_string(i[geom_id], i.centroid_wkt, type_list, road_table_name) for _,i in buffers_gdf.iterrows()]
+
+#     ts = time.time()
+
+#     results = run_tasks(find_nearest, knn_task_list, parallel=True, max_workers=12, chunksize=1)
+
+#     te = time.time()
+#     run_time = int(te - ts)
+#     print('\tnearest query runtime:', str(datetime.timedelta(seconds=run_time)))
+
+#     nearest_road_df = pd.DataFrame([i[3] for i in results], columns=[geom_id, f"{group}_roads_nearestid", f"{group}_roads_nearestdist"])
+#     nearest_roads_gdf_spatialite = nearest_roads_gdf_spatialite.merge(nearest_road_df, on=geom_id, how='left')
+
+
+# group = 'all'
+# nearest_roads_gdf_spatialite[f"{group}_roads_nearestdist"] = nearest_roads_gdf_spatialite[[f"{g}_roads_nearestdist" for g  in road_group_lists['group']]].min(axis=1)
+# nearest_roads_gdf_spatialite[f"{group}_roads_nearest-osmid"] = nearest_roads_gdf_spatialite[[f"{g}_roads_nearestdist" for g  in road_group_lists['group']]].idxmin(axis=1)
+
+
+
+
+
+# ========
+# geopandas approach for nearest road
+# ========
+
+osm_roads_shp_path = os.path.join(data_dir, f'osm/{country_name}-{osm_date}-free.shp/gis_osm_roads_free_1.shp')
+roads_raw_geo = gpd.read_file(osm_roads_shp_path)
 
 # merge new classification and assign any features without a type to unclassifid
 roads_geo = roads_raw_geo.merge(roads_type_crosswalk_df, left_on="fclass", right_on="type", how="left")
 
-roads_geo.loc[roads_geo["fclass"].isna(), "group"] = "unclassified"
-
-# group_field = "fclass"
-group_field = "group"
-
-# show breakdown of groups
-print(roads_geo[group_field].value_counts())
+roads_geo.loc[roads_geo["fclass"].isna(), "group"] = "unknown"
 
 
-# split by groups
-min_road_features = 0 # 1000
-roads_group_list = [i for i,j in roads_geo[group_field].value_counts().to_dict().items() if j > min_road_features]
-# roads_group_list = ["all"] + [i for i,j in roads_geo[group_field].value_counts().to_dict().items() if j > 1000]
-# roads_group_list = ["all"] + [i for i in set(roads_geo["fclass"])]
-# roads_group_list = ["all", "primary", "secondary"]
+nearest_roads_gdf_pandas = buffers_gdf.copy(deep=True)
 
+src_points = nearest_roads_gdf_pandas.apply(lambda x: (x.longitude, x.latitude), axis=1).to_list()
 
-#-----------------
-#find distance to nearest road (based on vertices of roads)
+group_field = 'group'
 
-
-cluster_centroids = buffers_gdf.copy(deep=True)
-
-src_points = cluster_centroids.apply(lambda x: (x.longitude, x.latitude), axis=1).to_list()
-
-
-for group in roads_group_list:
-    print(group)
+for group in road_group_lists['group']:
+    print(f'Roads nearest ({group})')
     # subset based on group
     if group == "all":
         subset_roads_geo = roads_geo.copy(deep=True)
@@ -476,57 +700,136 @@ for group in roads_group_list:
     # def func to get osm id for closest locations
     osm_id_lookup = lambda idx: line_xy_df.loc[idx].osm_id
     # set final data
-    cluster_centroids["{}_roads_nearest-osmid".format(group)] = list(map(osm_id_lookup, closest))
-    cluster_centroids["{}_roads_nearestdist".format(group)] = closest_dist
+    nearest_roads_gdf_pandas["{}_roads_nearestid".format(group)] = list(map(osm_id_lookup, closest))
+    nearest_roads_gdf_pandas["{}_roads_nearestdist".format(group)] = closest_dist
 
 
 
-cluster_centroids = cluster_centroids[[geom_id] + [i for i in cluster_centroids.columns if "_roads_" in i]]
-cluster_centroids.set_index(geom_id, inplace=True)
+nearest_roads_gdf_pandas = nearest_roads_gdf_pandas[[geom_id] + [i for i in nearest_roads_gdf_pandas.columns if "_roads_" in i]]
+nearest_roads_gdf_pandas.set_index(geom_id, inplace=True)
 
 
-# # -----------------
-# # calculate number of roads and length of roads intersecting with each buffer
+group = 'all'
 
-# # copy of buffers gdf to use for output
-buffers_gdf_roads = buffers_gdf.copy(deep=True)
+nearest_roads_gdf_pandas[f"{group}_roads_nearestdist"] = nearest_roads_gdf_pandas[[f"{g}_roads_nearestdist" for g  in road_group_lists['group']]].min(axis=1)
 
-for group in roads_group_list:
-    print(group)
-    if group == "all":
-        subset_roads_geo = roads_geo.copy(deep=True)
-    else:
-        subset_roads_geo = roads_geo.loc[roads_geo[group_field] == group].reset_index().copy(deep=True)
-    # query to find roads in each buffer
-    bquery = subset_roads_geo.sindex.query_bulk(buffers_gdf.geometry)
-    # roads dataframe where each column contains a cluster and one building in it (can have multiple rows per cluster)
-    bquery_df = pd.DataFrame({"cluster": bquery[0], "roads": bquery[1]})
-    # add roads data to spatial query dataframe
-    bquery_full = bquery_df.merge(roads_geo, left_on="roads", right_index=True, how="left")
-    # aggregate spatial query df with roads info, by cluster
-    bquery_agg = bquery_full.groupby("cluster").agg({"road_length": ["count", "sum"]})
-    bquery_agg.columns = [group + "_roads_count", group + "_roads_length"]
-    # join cluster back to original buffer_geo dataframe with columns for specific building type queries
-    z1 = buffers_gdf.merge(bquery_agg, left_index=True, right_on="cluster", how="left")
-    # not each cluster will have relevant roads, set those to zero
-    z1.fillna(0, inplace=True)
-    # set index and drop unnecessary columns
-    if z1.index.name != "cluster": z1.set_index("cluster", inplace=True)
-    z2 = z1[[group + "_roads_count", group + "_roads_length"]]
-    # merge group columns back to main cluster dataframe
-    buffers_gdf_roads = buffers_gdf_roads.merge(z2, left_index=True, right_index=True)
+nearest_roads_gdf_pandas[f"{group}_roads_nearest-osmid"] = nearest_roads_gdf_pandas[[f"{g}_roads_nearestdist" for g  in road_group_lists['group']]].idxmin(axis=1)
 
 
-# output final features
-roads_features = buffers_gdf_roads.merge(cluster_centroids, on=geom_id)
-roads_feature_cols = [i for i in roads_features.columns if "_roads_" in i]
-roads_cols = [geom_id] + roads_feature_cols
-roads_features = roads_features[roads_cols].copy(deep=True)
 
-roads_features['all_roads_length'] = roads_features[[i for i in roads_feature_cols if i.endswith("_roads_length")]].sum(axis=1)
-roads_features['all_roads_count'] = roads_features[[i for i in roads_feature_cols if i.endswith("_roads_count")]].sum(axis=1)
-roads_features['all_roads_nearestdist'] = roads_features[[i for i in roads_feature_cols if i.endswith("_roads_nearestdist")]].min(axis=1)
-# roads_features['all_roads_nearest-osmid'] =
+# -------------------------------------
+# length of roads in buffer
 
-roads_features_path = os.path.join(osm_features_dir, '{}_roads_{}.csv'.format(geom_label, osm_date))
+
+length_roads_gdf = buffers_gdf.copy(deep=True)
+
+# # geopandas approach
+# for i in road_group_lists.itertuples():
+#     _, group, type_list = i
+#     print(f'Roads length ({group})')
+#     if group == "all":
+#         subset_roads_geo = roads_geo.copy(deep=True)
+#     else:
+#         subset_roads_geo = roads_geo.loc[roads_geo[group_field] == group].reset_index().copy(deep=True)
+#     # query to find roads in each buffer
+#     bquery = subset_roads_geo.sindex.query_bulk(buffers_gdf.geometry)
+#     # roads dataframe where each column contains a cluster and one building in it (can have multiple rows per cluster)
+#     bquery_df = pd.DataFrame({"cluster": bquery[0], "roads": bquery[1]})
+#     # add roads data to spatial query dataframe
+#     bquery_full = bquery_df.merge(roads_geo, left_on="roads", right_index=True, how="left")
+#     # aggregate spatial query df with roads info, by cluster
+#     bquery_agg = bquery_full.groupby("cluster").agg({"road_length": ["count", "sum"]})
+#     bquery_agg.columns = [group + "_roads_count", group + "_roads_length"]
+#     # join cluster back to original buffer_geo dataframe with columns for specific building type queries
+#     z1 = buffers_gdf.merge(bquery_agg, left_index=True, right_on="cluster", how="left")
+#     # not each cluster will have relevant roads, set those to zero
+#     z1.fillna(0, inplace=True)
+#     # set index and drop unnecessary columns
+#     if z1.index.name != "cluster": z1.set_index("cluster", inplace=True)
+#     z2 = z1[[group + "_roads_count", group + "_roads_length"]]
+#     # merge group columns back to main cluster dataframe
+#     length_roads_gdf = length_roads_gdf.merge(z2, left_index=True, right_index=True)
+
+
+# spatialite approach
+for i in road_group_lists.itertuples():
+    _, group, type_list = i
+    print(f'Roads length ({group})')
+    length_roads_gdf[f"{group}_roads_length"] = None
+
+    task_list = []
+
+    for _, row in length_roads_gdf.iterrows():
+
+        int_wkt = row['geometry'].wkt
+
+        q = f'''
+            SELECT ogc_fid, AsText(st_intersection(geometry, GeomFromText("{int_wkt}"))) AS geometry
+            FROM {road_table_name}
+            WHERE fclass in {tuple(type_list)} AND st_intersects(geometry, GeomFromText("{int_wkt}"))
+            '''
+
+        task = (row[geom_id], q)
+        task_list.append(task)
+
+
+    def run_query(id, q):
+        return id, pd.read_sql(q, sqlite_road_conn)
+
+
+    ts = time.time()
+
+    results_list = run_tasks(run_query, task_list, parallel=True, max_workers=12, chunksize=1)
+
+    te = time.time()
+    run_time = int(te - ts)
+    print('\tquery runtime:', str(datetime.timedelta(seconds=run_time)))
+
+    for _, _, _, results in results_list:
+        row_id, result_df = results
+        df = result_df.copy(deep=True)
+        df['geometry'] = gpd.GeoSeries.from_wkt(df.geometry)
+        gdf = gpd.GeoDataFrame(df, geometry='geometry')
+        gdf = gdf.set_crs(epsg=4326)
+        gdf = gdf.to_crs(epsg=country_utm_epsg_code)
+
+        gdf['length'] = gdf.length
+        total_length = gdf.length.sum()
+
+        length_roads_gdf.loc[length_roads_gdf[geom_id] == row_id, f"{group}_roads_length"] = total_length
+
+
+
+
+# use group results to generate "all" results
+group = 'all'
+length_roads_gdf[f"{group}_roads_length"] = length_roads_gdf[[f"{g}_roads_length" for g  in road_group_lists['group']]].sum(axis=1)
+
+length_roads_gdf.set_index(geom_id, inplace=True)
+
+length_roads_gdf = length_roads_gdf[[i for i in length_roads_gdf.columns if "_roads_" in i]]
+
+
+
+
+# -------------------------------------
+# merge and output all roads data
+
+nearest_roads_gdf = nearest_roads_gdf_pandas
+# nearest_roads_gdf = nearest_roads_gdf_spatialite
+
+roads_features = pd.merge(nearest_roads_gdf, length_roads_gdf, how='inner', left_index=True, right_index=True)
+
+assert(len(roads_features) == len(buffers_gdf))
+
+
+roads_features.fillna(0, inplace=True)
+roads_features[geom_id] = roads_features.index
+
+roads_features_path = os.path.join(osm_features_dir, f'{geom_label}_roads_{osm_date}.csv')
 roads_features.to_csv(roads_features_path, index=False, encoding="utf-8")
+
+
+sqlite_road_conn.close()
+
+
