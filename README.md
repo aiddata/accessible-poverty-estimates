@@ -69,7 +69,9 @@ Builds on work published by [Thinking Machines Data Science](https://github.com/
 
 6. Run `dhs_clusters.py` to prepare DHS data
 
-7. Run `osm_features.py` to prepare OSM data
+7. Run `gen_spatialite.py` to convert OSM buildings/roads shapefiles to SpatiaLite databases
+
+8. Run `osm_features.py` to prepare OSM data
     - Note: If you are adapting this code for another country, be sure to update the OSM crosswalk files before this step. The `crosswalk_gen.py` script can be used to do this.
 
-8. Run `models.py` to train models and produce figures.
+9. Run `models.py` to train models and produce figures.
