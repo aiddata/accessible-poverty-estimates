@@ -254,6 +254,7 @@ def plot_regplot(
         scatter_kws={"alpha": 0.3},
     )
     plt.ticklabel_format(style='sci', axis='x', scilimits=(1,5))
+    r2 = pearsonr(data[x_label].tolist(), data[y_var].tolist())[0]
     plt.title(
         "Relationship between {} \nand {}".format(
             x_label, y_label
@@ -274,6 +275,7 @@ def plot_regplot(
         plt.savefig(fname=output_file, bbox_inches="tight")
     if show:
         plt.show(block=False)
+    return r2
 
 
 def plot_corr(
