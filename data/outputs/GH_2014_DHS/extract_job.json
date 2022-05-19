@@ -11,12 +11,12 @@
         "branch":"master"
     },
     "defaults": {
-        "bnd_absolute": "/sciclone/home20/smgoodman/ghana_accessible_poverty/dhs_buffers.geojson",
+        "bnd_absolute": "/sciclone/home20/smgoodman/ape/GH_2014_DHS/dhs_buffers.geojson",
         "bnd_name": "gh_dhs_buffer",
         "extract_type": "mean",
         "extract_method": "python",
-        "output_base": "/sciclone/home20/smgoodman/ghana_accessible_poverty/extracts",
-        "years": "2012:2014",
+        "output_base": "/sciclone/home20/smgoodman/ape/GH_2014_DHS/extracts",
+        "years": "2000:2020",
         "run_hours": 1
     },
     "data": [
