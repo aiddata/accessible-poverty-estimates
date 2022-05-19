@@ -54,8 +54,8 @@ extract_job_path.write_text(extract_job_text)
 # ---------------------------------------------------------
 # prepare DHS cluster indicators
 
-dhs_file = glob.glob(os.path.join(data_dir, 'dhs', f'{dhs_round}*', dhs_hh_file_name, '*.DTA' ))[0]
-dhs_dict_file = glob.glob(os.path.join(data_dir, 'dhs', f'{dhs_round}*', dhs_hh_file_name, '*.DO' ))[0]
+dhs_file = glob.glob(os.path.join(data_dir, 'dhs', '**', dhs_hh_file_name, '*.DTA' ), recursive=True)[0]
+dhs_dict_file = glob.glob(os.path.join(data_dir, 'dhs', '**', dhs_hh_file_name, '*.DO' ), recursive=True)[0]
 
 dhs = pd.read_stata(dhs_file, convert_categoricals=False)
 
@@ -95,7 +95,10 @@ active_agg_rules = {i:j for i,j in agg_rules.items() if i in var_list}
 
 cluster_data = hh_data.groupby("hv001").agg(active_agg_rules).reset_index().dropna(axis=1)
 
+
 print('Cluster Data Dimensions: {}'.format(cluster_data.shape))
+
+print(f'{project}: {len(dhs)} households aggregated to {len(cluster_data)} clusters')
 
 # cluster_data.columns = ["cluster_id", "wealthscore", "education_years", "electricity", "time_to_water"]
 
@@ -139,7 +142,7 @@ cluster_data.columns = [
 # # ---------------------------------------------------------
 # prepare DHS cluster geometries
 
-shp_path = glob.glob(os.path.join(data_dir, 'dhs', f'{dhs_round}*', dhs_geo_file_name, '*.shp' ))[0]
+shp_path = glob.glob(os.path.join(data_dir, 'dhs', '**', dhs_geo_file_name, '*.shp' ), recursive=True)[0]
 raw_gdf = gpd.read_file(shp_path)
 
 # drop locations without coordinates
