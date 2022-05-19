@@ -114,7 +114,7 @@ group_field = "group"
 
 # split by group
 # pois_group_list = ["all"] + [i for i in set(pois_geo[group_field])]
-pois_group_list = [i for i in set(pois_geo[group_field])]
+pois_group_list = [i for i in set(pois_geo[group_field]) if pd.notnull(i)]
 
 # copy of buffers gdf to use for output
 buffers_gdf_pois = buffers_gdf.copy(deep=True)
@@ -186,7 +186,7 @@ group_field = "group"
 
 # split by group
 # traffic_group_list = ["all"] + [i for i in set(traffic_geo[group_field])]
-traffic_group_list = [i for i in set(traffic_geo[group_field])]
+traffic_group_list = [i for i in set(traffic_geo[group_field]) if pd.notnull(i)]
 
 # copy of buffers gdf to use for output
 buffers_gdf_traffic = buffers_gdf.copy(deep=True)
@@ -257,7 +257,7 @@ group_field = "group"
 
 # split by group
 # transport_group_list = ["all"] + [i for i in set(transport_geo[group_field])]
-transport_group_list = [i for i in set(transport_geo[group_field])]
+transport_group_list = [i for i in set(transport_geo[group_field]) if pd.notnull(i)]
 
 # copy of buffers gdf to use for output
 buffers_gdf_transport = buffers_gdf.copy(deep=True)
