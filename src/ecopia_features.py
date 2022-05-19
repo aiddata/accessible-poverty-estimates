@@ -10,6 +10,12 @@ ogr2ogr -f SQLite -dsco SPATIALITE=YES africa_ghana_road.sqlite africa_ghana_roa
 ogr2ogr -f SQLite -dsco SPATIALITE=YES africa_ghana_building.sqlite africa_ghana_building_32630/africa_ghana_building_32630.shp
 ogr2ogr -f SQLite -update -append africa_ghana_building.sqlite africa_ghana_building_32631/africa_ghana_building_32631.shp -nln merge
 
+# to deal with multipolygon issues
+ogr2ogr -f SQLite -nlt PROMOTE_TO_MULTI -dsco SPATIALITE=YES africa_ghana_road.sqlite africa_ghana_road_4326/africa_ghana_road_4326.shp
+
+# set generic table name
+ogr2ogr -f SQLite -nlt PROMOTE_TO_MULTI -nln DATA_TABLE -dsco SPATIALITE=YES africa_ghana_road.sqlite africa_ghana_road_4326/africa_ghana_road_4326.shp
+
 '''
 
 from pathlib import Path
@@ -20,7 +26,7 @@ import geopandas as gpd
 
 
 country = 'ghana'
-country_utm_espg_code = 32630
+country_utm_epsg_code = 32630
 
 group = "ecopia"
 
@@ -39,7 +45,7 @@ dhs_path = '/home/userx/Desktop/PHL_WORK/osm-development-estimates/data/outputs/
 buffers_gdf = gpd.read_file(dhs_path)
 buffers_gdf = buffers_gdf.set_crs(epsg=4326)
 buffers_gdf['buffer'] = buffers_gdf['geometry']
-buffers_gdf = buffers_gdf.to_crs(epsg=country_utm_espg_code)
+buffers_gdf = buffers_gdf.to_crs(epsg=country_utm_epsg_code)
 buffers_gdf['geometry'] = buffers_gdf.centroid
 buffers_gdf = buffers_gdf.to_crs(epsg=4326)
 buffers_gdf['centroid_wkt'] = buffers_gdf.geometry.apply(lambda x: x.wkt)
@@ -115,7 +121,7 @@ sqlite_road_conn = build_gpkg_connection(ecopia_road_path)
 
 
 def find_nearest(wkt):
-    results = sqlite_road_conn.execute(f'SELECT fid,distance_m  FROM KNN2 WHERE f_table_name = "{road_table_name}" AND ref_geometry = PointFromText("{wkt}") AND radius=100.0 AND max_items=1').fetchall()
+    results = sqlite_road_conn.execute(f'SELECT fid,distance_m FROM KNN2 WHERE f_table_name = "{road_table_name}" AND ref_geometry = PointFromText("{wkt}") AND radius=100.0 AND max_items=1').fetchall()
     return results
 
 # took hours to run
@@ -151,7 +157,7 @@ for _, row in buffers_gdf_roads.iterrows():
     df['geometry'] = gpd.GeoSeries.from_wkt(df.geometry)
     gdf = gpd.GeoDataFrame(df, geometry='geometry')
     gdf = gdf.set_crs(epsg=4326)
-    gdf = gdf.to_crs(epsg=country_utm_espg_code)
+    gdf = gdf.to_crs(epsg=country_utm_epsg_code)
 
     gdf['length'] = gdf.length
     total_length = gdf.length.sum()
@@ -203,7 +209,7 @@ for _, row in buffers_gdf_buildings.iterrows():
     df['geometry'] = gpd.GeoSeries.from_wkt(df.geometry)
     gdf = gpd.GeoDataFrame(df, geometry='geometry')
     gdf = gdf.set_crs(epsg=4326)
-    gdf = gdf.to_crs(epsg=country_utm_espg_code)
+    gdf = gdf.to_crs(epsg=country_utm_epsg_code)
 
     gdf['length'] = gdf.length
     total_length = gdf.length.sum()
