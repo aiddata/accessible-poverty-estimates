@@ -15,6 +15,7 @@ Prepare DHS data
 import os
 import configparser
 import glob
+from pathlib import Path
 
 import pandas as pd
 import geopandas as gpd
@@ -38,6 +39,16 @@ country_utm_epsg_code = config[project]['country_utm_epsg_code']
 data_dir = os.path.join(project_dir, 'data')
 
 os.makedirs(os.path.join(data_dir, 'outputs', dhs_round), exist_ok=True)
+
+
+# ---------------------------------------------------------
+# create extract job file to use with resulting dhs buffers geojson for geoquery extract
+
+iso2 = project.lower().split('_')[0]
+base_extract_job_path = Path(data_dir, 'extract_job.json')
+extract_job_path = Path(data_dir, 'outputs', dhs_round, 'extract_job.json')
+extract_job_text = base_extract_job_path.read_text().replace('[[ISO2]]', iso2).replace('[[DHS_ROUND]]', dhs_round)
+extract_job_path.write_text(extract_job_text)
 
 
 # ---------------------------------------------------------
