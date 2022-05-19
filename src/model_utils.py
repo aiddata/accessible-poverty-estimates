@@ -267,7 +267,7 @@ def get_param_grid(model_type='ridge'):
             # "regressor__min_samples_leaf": [2,4],
             # "regressor__bootstrap": [True]
             "regressor__criterion": ["squared_error"],
-            "regressor__n_estimators": [2000],
+            "regressor__n_estimators": [1000],
             "regressor__max_features": [0.33],
             "regressor__max_depth": [20],
             "regressor__min_samples_split": [2],
@@ -537,7 +537,7 @@ def plot_cross_val_results(
 
 
 def rf_feature_importance(
-    cv, X, y, n_features=30, size=(10, 15),
+    cv, X, y, n_features=20, size=(10, 15),
     output_file=None,
     show=True
 ):
