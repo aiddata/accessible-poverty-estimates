@@ -40,12 +40,15 @@ Builds on work published by [Thinking Machines Data Science](https://github.com/
     - Unzip the download in the `data/dhs` directory of this repo
 
 4. Download OSM data
-    - Navigate to country page on [Geofabrik](https://download.geofabrik.de)
-        - e.g., https://download.geofabrik.de/asia/philippines.html
-    - Click the "raw directory index" link
-    - Download the OSM data (shp.zip file) with your desired timestamp (e.g., "philippines-210101-free.shp.zip")
-    - Unzip the download in the `data/osm` directory of this repo
-    - Note: If you are considering using older snapshots of the OSM database to align with DHS round years, historical coverage of OSM may be limited and impede model performance. For most developing countries, the amount of true historical coverage lacking in older snapshots is likely to be far greater than the amount of actual building/road/etc development since the last DHS round. Neither is ideal, but we expect using more recent OSM data will be more realistic overall. Please consider your particular use case and use your judgement to determine what is best for your application.
+    - To manually download data for an individual country:
+        - Navigate to country page on [Geofabrik](https://download.geofabrik.de)
+            - e.g., https://download.geofabrik.de/asia/philippines.html
+        - Click the "raw directory index" link
+        - Download the OSM data (shp.zip file) with your desired timestamp (e.g., "philippines-210101-free.shp.zip")
+        - Unzip the download in the `data/osm` directory of this repo
+        - Note: If you are considering using older snapshots of the OSM database to align with DHS round years, historical coverage of OSM may be limited and impede model performance. For most developing countries, the amount of true historical coverage lacking in older snapshots is likely to be far greater than the amount of actual building/road/etc development since the last DHS round. Neither is ideal, but we expect using more recent OSM data will be more realistic overall. Please consider your particular use case and use your judgement to determine what is best for your application.
+        - If using the default `osm_features.py` script in a later step, use `gen_spatialite.py` to convert OSM buildings/roads shapefiles to SpatiaLite databases
+    - For bulk downloads, you can use the `download_osm.py` script
 
 5. Setup `config.ini`
     - Note: If you are replicating examples from this repo, you only need to modify the `project_dir` and `project` in the [main] section of the config file
