@@ -31,15 +31,29 @@ Builds on work published by [Thinking Machines Data Science](https://github.com/
 		```
 		conda env export > environment.yml
 		```
+3. Install SpatiaLite 5.1.0+
+    - We use [VirtualKNN2](https://www.gaia-gis.it/fossil/libspatialite/wiki?name=KNN2), which was added in [check-in 03786a62cd](https://www.gaia-gis.it/fossil/libspatialite/info/03786a62cdb4ab17) of SpatialLite.
+    - Download and build Spatialite:
+      ```
+      fossil clone https://www.gaia-gis.it/fossil/libspatialite
+      cd libspatialite
+      # You can build with freexl if you like, but it isn't needed
+      ./configure --disable-freexl
+      make
+      sudo make install
+      ```
+    - Confirm that spatialite_lib_path in config.ini points to your newly-built mod_spatialite.so
+        - The command `whereis mod_spatialite.so` can help you find it.
+	  It is likely in /usr/local/lib/
 
-3. Download DHS data
+4. Download DHS data
     - Register a DHS account, login, and then create a project to request access to the survey data for your countries of interest
         - Be sure to request access to both the Standard DHS survey data and the GIS/GPS data for all countries you wish to download data for.
     - Once your access to both the Standard DHS and GIS/GPS data is approved (may be approved at different times), use either your [account project page](https://dhsprogram.com/data/dataset_admin/index.cfm) to access the download manager.
     - Using the download manager, select the Household Recode Stata dataset (.dta) and the Geographic Data Shape file (.shp) then click the "Process Selected Files for Download" button
     - Unzip the download in the `data/dhs` directory of this repo
 
-4. Download OSM data
+5. Download OSM data
     - To manually download data for an individual country:
         - Navigate to country page on [Geofabrik](https://download.geofabrik.de)
             - e.g., https://download.geofabrik.de/asia/philippines.html
@@ -50,11 +64,10 @@ Builds on work published by [Thinking Machines Data Science](https://github.com/
         - If using the default `osm_features.py` script in a later step, use `gen_spatialite.py` to convert OSM buildings/roads shapefiles to SpatiaLite databases
     - For bulk downloads, you can use the `download_osm.py` script
 
-5. Setup `config.ini`
+6. Setup `config.ini`
     - Note: If you are replicating examples from this repo, you only need to modify the `project_dir` and `project` in the [main] section of the config file
     - `project_dir` - path to the root of the cloned repo
     - `project` - specifies which subsection to use for project specific configurations (e.g., To replicate work using the Philippines 2017 DHS, use "PH_2017_DHS")
-
     - Project specific configurations (e.g., within the [PH_2017_DHS] section):
         - `country_name` - name of country based on the OSM download file (e.g., "philippines" for "philippines-210101-free.shp.zip")
         - `osm_date` - timestamp from the OSM download (e.g. "210101" for "philippines-210101-free.shp.zip")
@@ -70,11 +83,11 @@ Builds on work published by [Thinking Machines Data Science](https://github.com/
         - `geospatial_variable_years` - List of years to include for time series geospatial variables (limited to what is available in data downloaded from GeoQuery)
 
 
-6. Run `dhs_clusters.py` to prepare DHS data
+7. Run `dhs_clusters.py` to prepare DHS data
 
-7. Run `gen_spatialite.py` to convert OSM buildings/roads shapefiles to SpatiaLite databases
+8. Run `gen_spatialite.py` to convert OSM buildings/roads shapefiles to SpatiaLite databases
 
-8. Run `osm_features.py` to prepare OSM data
+9. Run `osm_features.py` to prepare OSM data
     - Note: If you are adapting this code for another country, be sure to update the OSM crosswalk files before this step. The `crosswalk_gen.py` script can be used to do this.
 
-9. Run `models.py` to train models and produce figures.
+10. Run `models.py` to train models and produce figures.
