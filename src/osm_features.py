@@ -102,42 +102,24 @@ buffers_gdf['centroid_wkt'] = buffers_gdf.geometry.centroid.apply(lambda x: x.wk
 
 def build_gpkg_connection(sqlite_path):
 
-    # create connection and load spatialite extension
+    # create connection to SQLite database
     conn = sqlite3.connect(sqlite_path)
 
-    # enable SpatialLite extension
+    # allow SQLite to load extensions
     conn.enable_load_extension(True)
 
-    # to find existing path:
-    # > whereis mod_spatialite.so
-    # was version 4.3.0
-    # default_shared_lib = '/usr/lib/x86_64-linux-gnu/mod_spatialite.so'
-
-    # built v5.0.1 from source
-    custom_shared_lib = '/usr/local/lib/mod_spatialite.so'
-
-    # could not get libspatialite working either via apt install or conda install
-    # libspatialite_path = os.path.join(os.environ["CONDA_PREFIX"], 'lib/libspatialite.so')
-
-
-    # conn.load_extension(default_shared_lib)
-    conn.load_extension(custom_shared_lib)
-    # conn.load_extension(libspatialite_path)
+    # load SpatiaLite extension
+    # see README.md for more information
+    conn.load_extension(config["main"]["spatialite_lib_path"])
 
     # initialise spatial table support
-    conn.execute('SELECT InitSpatialMetadata(1)')
+    # conn.execute('SELECT InitSpatialMetadata(1)')
+
+    # this statement creates missing system tables,
+    # including knn2, which we will use
     conn.execute('SELECT CreateMissingSystemTables(1)')
+
     conn.execute('SELECT EnableGpkgAmphibiousMode()')
-
-    # conn.execute('SELECT CreateSpatialIndex("africa_ghana_road_4326", "geom");')
-
-
-    conn.execute("SELECT CreateMissingSystemTables(1);").fetchall()
-    try:
-        conn.execute("CREATE VIRTUAL TABLE KNN2 USING VirtualKNN2();")
-    except:
-        pass
-
 
     return conn
 
