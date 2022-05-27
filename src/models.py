@@ -37,6 +37,15 @@ config.read('config.ini')
 project = config["main"]["project"]
 project_dir = config["main"]["project_dir"]
 
+indicators = json.loads(config["main"]['indicators'])
+# indicators = [
+#     'Wealth Index',
+#     'Education completed (years)',
+#     'Access to electricity',
+#     'Access to water (minutes)'
+# ]
+
+
 data_dir = os.path.join(project_dir, 'data')
 
 output_name = config[project]['output_name']
@@ -46,8 +55,6 @@ results_dir = os.path.join(data_dir, 'outputs', output_name, 'results')
 
 os.makedirs(models_dir, exist_ok=True)
 os.makedirs(results_dir, exist_ok=True)
-
-
 
 
 
@@ -62,15 +69,6 @@ import data_utils
 # importlib.reload(data_utils)
 
 
-# indicators = [
-#     'Wealth Index',
-#     'Education completed (years)',
-#     'Access to electricity',
-#     'Access to water (minutes)'
-# ]
-indicators = ['Wealth Index']
-
-
 # Scoring metrics
 scoring = {
     'r2': data_utils.pearsonr2,
@@ -80,11 +78,7 @@ scoring = {
 search_type = 'grid'
 
 # number of folds for cross-validation
-n_splits = 5
-
-
-
-
+n_splits = 10
 
 
 
@@ -100,7 +94,7 @@ project_data_dict = {}
 
 for dhs_item in dhs_list:
 
-    dhs_round = config[dhs_item]['dhs_round']
+    tmp_output_name = config[dhs_item]['output_name']
     country_utm_epsg_code = config[dhs_item]['country_utm_epsg_code']
 
     osm_date = config[dhs_item]["osm_date"]
@@ -114,11 +108,10 @@ for dhs_item in dhs_list:
     geospatial_variable_years = json.loads(config[dhs_item]['geospatial_variable_years'])
 
 
-
     # -------------------------------------
     # load in dhs data
 
-    dhs_path =  os.path.join(data_dir, 'outputs', dhs_round, 'dhs_data.csv')
+    dhs_path =  os.path.join(data_dir, 'outputs', tmp_output_name, 'dhs_data.csv')
     raw_dhs_df = pd.read_csv(dhs_path)
     dhs_cols = [geom_id, 'latitude', 'longitude'] + indicators
     dhs_df = raw_dhs_df[dhs_cols]
@@ -127,7 +120,7 @@ for dhs_item in dhs_list:
     # -------------------------------------
     # OSM data prep
 
-    osm_features_dir = os.path.join(data_dir, 'outputs', dhs_round, 'osm_features')
+    osm_features_dir = os.path.join(data_dir, 'outputs', tmp_output_name, 'osm_features')
 
     # new osm data
     osm_roads_file = os.path.join(osm_features_dir, '{}_roads_{}.csv'.format(geom_label, osm_date))
@@ -167,7 +160,7 @@ for dhs_item in dhs_list:
     # geoquery spatial data prep
 
     # join GeoQuery spatial data to osm_data
-    geoquery_path = os.path.join(data_dir, 'outputs', dhs_round, f'{geoquery_data_file_name}.csv')
+    geoquery_path = os.path.join(data_dir, 'outputs', tmp_output_name, f'{geoquery_data_file_name}.csv')
     geoquery_df = pd.read_csv(geoquery_path)
     geoquery_df.fillna(-999, inplace=True)
 
@@ -194,7 +187,6 @@ for dhs_item in dhs_list:
         na = all_data_df[i].isna().sum()
         if na > 0:
             print(i, all_data_df[i].isna().sum())
-
 
 
     # -------------------------------------
@@ -277,7 +269,6 @@ for dhs_item in dhs_list:
         'all_geo_cols': all_geo_cols,
         'sub_geo_cols': sub_geo_cols,
         'ntl_cols': ntl_cols,
-        'dhs_round': dhs_round,
         'country_utm_epsg_code': country_utm_epsg_code,
         'osm_date': osm_date,
         'geom_id': geom_id,
@@ -287,8 +278,11 @@ for dhs_item in dhs_list:
     }
 
 
-
-
+all_osm_cols = set.union(*[set(i['all_osm_cols']) for i in project_data_dict.values()])
+sub_osm_cols = set.union(*[set(i['sub_osm_cols']) for i in project_data_dict.values()])
+all_geo_cols = set.union(*[set(i['all_geo_cols']) for i in project_data_dict.values()])
+sub_geo_cols = set.union(*[set(i['sub_geo_cols']) for i in project_data_dict.values()])
+ntl_cols = set.union(*[set(i['ntl_cols']) for i in project_data_dict.values()])
 
 final_data_df = pd.concat([i['data'] for i in project_data_dict.values()], axis=0)
 
@@ -301,7 +295,6 @@ final_data_df.fillna(0, inplace=True)
 
 final_data_path = os.path.join(data_dir, 'outputs', output_name, 'final_data.csv')
 final_data_df.to_csv(final_data_path, index=False)
-
 
 
 
@@ -559,7 +552,7 @@ Sub geo             & 16   & 0.76 \\
 Sub OSM + Sub geo   & 22   & 0.765 \\
 Final               & 8   & 0.751 \\
 
-    
+
 '''
 
 # -----------------------------------------------------------------------------

@@ -62,7 +62,7 @@ config.read('config.ini')
 project = config["main"]["project"]
 project_dir = config["main"]["project_dir"]
 
-dhs_round = config[project]['dhs_round']
+output_name = config[project]['output_name']
 country_utm_epsg_code = config[project]['country_utm_epsg_code']
 
 country_name = config[project]["country_name"]
@@ -73,7 +73,7 @@ geom_label = config[project]["geom_label"]
 
 data_dir = os.path.join(project_dir, 'data')
 
-osm_features_dir = os.path.join(data_dir, 'outputs', dhs_round, 'osm_features')
+osm_features_dir = os.path.join(data_dir, 'outputs', output_name, 'osm_features')
 os.makedirs(osm_features_dir, exist_ok=True)
 
 
@@ -81,7 +81,7 @@ os.makedirs(osm_features_dir, exist_ok=True)
 # DHS CLUSTERS
 
 # load buffers/geom created during data prep
-geom_path = os.path.join(data_dir, 'outputs', dhs_round, 'dhs_buffers.geojson')
+geom_path = os.path.join(data_dir, 'outputs', output_name, 'dhs_buffers.geojson')
 buffers_gdf = gpd.read_file(geom_path)
 
 # calculate area of each buffer

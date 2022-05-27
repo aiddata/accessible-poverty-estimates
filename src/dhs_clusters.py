@@ -30,7 +30,7 @@ config.read('config.ini')
 project = config["main"]["project"]
 project_dir = config["main"]["project_dir"]
 
-dhs_round = config[project]['dhs_round']
+output_name = config[project]['output_name']
 dhs_hh_file_name = config[project]['dhs_hh_file_name']
 dhs_geo_file_name = config[project]['dhs_geo_file_name']
 country_utm_epsg_code = config[project]['country_utm_epsg_code']
@@ -38,7 +38,7 @@ country_utm_epsg_code = config[project]['country_utm_epsg_code']
 
 data_dir = os.path.join(project_dir, 'data')
 
-os.makedirs(os.path.join(data_dir, 'outputs', dhs_round), exist_ok=True)
+os.makedirs(os.path.join(data_dir, 'outputs', output_name), exist_ok=True)
 
 
 # ---------------------------------------------------------
@@ -46,16 +46,15 @@ os.makedirs(os.path.join(data_dir, 'outputs', dhs_round), exist_ok=True)
 
 iso2 = project.lower().split('_')[0]
 base_extract_job_path = Path(data_dir, 'extract_job.json')
-extract_job_path = Path(data_dir, 'outputs', dhs_round, 'extract_job.json')
-extract_job_text = base_extract_job_path.read_text().replace('[[ISO2]]', iso2).replace('[[DHS_ROUND]]', dhs_round)
+extract_job_path = Path(data_dir, 'outputs', output_name, 'extract_job.json')
+extract_job_text = base_extract_job_path.read_text().replace('[[ISO2]]', iso2).replace('[[DHS_ROUND]]', output_name)
 extract_job_path.write_text(extract_job_text)
 
 
 # ---------------------------------------------------------
 # prepare DHS cluster indicators
 
-dhs_file = glob.glob(os.path.join(data_dir, 'dhs', '**', dhs_hh_file_name, '*.DTA' ), recursive=True)[0]
-dhs_dict_file = glob.glob(os.path.join(data_dir, 'dhs', '**', dhs_hh_file_name, '*.DO' ), recursive=True)[0]
+dhs_file = glob.glob(os.path.join(data_dir, 'dhs', '**', f'{dhs_hh_file_name}.DTA' ), recursive=True)[0]
 
 dhs = pd.read_stata(dhs_file, convert_categoricals=False)
 
@@ -186,11 +185,11 @@ gdf_merge = gdf.merge(cluster_data, left_on="DHSCLUST", right_on="Cluster number
 
 # output all dhs cluster data to CSV
 final_df = gdf_merge[[i for i in gdf_merge.columns if i != "geometry"]]
-final_path =  os.path.join(data_dir, 'outputs', dhs_round, 'dhs_data.csv')
+final_path =  os.path.join(data_dir, 'outputs', output_name, 'dhs_data.csv')
 final_df.to_csv(final_path, index=False, encoding='utf-8')
 
 
 # save buffer geometry as geojson
-geo_path = os.path.join(data_dir, 'outputs', dhs_round, 'dhs_buffers.geojson')
+geo_path = os.path.join(data_dir, 'outputs', output_name, 'dhs_buffers.geojson')
 gdf[['DHSID', 'geometry']].to_file(geo_path, driver='GeoJSON')
 
