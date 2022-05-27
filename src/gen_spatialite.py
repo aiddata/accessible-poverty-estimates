@@ -2,7 +2,6 @@
 Convert OSM buildgins/roads shapefiles to spatialite databases using shell calls run from python
 '''
 
-
 import os
 import configparser
 import subprocess as sp
