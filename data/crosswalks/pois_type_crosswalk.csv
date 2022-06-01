@@ -134,3 +134,7 @@ hairdresser,services
 market_place,retail
 windmill,landmark
 general,0
+bed_and_breakfast,services
+vending_cigarette,retail
+vending_parking,services
+clinic,health
