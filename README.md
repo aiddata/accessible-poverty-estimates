@@ -82,12 +82,14 @@ Builds on work published by [Thinking Machines Data Science](https://github.com/
         - `ntl_year` - Base year to use for nighttime lights (and potentially other geospatial variables)
         - `geospatial_variable_years` - List of years to include for time series geospatial variables (limited to what is available in data downloaded from GeoQuery)
 
-
 7. Run `dhs_clusters.py` to prepare DHS data
 
 8. Run `gen_spatialite.py` to convert OSM buildings/roads shapefiles to SpatiaLite databases
 
 9. Run `osm_features.py` to prepare OSM data
     - Note: If you are adapting this code for another country, be sure to update the OSM crosswalk files before this step. The `crosswalk_gen.py` script can be used to do this.
+    - The crosswalk files available with the repo have been built from many countries so it is unlikely any major OSM feature types would be missing, but you can use this script to be sure.
+    - `crosswalk_gen.py` by default will check every OSM file in your `data/osm` directory. You can change this to check only a single country specified in your `config.ini` by commenting/uncommented lines specified within the script.
+    - After running `crosswalk_gen.py` edit the modified CSV files if new feature types were detected. Excel or any other CSV/spreadsheet editor will work for this. Replace any `0` values in the `group` column with a relevant group (see groups already used in crosswalk files for examples such as an OSM building type of "house" being assigned the group of "residential").
 
 10. Run `models.py` to train models and produce figures.
