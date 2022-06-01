@@ -15,7 +15,6 @@ import configparser
 from pathlib import Path
 
 import pandas as pd
-import geopandas as gpd
 from dbfread import DBF
 
 
@@ -25,35 +24,28 @@ if 'config.ini' not in os.listdir():
 config = configparser.ConfigParser()
 config.read('config.ini')
 
+project = config["main"]["project"]
 project_dir = Path(config["main"]["project_dir"])
 data_dir = project_dir / 'data'
 
-# uncomment below to check only one country specified by the config file
-# project = config["main"]["project"]
-# country_name = config[project]["country_name"]
-# osm_date = config[project]["osm_date"]
-# dir_list = [(country_name, osm_date)]
 
-# uncomment below to check every OSM download in the data/osm directory
-dir_list = [('-'.join(i.stem.split('-')[0:-2]), i.stem.split('-')[-2]) for i in (Path(data_dir) / 'osm').glob('*.shp')]
-
-
-task_list = []
-for country_name, osm_date in dir_list:
-    print(country_name, osm_date)
-    osm_dir = data_dir / 'osm' / f'{country_name}-{osm_date}-free.shp'
-    tmp_tasks = [
-        (country_name, osm_date, 'pois', osm_dir / 'gis_osm_pois_free_1.dbf'),
-        (country_name, osm_date, 'pois', osm_dir / 'gis_osm_pois_a_free_1.dbf'),
-        (country_name, osm_date, 'traffic', osm_dir / 'gis_osm_traffic_free_1.dbf'),
-        (country_name, osm_date, 'traffic', osm_dir / 'gis_osm_traffic_a_free_1.dbf'),
-        (country_name, osm_date, 'transport', osm_dir / 'gis_osm_transport_free_1.dbf'),
-        (country_name, osm_date, 'transport', osm_dir / 'gis_osm_transport_a_free_1.dbf'),
-        (country_name, osm_date, 'buildings', osm_dir / 'gis_osm_buildings_a_free_1.dbf'),
-        (country_name, osm_date, 'roads', osm_dir / 'gis_osm_roads_free_1.dbf')
-    ]
-    task_list.extend(tmp_tasks)
-
+def gen_task_list(osm_items, data_dir):
+    task_list = []
+    for country_name, osm_date in osm_items:
+        print(country_name, osm_date)
+        osm_dir = data_dir / 'osm' / f'{country_name}-{osm_date}-free.shp'
+        tmp_tasks = [
+            (country_name, osm_date, 'pois', osm_dir / 'gis_osm_pois_free_1.dbf'),
+            (country_name, osm_date, 'pois', osm_dir / 'gis_osm_pois_a_free_1.dbf'),
+            (country_name, osm_date, 'traffic', osm_dir / 'gis_osm_traffic_free_1.dbf'),
+            (country_name, osm_date, 'traffic', osm_dir / 'gis_osm_traffic_a_free_1.dbf'),
+            (country_name, osm_date, 'transport', osm_dir / 'gis_osm_transport_free_1.dbf'),
+            (country_name, osm_date, 'transport', osm_dir / 'gis_osm_transport_a_free_1.dbf'),
+            (country_name, osm_date, 'buildings', osm_dir / 'gis_osm_buildings_a_free_1.dbf'),
+            (country_name, osm_date, 'roads', osm_dir / 'gis_osm_roads_free_1.dbf')
+        ]
+        task_list.extend(tmp_tasks)
+    return task_list
 
 
 def gen_groups(country_name, osm_date, type, path):
@@ -85,6 +77,15 @@ def gen_groups(country_name, osm_date, type, path):
     type_crosswalk_df.to_csv(crosswalk_path, index=False)
 
 
+
+# uncomment below to check only one country specified by the config file
+# osm_items = [(config[project]["country_name"], config[project]["osm_date"])]
+
+# uncomment below to check every OSM download in the data/osm directory
+osm_items = [('-'.join(i.stem.split('-')[0:-2]), i.stem.split('-')[-2]) for i in (data_dir / 'osm').glob('*.shp')]
+
+
+task_list = gen_task_list(osm_items, data_dir)
 
 for i in task_list:
     gen_groups(*i)

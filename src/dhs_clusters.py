@@ -28,126 +28,124 @@ config = configparser.ConfigParser()
 config.read('config.ini')
 
 project = config["main"]["project"]
-project_dir = config["main"]["project_dir"]
+project_dir = Path(config["main"]["project_dir"])
 
 output_name = config[project]['output_name']
 dhs_hh_file_name = config[project]['dhs_hh_file_name']
 dhs_geo_file_name = config[project]['dhs_geo_file_name']
 country_utm_epsg_code = config[project]['country_utm_epsg_code']
 
+data_dir = project_dir / 'data'
 
-data_dir = os.path.join(project_dir, 'data')
 
-os.makedirs(os.path.join(data_dir, 'outputs', output_name), exist_ok=True)
+# key = column, value = descriptor (used as column name)
+#   - cluster id for each DHS file used is always required (e.g., both household recode and indivdual recode if using data from both)
+#   - at least one additional column is required to represent outcome variable / indicator
+#   - source field indicates which DHS file the variable is in. No source is required for hv001
+#   - Note: this has not been tested (nor are there config vars) for use with DHS files other than the household recode
+var_dict = {
+    "hv001": {
+        "name": "Cluster number",
+        "agg": "mean",
+        "source": dhs_hh_file_name
+    },
+    "hv271": {
+        "name": 'Wealth Index',
+        "agg": "mean",
+        "source": dhs_hh_file_name
+    },
+    # "hv108_01": {
+    #     "name": "Education completed (years)",
+    #     "agg": "mean",
+    #     "replacements": [(996, 0), (1,3)] # 996 = water is on property
+    # },
+    # "hv206": {
+    #     "name": "Access to electricity",
+    #     "agg": "mean"
+    # },
+    # "hv204": {
+    #     "name": "Access to water (minutes",
+    #     "agg": "mean"
+    # },
+    # "hv208": {
+    #     "name": "Has television",
+    #     "agg": "mean"
+    # },
+    # "hv226": {
+    #     "name": "Type of cooking fuel",
+    #     "agg": "mean"
+    # },
+    # "v001": {
+    #     "name": "Cluster number",
+    #     "agg": "mean",
+    #     "source": dhs_ir_file_name
+    # },
+    # "v171b": {
+    #     "name": 'Internet usage in the last month',
+    #     "agg": "mean",
+    #     "source": dhs_ir_file_name
+    # },
+}
 
 
 # ---------------------------------------------------------
-# create extract job file to use with resulting dhs buffers geojson for geoquery extract
-
-iso2 = project.lower().split('_')[0]
-base_extract_job_path = Path(data_dir, 'extract_job.json')
-extract_job_path = Path(data_dir, 'outputs', output_name, 'extract_job.json')
-extract_job_text = base_extract_job_path.read_text().replace('[[ISO2]]', iso2).replace('[[DHS_ROUND]]', output_name)
-extract_job_path.write_text(extract_job_text)
 
 
-# ---------------------------------------------------------
-# prepare DHS cluster indicators
-
-dhs_file = glob.glob(os.path.join(data_dir, 'dhs', '**', f'{dhs_hh_file_name}.DTA' ), recursive=True)[0]
-
-dhs = pd.read_stata(dhs_file, convert_categoricals=False)
-
-"""
-Column      - Description
-hv001       - Cluster number
-hv271       - Wealth index factor score combined (5 decimals)
-hv108_01    - Education completed in single years
-hv206       - Has electricity
-hv204       - Access to water (minutes)
-hv226       - Type of cooking fuel
-hv208       - Has television
-"""
-
-var_titles = {
-
-}
-
-var_list = ["hv001", "hv271"]
-hh_data = dhs[var_list].copy(deep=True)
-
-# 996 = water is on property
-if "hv204" in var_list:
-    hh_data["hv204"] = hh_data["hv204"].replace(996, 0)
+def create_extract_file(output_name, data_dir):
+    """create extract job file to use with resulting dhs buffers geojson for geoquery extract
+    """
+    iso2 = output_name.lower().split('_')[0]
+    base_extract_job_path = data_dir / 'extract_job.json'
+    extract_job_path = data_dir / 'outputs' / output_name / 'extract_job.json'
+    extract_job_text = base_extract_job_path.read_text().replace('[[ISO2]]', iso2).replace('[[DHS_ROUND]]', output_name)
+    extract_job_path.write_text(extract_job_text)
 
 
-agg_rules = {
-    "hv271": "mean",
-    "hv108_01": "mean",
-    "hv206": "mean",
-    "hv204": "median",
-    "hv208": "mean",
-    "hv226": "mean"
-}
+def load_dhs_data(var_dict, data_dir):
+    """
+    Loads the DHS data
+    """
+    var_list = var_dict.keys()
+    replacement_rules = [(field, rule) for field, value in var_dict.items() for rule in value.get("replacements", [])]
+    agg_rules = {k: v['agg'] for k,v in var_dict.items()}
+    field_names = [v['name'] for v in var_dict.values()]
 
-active_agg_rules = {i:j for i,j in agg_rules.items() if i in var_list}
+    raw_dhs_list = []
+    for s in set([i.get('source') for i in var_dict.values() if i.get('source')]):
+        tmp_path = glob.glob(str(data_dir / 'dhs' / '**' / f'{s}.DTA'), recursive=True)[0]
+        tmp_df = pd.read_stata(tmp_path, convert_categoricals=False)
+        raw_dhs_list.append(tmp_df.set_index('hhid'))
 
-cluster_data = hh_data.groupby("hv001").agg(active_agg_rules).reset_index().dropna(axis=1)
+    if not raw_dhs_list:
+        raise Exception('No DHS data found')
+    elif len(raw_dhs_list) == 1:
+        raw_dhs_df = raw_dhs_list[0]
+    else:
+        raw_dhs_df = pd.concat(raw_dhs_list, axis=1, join='inner')
 
+    dhs_df = raw_dhs_df[var_list].copy(deep=True)
 
-print('Cluster Data Dimensions: {}'.format(cluster_data.shape))
+    for field, rule in replacement_rules:
+        dhs_df[field] = dhs_df[field].replace(*rule)
 
-print(f'{project}: {len(dhs)} households aggregated to {len(cluster_data)} clusters')
+    cluster_data = dhs_df.groupby("hv001").agg(agg_rules).drop(columns="hv001").reset_index().dropna(axis=1)
+    cluster_data.columns = field_names
 
-# cluster_data.columns = ["cluster_id", "wealthscore", "education_years", "electricity", "time_to_water"]
-
-cluster_data.columns = [
-    'Cluster number',
-    'Wealth Index',
-    # 'Education completed (years)',
-    # 'Access to electricity',
-    # 'Access to water (minutes)'
-    # 'Has television',
-    # 'Type of cooking fuel'
-]
-
-
-#  ---------------------------------------------------------
-# read in IR file along with the label file
-# v001        - Cluster number
-# v171b       - Internet usage in the last month
-
-# dhs_ir_file = os.path.join(data_dir, 'dhs/PHIR71DT/PHIR71FL.DTA')
-# dhs_ir_dict_file = os.path.join(data_dir,  'dhs/PHHR71DT/PHIR71FL.DO')
-
-# dhs_ir = pd.read_stata(dhs_ir_file, convert_categoricals=False)
-# print(dhs_ir.shape)
-
-# ir_data = dhs_ir[["v001","v171b"]]
-
-# ir_data = ir_data.groupby("v001").agg({
-#     "v171b": "mean",
-# }).reset_index().dropna(axis=1)
-
-# ir_data.columns = [
-#     'Cluster number',
-#     'Internet usage in the last month'
-# ]
-
-# ir_out_path = os.path.join(data_dir, "ir_indicators.csv")
-# ir_data.to_csv(ir_out_path, encoding="utf-8")
+    raw_count = len(dhs_df)
+    final_count = len(cluster_data)
+    return cluster_data, raw_count, final_count
 
 
-# # ---------------------------------------------------------
-# prepare DHS cluster geometries
+def load_dhs_geo(dhs_geo_file_name, data_dir):
+    """Load shapefile containing DHS cluster points
+    """
+    shp_path = glob.glob(str(data_dir / 'dhs' / '**' / dhs_geo_file_name / '*.shp'), recursive=True)[0]
+    gdf = gpd.read_file(shp_path)
+    # drop locations without coordinates
+    gdf = gdf.loc[(gdf["LONGNUM"] != 0) & (gdf["LATNUM"] != 0)].reset_index(drop=True)
+    gdf.rename(columns={"LONGNUM": "longitude", "LATNUM": "latitude"}, inplace=True)
+    return gdf
 
-shp_path = glob.glob(os.path.join(data_dir, 'dhs', '**', dhs_geo_file_name, '*.shp' ), recursive=True)[0]
-raw_gdf = gpd.read_file(shp_path)
-
-# drop locations without coordinates
-raw_gdf = raw_gdf.loc[(raw_gdf["LONGNUM"] != 0) & (raw_gdf["LATNUM"] != 0)].reset_index(drop=True)
-
-raw_gdf.rename(columns={"LONGNUM": "longitude", "LATNUM": "latitude"}, inplace=True)
 
 def buffer(geom, urban_rural):
     """Create DHS cluster buffers
@@ -168,28 +166,54 @@ def buffer(geom, urban_rural):
         raise ValueError("Invalid urban/rural identified ({})".format(urban_rural))
 
 
-gdf = raw_gdf.copy(deep=True)
-# convert to UTM first (meters) then back to WGS84 (degrees)
-gdf = gdf.to_crs(f"EPSG:{country_utm_epsg_code}")
-# generate buffer
-gdf.geometry = gdf.apply(lambda x: buffer(x.geometry, x.URBAN_RURA), axis=1)
-gdf = gdf.to_crs("EPSG:4326") # WGS84
+def export_data(gdf, output_name, data_dir):
+    """Export data to shapefile and csv
+
+    Args:
+        gdf (GeoDataFrame): GeoDataFrame to export
+        output_name (str): name of outputs directory
+        data_dir (str): path to base data directory
+
+    Returns:
+        None
+    """
+    # output all dhs cluster data to CSV
+    final_df = gdf_merge[[i for i in gdf_merge.columns if i != "geometry"]]
+    final_path = data_dir / 'outputs' / output_name / 'dhs_data.csv'
+    final_df.to_csv(final_path, index=False, encoding='utf-8')
+
+    # save buffer geometry as geojson
+    geo_path = data_dir / 'outputs' / output_name / 'dhs_buffers.geojson'
+    gdf[['DHSID', 'geometry']].to_file(geo_path, driver='GeoJSON')
 
 
 # ---------------------------------------------------------
-# prepare combined dhs cluster data
+
+
+(data_dir / 'outputs' / output_name).mkdir(exist_ok=True)
+
+
+# create extract job file to use with resulting dhs buffers geojson for geoquery extract
+create_extract_file(output_name, data_dir)
+
+
+# prepare DHS cluster indicators
+cluster_data, raw_count, final_count = load_dhs_data(var_dict, data_dir)
+
+print(f'{project}: {raw_count} households aggregated to {final_count} clusters')
+print('\tCluster data dimensions: {}'.format(cluster_data.shape))
+
+
+# load DHS cluster coordinates
+raw_gdf = load_dhs_geo(dhs_geo_file_name, data_dir)
+
+# convert to UTM first (meters) to buffer, then back to WGS84 (degrees)
+gdf = raw_gdf.to_crs(f"EPSG:{country_utm_epsg_code}")
+gdf.geometry = gdf.apply(lambda x: buffer(x.geometry, x.URBAN_RURA), axis=1)
+gdf = gdf.to_crs("EPSG:4326")
 
 # merge geospatial data with dhs hr indicators
 gdf_merge = gdf.merge(cluster_data, left_on="DHSCLUST", right_on="Cluster number", how="inner")
 
-
-# output all dhs cluster data to CSV
-final_df = gdf_merge[[i for i in gdf_merge.columns if i != "geometry"]]
-final_path =  os.path.join(data_dir, 'outputs', output_name, 'dhs_data.csv')
-final_df.to_csv(final_path, index=False, encoding='utf-8')
-
-
-# save buffer geometry as geojson
-geo_path = os.path.join(data_dir, 'outputs', output_name, 'dhs_buffers.geojson')
-gdf[['DHSID', 'geometry']].to_file(geo_path, driver='GeoJSON')
-
+# export
+export_data(gdf_merge, output_name, data_dir)
