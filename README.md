@@ -68,10 +68,12 @@ Builds on work published by [Thinking Machines Data Science](https://github.com/
     - Note: If you are replicating examples from this repo, you only need to modify the `project_dir` and `project` in the [main] section of the config file
     - `project_dir` - path to the root of the cloned repo
     - `project` - specifies which subsection to use for project specific configurations (e.g., To replicate work using the Philippines 2017 DHS, use "PH_2017_DHS")
+    - `spatialite_lib_path` - path to where the spatialite library was installed. Typically will not need to be modified if running on Ubuntu based distribution of Linux.
+    - `indicators` - list of DHS indicators to use for modeling. Currently only supports the DHS "Wealth Index"
     - Project specific configurations (e.g., within the [PH_2017_DHS] section):
         - `country_name` - name of country based on the OSM download file (e.g., "philippines" for "philippines-210101-free.shp.zip")
         - `osm_date` - timestamp from the OSM download (e.g. "210101" for "philippines-210101-free.shp.zip")
-        - `dhs_round` - base component of DHS download zip. All downloads will have additional characters you can ignore. (e.g., "PH_2017_DHS" for "PH_2017_DHS_02012021_2025_149015")
+        - `output_name` - name unique to your config section which will be used to determine where output files are saved.
         - `dhs_hh_file_name` - filename of the DHS household recode data. You can determine this via the DHS download manager or using your downloaded files. (e.g. "PHHR71DT" for the 2017 Philippines DHS)
         - `dhs_geo_file_name` - filename of the DHS geographic data. You can determine this via the DHS download manager or using your downloaded files. (e.g. "PHGE71FL" for the 2017 Philippines DHS)
         - `country_utm_epsg_code` - EPSG code specific to the country of interest. Typically based on the UTM code for the country (e.g., "32651" to specify UTM 51N for the Philippines). See [example search](https://epsg.io/?q=Philippines+UTM)
