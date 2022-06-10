@@ -95,6 +95,7 @@ buffers_gdf['centroid_wkt'] = buffers_gdf.geometry.centroid.apply(lambda x: x.wk
 
 
 
+group_field = "group"
 
 
 # =============================================================================
@@ -159,35 +160,46 @@ def run_tasks(func, flist, parallel, max_workers=None, chunksize=1):
 # generate features
 
 
+def load_crosswalk(type, data_dir):
+    # load crosswalk for types and assign any not grouped to "other"
+    type_crosswalk_path = os.path.join(data_dir, f'crosswalks/{type}_type_crosswalk.csv')
+    type_crosswalk_df = pd.read_csv(type_crosswalk_path)
+    type_crosswalk_df.loc[type_crosswalk_df["group"] == "0", "group"] = "other"
+    type_crosswalk_df = type_crosswalk_df.loc[type_crosswalk_df.type.notna()]
+    return type_crosswalk_df
+
+
+def load_osm_shp(type, data_dir, country_name, osm_date):
+
+    paths = [
+        os.path.join(data_dir, f'osm/{country_name}-{osm_date}-free.shp/gis_osm_{type}_free_1.shp'),
+        os.path.join(data_dir, f'osm/{country_name}-{osm_date}-free.shp/gis_osm_{type}_a_free_1.shp')
+    ]
+
+    gdf_list = [gpd.read_file(p) for p in paths if os.path.exists(p)]
+
+    gdf = pd.concat(gdf_list)
+    return gdf
+
+
 # ---------------------------------------------------------
 # pois
 # count of each type of pois (100+) in each buffer
 
 print("Running pois...")
 
-osm_pois_shp_path = os.path.join(data_dir, f'osm/{country_name}-{osm_date}-free.shp/gis_osm_pois_free_1.shp')
-osm_pois_a_shp_path = os.path.join(data_dir, f'osm/{country_name}-{osm_date}-free.shp/gis_osm_pois_a_free_1.shp')
+pois_geo_raw = load_osm_shp("pois", data_dir, country_name, osm_date)
 
-raw_pois_geo = gpd.read_file(osm_pois_shp_path)
-raw_pois_a_geo = gpd.read_file(osm_pois_a_shp_path)
-
-pois_geo_raw = pd.concat([raw_pois_geo, raw_pois_a_geo])
-
-# load crosswalk for types and assign any not grouped to "other"
-pois_type_crosswalk_path = os.path.join(data_dir, 'crosswalks/pois_type_crosswalk.csv')
-pois_type_crosswalk_df = pd.read_csv(pois_type_crosswalk_path)
-pois_type_crosswalk_df.loc[pois_type_crosswalk_df["group"] == "0", "group"] = "other"
+pois_type_crosswalk_df = load_crosswalk("pois", data_dir)
 
 # merge new classification and assign any features without a type to unclassifid
 pois_geo = pois_geo_raw.merge(pois_type_crosswalk_df, left_on="fclass", right_on="type", how="left")
 
-pois_geo.loc[pois_geo["fclass"].isna(), "group"] = "unclassified"
+pois_geo.loc[pois_geo["fclass"].isna(), "group"] = "other"
 
 # show breakdown of groups
 print(pois_geo.group.value_counts())
 
-# group_field = "fclass"
-group_field = "group"
 
 # split by group
 # pois_group_list = ["all"] + [i for i in set(pois_geo[group_field])]
@@ -237,29 +249,19 @@ pois_features.to_csv(pois_features_path, index=False, encoding="utf-8")
 
 print("Running traffic...")
 
-osm_traffic_shp_path = os.path.join(data_dir, f'osm/{country_name}-{osm_date}-free.shp/gis_osm_traffic_free_1.shp')
-osm_traffic_a_shp_path = os.path.join(data_dir, f'osm/{country_name}-{osm_date}-free.shp/gis_osm_traffic_a_free_1.shp')
+traffic_geo_raw = load_osm_shp("traffic", data_dir, country_name, osm_date)
 
-raw_traffic_geo = gpd.read_file(osm_traffic_shp_path)
-raw_traffic_a_geo = gpd.read_file(osm_traffic_a_shp_path)
-
-traffic_geo_raw = pd.concat([raw_traffic_geo, raw_traffic_a_geo])
-
-# load crosswalk for types and assign any not grouped to "other"
-traffic_type_crosswalk_path = os.path.join(data_dir, 'crosswalks/traffic_type_crosswalk.csv')
-traffic_type_crosswalk_df = pd.read_csv(traffic_type_crosswalk_path)
-traffic_type_crosswalk_df.loc[traffic_type_crosswalk_df["group"] == "0", "group"] = "other"
+traffic_type_crosswalk_df = load_crosswalk("traffic", data_dir)
 
 # merge new classification and assign any features without a type to unclassifid
 traffic_geo = traffic_geo_raw.merge(traffic_type_crosswalk_df, left_on="fclass", right_on="type", how="left")
 
-traffic_geo.loc[traffic_geo["fclass"].isna(), "group"] = "unclassified"
+traffic_geo.loc[traffic_geo["fclass"].isna(), "group"] = "other"
+
 
 # show breakdown of groups
 print(traffic_geo.group.value_counts())
 
-# group_field = "fclass"
-group_field = "group"
 
 # split by group
 # traffic_group_list = ["all"] + [i for i in set(traffic_geo[group_field])]
@@ -308,29 +310,19 @@ traffic_features.to_csv(traffic_features_path, index=False, encoding="utf-8")
 
 print("Running transport...")
 
-osm_transport_shp_path = os.path.join(data_dir, f'osm/{country_name}-{osm_date}-free.shp/gis_osm_transport_free_1.shp')
-osm_transport_a_shp_path = os.path.join(data_dir, f'osm/{country_name}-{osm_date}-free.shp/gis_osm_transport_a_free_1.shp')
+transport_geo_raw = load_osm_shp("transport", data_dir, country_name, osm_date)
 
-raw_transport_geo = gpd.read_file(osm_transport_shp_path)
-raw_transport_a_geo = gpd.read_file(osm_transport_a_shp_path)
-
-transport_geo_raw = pd.concat([raw_transport_geo, raw_transport_a_geo])
-
-# load crosswalk for types and assign any not grouped to "other"
-transport_type_crosswalk_path = os.path.join(data_dir, 'crosswalks/transport_type_crosswalk.csv')
-transport_type_crosswalk_df = pd.read_csv(transport_type_crosswalk_path)
-transport_type_crosswalk_df.loc[transport_type_crosswalk_df["group"] == "0", "group"] = "other"
+transport_type_crosswalk_df = load_crosswalk("transport", data_dir)
 
 # merge new classification and assign any features without a type to unclassifid
 transport_geo = transport_geo_raw.merge(transport_type_crosswalk_df, left_on="fclass", right_on="type", how="left")
 
-transport_geo.loc[transport_geo["fclass"].isna(), "group"] = "unclassified"
+transport_geo.loc[transport_geo["fclass"].isna(), "group"] = "other"
+
 
 # show breakdown of groups
 print(transport_geo.group.value_counts())
 
-# group_field = "fclass"
-group_field = "group"
 
 # split by group
 # transport_group_list = ["all"] + [i for i in set(transport_geo[group_field])]
@@ -388,11 +380,7 @@ sqlite_building_conn = build_gpkg_connection(building_path)
 # sqlite_building_conn.execute(f'PRAGMA table_info({building_table_name})').fetchall()
 
 
-# load crosswalk for building types and assign any not grouped to "other"
-building_type_crosswalk_path = os.path.join(data_dir, 'crosswalks/buildings_type_crosswalk.csv')
-building_type_crosswalk_df = pd.read_csv(building_type_crosswalk_path)
-building_type_crosswalk_df.loc[building_type_crosswalk_df["group"] == "0", "group"] = "other"
-building_type_crosswalk_df = building_type_crosswalk_df.loc[building_type_crosswalk_df.type.notna()]
+building_type_crosswalk_df = load_crosswalk("buildings", data_dir)
 
 building_group_lists = building_type_crosswalk_df.groupby('group').agg({'type':list}).reset_index()
 
@@ -417,7 +405,7 @@ for i in building_group_lists.itertuples():
 # # merge new classification and assign any buildings without a type to unclassifid
 # buildings_geo = buildings_geo_raw.merge(building_type_crosswalk_df, on="type", how="left")
 
-# buildings_group_list = [i for i in set(buildings_geo[group_field]) if i not in ["other", "unclassified"]]
+# buildings_group_list = [i for i in set(buildings_geo[group_field]) if i not in ["other", "other"]]
 
 # if "all" not in buildings_group_list:
 #     buildings_geo = buildings_geo.loc[buildings_geo[group_field].isin(buildings_group_list)]
@@ -553,7 +541,6 @@ sqlite_building_conn.close()
 # ---------------------------------------------------------
 # road metrics
 
-
 road_path = os.path.join(data_dir, f'osm/{country_name}-{osm_date}-free.shp/gis_osm_roads_free_1.sqlite')
 
 road_table_name = 'DATA_TABLE'
@@ -562,12 +549,7 @@ sqlite_road_conn = build_gpkg_connection(road_path)
 # sqlite_road_conn.execute("SELECT tbl_name FROM sqlite_master WHERE type = 'table'").fetchall()
 # sqlite_road_conn.execute(f'PRAGMA table_info({road_table_name})').fetchall()
 
-
-# load crosswalk for types and assign any not grouped to "other"
-roads_type_crosswalk_path = os.path.join(data_dir, 'crosswalks/roads_type_crosswalk.csv')
-roads_type_crosswalk_df = pd.read_csv(roads_type_crosswalk_path)
-roads_type_crosswalk_df.loc[roads_type_crosswalk_df["group"] == "0", "group"] = "other"
-roads_type_crosswalk_df = roads_type_crosswalk_df.loc[roads_type_crosswalk_df.type.notna()]
+roads_type_crosswalk_df = load_crosswalk("roads", data_dir)
 
 road_group_lists = roads_type_crosswalk_df.groupby('group').agg({'type':list}).reset_index()
 
@@ -642,8 +624,7 @@ for i in road_group_lists.itertuples():
 # geopandas approach for nearest road
 # ========
 
-osm_roads_shp_path = os.path.join(data_dir, f'osm/{country_name}-{osm_date}-free.shp/gis_osm_roads_free_1.shp')
-roads_raw_geo = gpd.read_file(osm_roads_shp_path)
+roads_raw_geo = load_osm_shp("roads", data_dir, country_name, osm_date)
 
 # merge new classification and assign any features without a type to unclassifid
 roads_geo = roads_raw_geo.merge(roads_type_crosswalk_df, left_on="fclass", right_on="type", how="left")
@@ -654,8 +635,6 @@ roads_geo.loc[roads_geo["fclass"].isna(), "group"] = "unknown"
 nearest_roads_gdf_pandas = buffers_gdf.copy(deep=True)
 
 src_points = nearest_roads_gdf_pandas.apply(lambda x: (x.longitude, x.latitude), axis=1).to_list()
-
-group_field = 'group'
 
 for group in road_group_lists['group']:
     print(f'Roads nearest ({group})')
