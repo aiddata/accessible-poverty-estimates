@@ -10,7 +10,6 @@ Run models based on OSM features and additional geospatial data
 """
 
 import os
-import sys
 import configparser
 import json
 from pathlib import Path
@@ -69,6 +68,7 @@ for dhs_item in dhs_list:
     osm_date = config[dhs_item]["osm_date"]
     geom_id = config[dhs_item]["geom_id"]
     geom_label = config[dhs_item]["geom_label"]
+    dhs_geo_file_name = config[dhs_item]['dhs_geo_file_name']
 
     geoquery_data_file_name = config[dhs_item]["geoquery_data_file_name"]
 
@@ -80,9 +80,17 @@ for dhs_item in dhs_list:
     # -------------------------------------
     # load in dhs data
 
+
+    adm_path =  os.path.join(data_dir, 'dhs', f'{dhs_geo_file_name}_adm_units.csv')
+    adm_df = pd.read_csv(adm_path)
+
     dhs_path =  os.path.join(data_dir, 'outputs', tmp_output_name, 'dhs_data.csv')
     raw_dhs_df = pd.read_csv(dhs_path)
-    dhs_cols = [geom_id, 'latitude', 'longitude'] + indicators
+
+    raw_dhs_df = raw_dhs_df.merge(adm_df, on=geom_id, how='left')
+
+    dhs_cols = [geom_id, 'latitude', 'longitude'] + indicators + ['ADM1','ADM2']
+
     dhs_df = raw_dhs_df[dhs_cols]
 
 

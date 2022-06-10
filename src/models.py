@@ -17,6 +17,8 @@ import json
 from pathlib import Path
 
 import pandas as pd
+import statsmodels.api as sm
+from stargazer.stargazer import Stargazer
 
 warnings.filterwarnings('ignore')
 
@@ -151,6 +153,17 @@ def run_model_funcs(data, columns, name, n_splits):
     return cv, predictions
 
 
+
+def run_OLS(data, y_var, x_vars, name):
+    est = sm.OLS(endog=data[y_var], exog=sm.add_constant(data[x_vars])).fit()
+    stargazer = Stargazer([est])
+    with open(os.path.join(results_dir, f'{name}_ols.html'), 'w') as f:
+        f.write(stargazer.render_html())
+    with open(os.path.join(results_dir, f'{name}_ols.tex'), 'w') as f:
+        f.write(stargazer.render_latex())
+    return est
+
+
 # -----------------------------------------------------------------------------
 # Explore population distribution and relationships
 
@@ -185,48 +198,66 @@ ntl_r2 = data_utils.plot_regplot(
     show=show_plots
 )
 
+adm1_cols = pd.['ADM1']
+adm1_ols = run_OLS(final_data_df, 'Wealth Index', adm1_cols, 'adm1')
+
+adm12_cols = ['ADM1', 'ADM2']
+adm12_ols = run_OLS(final_data_df, 'Wealth Index', adm12_cols, 'adm12')
+
+
 
 # all OSM + NTL
 all_osm_ntl_cols = all_osm_cols + ntl_cols
 all_osm_ntl_cv, all_osm_ntl_predictions = run_model_funcs(final_data_df, all_osm_ntl_cols, 'all-osm-ntl', n_splits=n_splits)
+all_osm_ntl_ols = run_OLS(final_data_df, 'Wealth Index', all_osm_ntl_cols, 'all-osm-ntl')
 
 # NTL only
 ntl_cv, ntl_predictions = run_model_funcs(final_data_df, ntl_cols, 'ntl', n_splits=n_splits)
+ntl_ols = run_OLS(final_data_df, 'Wealth Index', ntl_cols, 'ntl')
 
 # all OSM only
 all_osm_cv, all_osm_predictions = run_model_funcs(final_data_df, all_osm_cols, 'all-osm', n_splits=n_splits)
+all_osm_ols = run_OLS(final_data_df, 'Wealth Index', all_osm_cols, 'all-osm')
 
 # all OSM + all geo
 all_data_cols = all_osm_cols + all_geo_cols
 all_cv, all_predictions = run_model_funcs(final_data_df, all_data_cols, 'all', n_splits=n_splits)
+all_ols = run_OLS(final_data_df, 'Wealth Index', all_data_cols, 'all')
 
 # location only
 loc_cv, loc_predictions = run_model_funcs(final_data_df, ['longitude', 'latitude'], 'loc', n_splits=n_splits)
+loc_ols = run_OLS(final_data_df, 'Wealth Index', ['longitude', 'latitude'], 'loc')
 
 # -----------------
 
 # sub OSM + NTL
 sub_osm_ntl_cols = sub_osm_cols + ntl_cols
 sub_osm_ntl_cv, sub_osm_ntl_predictions = run_model_funcs(final_data_df, sub_osm_ntl_cols, 'sub-osm-ntl', n_splits=n_splits)
+sub_osm_ntl_ols = run_OLS(final_data_df, 'Wealth Index', sub_osm_ntl_cols, 'sub-osm-ntl')
 
 # sub OSM only
 sub_osm_cv, sub_osm_predictions = run_model_funcs(final_data_df, sub_osm_cols, 'sub-osm', n_splits=n_splits)
+sub_osm_ols = run_OLS(final_data_df, 'Wealth Index', sub_osm_cols, 'sub-osm')
 
 # sub OSM + all geo
 sub_osm_all_geo_cols = sub_osm_cols + all_geo_cols
 sub_osm_all_geo_cv, sub_osm_all_geo_predictions = run_model_funcs(final_data_df, sub_osm_all_geo_cols, 'sub-osm-all-geo', n_splits=n_splits)
+sub_osm_all_geo_ols = run_OLS(final_data_df, 'Wealth Index', sub_osm_all_geo_cols, 'sub-osm-all-geo')
 
 # all geo only
 all_geo_cv, all_geo_predictions = run_model_funcs(final_data_df, all_geo_cols, 'all-geo', n_splits=n_splits)
+all_geo_ols = run_OLS(final_data_df, 'Wealth Index', all_geo_cols, 'all-geo')
 
 # -----------------
 
 # sub geo
 sub_geo_cv, sub_geo_predictions = run_model_funcs(final_data_df, sub_geo_cols, 'sub-geo', n_splits=n_splits)
+sub_geo_ols = run_OLS(final_data_df, 'Wealth Index', sub_geo_cols, 'sub-geo')
 
 # sub OSM + sub geo
 sub_data_cols = sub_osm_cols + sub_geo_cols
 sub_cv, sub_predictions = run_model_funcs(final_data_df, sub_data_cols, 'sub', n_splits=n_splits)
+sub_ols = run_OLS(final_data_df, 'Wealth Index', sub_data_cols, 'sub')
 
 # -----------------
 
@@ -239,6 +270,7 @@ final_features = [f'viirs_median', f'worldpop_pop_count_1km_mosaic_mean',  f'vii
 
 
 final_cv, final_predictions = run_model_funcs(final_data_df, final_features, 'final', n_splits=n_splits)
+final_ols = run_OLS(final_data_df, 'Wealth Index', final_features, 'final')
 
 
 # -----------------------------------------------------------------------------
