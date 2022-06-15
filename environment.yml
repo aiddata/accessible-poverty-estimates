@@ -6,7 +6,10 @@ dependencies:
   - _libgcc_mutex=0.1=conda_forge
   - _openmp_mutex=4.5=1_gnu
   - _py-xgboost-mutex=2.0=cpu_0
+  - alembic=1.8.0=pyhd8ed1ab_0
   - alsa-lib=1.2.3=h516909a_0
+  - appdirs=1.4.4=pyh9f0ad1d_0
+  - asn1crypto=1.5.1=pyhd8ed1ab_0
   - attrs=21.4.0=pyhd8ed1ab_0
   - blosc=1.21.0=h9c3ff4c_0
   - boost-cpp=1.74.0=h359cf19_5
@@ -16,22 +19,29 @@ dependencies:
   - brotlipy=0.7.0=py39h3811e60_1003
   - bzip2=1.0.8=h7f98852_4
   - c-ares=1.18.1=h7f98852_0
-  - ca-certificates=2021.10.8=ha878542_0
+  - ca-certificates=2022.5.18.1=ha878542_0
   - cairo=1.16.0=ha00ac49_1009
-  - certifi=2021.10.8=py39hf3d152e_1
+  - certifi=2022.5.18.1=py39hf3d152e_0
   - cffi=1.15.0=py39h4bc2ebd_0
   - cfitsio=4.0.0=h9a35b8e_0
   - charset-normalizer=2.0.10=pyhd8ed1ab_0
   - click=8.0.3=py39hf3d152e_1
   - click-plugins=1.1.1=py_0
   - cligj=0.7.2=pyhd8ed1ab_1
+  - cloudpickle=2.1.0=pyhd8ed1ab_0
   - colorama=0.4.4=pyh9f0ad1d_0
+  - configparser=5.2.0=pyhd8ed1ab_0
   - cryptography=36.0.1=py39h95dcef6_0
   - curl=7.81.0=h2574ce0_0
   - cycler=0.11.0=pyhd8ed1ab_0
+  - databricks-cli=0.12.1=pyhd8ed1ab_0
   - dbus=1.13.6=h5008d03_3
+  - docker-py=5.0.3=py39hf3d152e_2
+  - docker-pycreds=0.4.0=py_0
+  - entrypoints=0.4=pyhd8ed1ab_0
   - expat=2.4.3=h9c3ff4c_0
   - fiona=1.8.20=py39hc5a795b_4
+  - flask=2.1.2=pyhd8ed1ab_1
   - folium=0.12.1.post1=pyhd8ed1ab_1
   - font-ttf-dejavu-sans-mono=2.37=hab24e00_0
   - font-ttf-inconsolata=3.000=h77eed37_0
@@ -50,12 +60,19 @@ dependencies:
   - geotiff=1.7.0=h6593c0a_6
   - gettext=0.19.8.1=h73d1719_1008
   - giflib=5.2.1=h36c2ea0_2
+  - gitdb=4.0.9=pyhd8ed1ab_0
+  - gitpython=3.1.27=pyhd8ed1ab_0
+  - greenlet=1.1.2=py39h5a03fae_2
   - gst-plugins-base=1.18.5=hf529b03_3
   - gstreamer=1.18.5=h9f60fe5_3
+  - gunicorn=20.1.0=py39hf3d152e_2
   - hdf4=4.2.15=h10796ff_3
   - hdf5=1.12.1=nompi_h2750804_103
   - icu=69.1=h9c3ff4c_0
   - idna=3.3=pyhd8ed1ab_0
+  - importlib-metadata=4.11.4=py39hf3d152e_0
+  - importlib_resources=5.7.1=pyhd8ed1ab_1
+  - itsdangerous=2.1.2=pyhd8ed1ab_0
   - jbig=2.1=h7f98852_2003
   - jinja2=3.0.3=pyhd8ed1ab_0
   - joblib=1.1.0=pyhd8ed1ab_0
@@ -98,6 +115,7 @@ dependencies:
   - libopus=1.3.1=h7f98852_1
   - libpng=1.6.37=h21135ba_2
   - libpq=14.1=hd57d9b9_1
+  - libprotobuf=3.20.1=h6239696_0
   - librttopo=1.1.0=hf69c175_9
   - libspatialindex=1.9.3=h9c3ff4c_4
   - libspatialite=5.0.1=h0e567f8_14
@@ -114,10 +132,12 @@ dependencies:
   - libzip=1.8.0=h4de3113_1
   - libzlib=1.2.11=h36c2ea0_1013
   - lz4-c=1.9.3=h9c3ff4c_1
+  - mako=1.2.0=pyhd8ed1ab_1
   - mapclassify=2.4.3=pyhd8ed1ab_0
   - markupsafe=2.0.1=py39h3811e60_1
   - matplotlib=3.5.1=py39hf3d152e_0
   - matplotlib-base=3.5.1=py39h2fa2bec_0
+  - mlflow=1.26.1=py39ha39b057_0
   - munch=2.5.0=py_0
   - munkres=1.1.4=pyh9f0ad1d_0
   - mysql-common=8.0.28=ha770c72_0
@@ -129,7 +149,7 @@ dependencies:
   - numpy=1.22.1=py39h91f2184_0
   - olefile=0.46=pyh9f0ad1d_1
   - openjpeg=2.4.0=hb52868f_1
-  - openssl=1.1.1l=h7f98852_0
+  - openssl=1.1.1o=h166bdaf_0
   - packaging=21.3=pyhd8ed1ab_0
   - pandas=1.4.0=py39hde0f152_0
   - patsy=0.5.2=pyhd8ed1ab_0
@@ -141,6 +161,9 @@ dependencies:
   - poppler-data=0.4.11=hd8ed1ab_0
   - postgresql=14.1=h2510834_1
   - proj=8.2.1=h277dcde_0
+  - prometheus_client=0.14.1=pyhd8ed1ab_0
+  - prometheus_flask_exporter=0.20.2=pyhd8ed1ab_0
+  - protobuf=3.20.1=py39h5a03fae_0
   - pthread-stubs=0.4=h36c2ea0_1001
   - py-xgboost=1.5.1=py39hf3d152e_0
   - pycparser=2.21=pyhd8ed1ab_0
@@ -157,7 +180,9 @@ dependencies:
   - python-dateutil=2.8.2=pyhd8ed1ab_0
   - python_abi=3.9=2_cp39
   - pytz=2021.3=pyhd8ed1ab_0
+  - pyyaml=6.0=py39hb9d737c_4
   - qt=5.12.9=ha98a1a1_5
+  - querystring_parser=1.2.4=py_0
   - readline=8.1=h46c0cb4_0
   - requests=2.27.1=pyhd8ed1ab_0
   - rtree=0.9.7=py39hb102c33_3
@@ -168,17 +193,25 @@ dependencies:
   - setuptools=60.6.0=py39hf3d152e_0
   - shapely=1.8.0=py39ha65c37e_5
   - six=1.16.0=pyh6c4a22f_0
+  - smmap=3.0.5=pyh44b312d_0
+  - sqlalchemy=1.4.13=py39h3811e60_0
   - sqlite=3.37.0=h9cd32fc_0
+  - sqlparse=0.4.2=pyhd8ed1ab_0
   - statsmodels=0.13.1=py39hce5d2b2_0
+  - tabulate=0.8.9=pyhd8ed1ab_0
+  - tenacity=8.0.1=pyhd8ed1ab_0
   - threadpoolctl=3.0.0=pyh8a188c0_0
   - tiledb=2.6.2=h2038895_0
   - tk=8.6.11=h27826a3_1
   - tornado=6.1=py39h3811e60_2
   - tqdm=4.62.3=pyhd8ed1ab_0
+  - typing_extensions=4.2.0=pyha770c72_1
   - tzcode=2021e=h7f98852_0
   - tzdata=2021e=he74cb21_0
   - unicodedata2=14.0.0=py39h3811e60_0
   - urllib3=1.26.8=pyhd8ed1ab_1
+  - websocket-client=1.3.2=pyhd8ed1ab_0
+  - werkzeug=2.1.2=pyhd8ed1ab_1
   - wheel=0.37.1=pyhd8ed1ab_0
   - xerces-c=3.2.3=h8ce2273_4
   - xgboost=1.5.1=py39hf3d152e_0
@@ -195,6 +228,8 @@ dependencies:
   - xorg-xproto=7.0.31=h7f98852_1007
   - xyzservices=2022.1.1=pyhd8ed1ab_0
   - xz=5.2.5=h516909a_1
+  - yaml=0.2.5=h7f98852_2
+  - zipp=3.8.0=pyhd8ed1ab_0
   - zlib=1.2.11=h36c2ea0_1013
   - zstd=1.5.2=ha95c52a_0
 prefix: /home/userv/anaconda3/envs/osm-rf
