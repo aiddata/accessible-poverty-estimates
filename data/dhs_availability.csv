@@ -1,39 +1,533 @@
-country,iso2,iso3,hr_regex,ge_regex,year_label,start_year,end_year,Dates of Fieldwork,Phase,Recode
-India,IN,IND,INHR**DT,INGE**FL,2019-21,2019,2021,06/2019- 04/2021,DHS-VII,DHS-VII
-Mauritania,MR,MRT,MRHR**DT,MRGE**FL,2019-21,2019,2020,11/2019- 04/2020,DHS-VII,DHS-VII
-Liberia,LB,LBR,LBHR**DT,LBGE**FL,2019-20,2019,2020,10/2019- 02/2020,DHS-VII,DHS-VII
-Sierra Leone,SL,SLE,SLHR**DT,SLGE**FL,2019,2019,2019,05/2019- 08/2019,DHS-VII,DHS-VII
-Cameroon,CM,CMR,CMHR**DT,CMGE**FL,2018,2018,2018,06/2018- 12/2018,DHS-VII,DHS-VII
-Guinea,GN,GIN,GNHR**DT,GNGE**FL,2018,2018,2018,02/2018- 06/2018,DHS-VII,DHS-VII
-Mali,ML,MLI,MLHR**DT,MLGE**FL,2018,2018,2018,08/2018- 11/2018,DHS-VII,DHS-VII
-Nigeria,NG,NGA,NGHR**DT,NGGE**FL,2018,2018,2018,08/2018- 12/2018,DHS-VII,DHS-VII
-Zambia,ZM,ZMB,ZMHR**DT,ZMGE**FL,2018,2018,2019,07/2018- 01/2019,DHS-VII,DHS-VII
-Albania,AL,ALB,ALHR**DT,ALGE**FL,2017-18,2017,2017,09/2017- 12/2017,DHS-VII,DHS-VII
-Bangladesh,BD,BGD,BDHR**DT,BDGE**FL,2017-18,2017,2018,10/2017- 03/2018,DHS-VII,DHS-VII
-Benin,BJ,BEN,BJHR**DT,BJGE**FL,2017-18,2017,2018,11/2017- 02/2018,DHS-VII,DHS-VII
-Jordan,JO,JOR,JOHR**DT,JOGE**FL,2017-18,2017,2018,10/2017- 01/2018,DHS-VII,DHS-VII
-Pakistan,PK,PAK,PKHR**DT,PKGE**FL,2017-18,2017,2018,11/2017- 04/2018,DHS-VII,DHS-VII
-Philippines,PH,PHL,PHHR**DT,PHGE**FL,2017,2017,2017,08/2017- 10/2017,DHS-VII,DHS-VII
-Tajikistan,TJ,TJK,TJHR**DT,TJGE**FL,2017,2017,2017,08/2017- 11/2017,DHS-VII,DHS-VII
-Armenia,AM,ARM,AMHR**DT,AMGE**FL,2015-16,2015,2016,12/2015- 04/2016,DHS-VII,DHS-VII
-Burundi,BU,BDI,BUHR**DT,BUGE**FL,2016-17,2016,2017,10/2016- 02/2017,DHS-VII,DHS-VII
-Ethiopia,ET,ETH,ETHR**DT,ETGE**FL,2016,2016,2016,01/2016- 06/2016,DHS-VII,DHS-VII
-Haiti,HT,HTI,HTHR**DT,HTGE**FL,2016-17,2016,2017,11/2016- 04/2017,DHS-VII,DHS-VII
-Myanmar,MM,MMR,MMHR**DT,MMGE**FL,2015-16,2015,2016,12/2015- 07/2016,DHS-VII,DHS-VII
-Nepal,NP,NPL,NPHR**DT,NPGE**FL,2016,2016,2017,06/2016- 01/2017,DHS-VII,DHS-VII
-South Africa,ZA,ZAF,ZAHR**DT,ZAGE**FL,2016,2016,2016,06/2016- 11/2016,DHS-VII,DHS-VII
-East Timor,TL,TLS,TLHR**DT,TLGE**FL,2016,2016,2016,09/2016- 12/2016,DHS-VII,DHS-VII
-Uganda,UG,UGA,UGHR**DT,UGGE**FL,2016,2016,2016,06/2016- 12/2016,DHS-VII,DHS-VII
-Angola,AO,AGO,AOHR**DT,AOGE**FL,2015-16,2015,2016,11/2015- 02/2016,DHS-VII,DHS-VII
-Guatemala,GT,GTM,GTHR**DT,GTGE**FL,2014-15,2014,2015,10/2014- 06/2015,DHS-VII,DHS-VI
-India,IN,IND,INHR**DT,INGE**FL,2015-16,2015,2016,01/2015- 12/2016,DHS-VII,DHS-VI
-Malawi,MW,MWI,MWHR**DT,MWGE**FL,2015-16,2015,2016,10/2015- 02/2016,DHS-VII,DHS-VII
-Rwanda,RW,RWA,RWHR**DT,RWGE**FL,2014-15,2014,2015,11/2014- 04/2015,DHS-VII,DHS-VI
-Tanzania,TZ,TZA,TZHR**DT,TZGE**FL,2015-16,2015,2016,08/2015- 02/2016,DHS-VII,DHS-VII
-Zimbabwe,ZW,ZWE,ZWHR**DT,ZWGE**FL,2015,2015,2015,07/2015- 12/2015,DHS-VII,DHS-VII
-Bangladesh,BD,BGD,BDHR**DT,BDGE**FL,2014,2014,2014,06/2014- 11/2014,DHS-VII,DHS-VI
-Cambodia,KH,KHM,KHHR**DT,KHGE**FL,2014,2014,2014,06/2014- 12/2014,DHS-VII,DHS-VI
-Chad,TD,TCD,TDHR**DT,TDGE**FL,2014-15,2014,2015,10/2014- 04/2015,DHS-VII,DHS-VI
-Ghana,GH,GHA,GHHR**DT,GHGE**FL,2014,2014,2014,09/2014- 12/2014,DHS-VII,DHS-VI
-Kenya,KE,KEN,KEHR**DT,KEGE**FL,2014,2014,2014,05/2014- 10/2014,DHS-VII,DHS-VI
-Lesotho,LS,LSO,LSHR**DT,LSGE**FL,2014,2014,2014,09/2014- 12/2014,DHS-VII,DHS-VI
+country,iso2,iso3,hr_regex,ge_regex,year_label,start_year,end_year,Dates of Fieldwork,Phase,Recode,hr_fname,ge_fname,prev_year,survey_name,iso_a3,geometry,epsg,config_str
+Albania,AL,ALB,ALHR**DT,ALGE**FL,2017-18,2017,2017,09/2017- 12/2017,DHS-VII,DHS-VII,,,2016,AL_2017-18_DHS,ALB,POINT (20.03242643144321 41.141353306048785),32634,"
+    [AL_2017-18_DHS]
+    output_name = AL_2017-18_DHS
+    country_name = albania
+    osm_date = 220101
+    dhs_hh_file_name = None
+    dhs_geo_file_name = None
+    country_utm_epsg_code = 32634
+    geom_id = DHSID
+    geom_label = dhs-buffers
+    geoquery_data_file_name = merge_al_dhs_buffer
+    ntl_year = 2016
+    geospatial_variable_years = [2016]
+    "
+Angola,AO,AGO,AOHR**DT,AOGE**FL,2015-16,2015,2016,11/2015- 02/2016,DHS-VII,DHS-VII,AOHR71DT,AOGE71FL,2014,AO_2015-16_DHS,AGO,POINT (17.47057255231345 -12.245869036133188),32733,"
+    [AO_2015-16_DHS]
+    output_name = AO_2015-16_DHS
+    country_name = angola
+    osm_date = 220101
+    dhs_hh_file_name = AOHR71DT
+    dhs_geo_file_name = AOGE71FL
+    country_utm_epsg_code = 32733
+    geom_id = DHSID
+    geom_label = dhs-buffers
+    geoquery_data_file_name = merge_ao_dhs_buffer
+    ntl_year = 2014
+    geospatial_variable_years = [2014]
+    "
+Armenia,AM,ARM,AMHR**DT,AMGE**FL,2015-16,2015,2016,12/2015- 04/2016,DHS-VII,DHS-VII,,,2014,AM_2015-16_DHS,ARM,POINT (45.00029001101479 40.21660761230143),32638,"
+    [AM_2015-16_DHS]
+    output_name = AM_2015-16_DHS
+    country_name = armenia
+    osm_date = 220101
+    dhs_hh_file_name = None
+    dhs_geo_file_name = None
+    country_utm_epsg_code = 32638
+    geom_id = DHSID
+    geom_label = dhs-buffers
+    geoquery_data_file_name = merge_am_dhs_buffer
+    ntl_year = 2014
+    geospatial_variable_years = [2014]
+    "
+Bangladesh,BD,BGD,BDHR**DT,BDGE**FL,2014,2014,2014,06/2014- 11/2014,DHS-VII,DHS-VI,BDHR7RDT,BDGE7SFL,2013,BD_2014_DHS,BGD,POINT (90.26792827719598 23.83946179534406),32646,"
+    [BD_2014_DHS]
+    output_name = BD_2014_DHS
+    country_name = bangladesh
+    osm_date = 220101
+    dhs_hh_file_name = BDHR7RDT
+    dhs_geo_file_name = BDGE7SFL
+    country_utm_epsg_code = 32646
+    geom_id = DHSID
+    geom_label = dhs-buffers
+    geoquery_data_file_name = merge_bd_dhs_buffer
+    ntl_year = 2013
+    geospatial_variable_years = [2013]
+    "
+Bangladesh,BD,BGD,BDHR**DT,BDGE**FL,2017-18,2017,2018,10/2017- 03/2018,DHS-VII,DHS-VII,BDHR7RDT,BDGE7SFL,2016,BD_2017-18_DHS,BGD,POINT (90.26792827719598 23.83946179534406),32646,"
+    [BD_2017-18_DHS]
+    output_name = BD_2017-18_DHS
+    country_name = bangladesh
+    osm_date = 220101
+    dhs_hh_file_name = BDHR7RDT
+    dhs_geo_file_name = BDGE7SFL
+    country_utm_epsg_code = 32646
+    geom_id = DHSID
+    geom_label = dhs-buffers
+    geoquery_data_file_name = merge_bd_dhs_buffer
+    ntl_year = 2016
+    geospatial_variable_years = [2016]
+    "
+Benin,BJ,BEN,BJHR**DT,BJGE**FL,2017-18,2017,2018,11/2017- 02/2018,DHS-VII,DHS-VII,BJHR71DT,BJGE71FL,2016,BJ_2017-18_DHS,BEN,POINT (2.337377553496156 9.647430780663699),32631,"
+    [BJ_2017-18_DHS]
+    output_name = BJ_2017-18_DHS
+    country_name = benin
+    osm_date = 220101
+    dhs_hh_file_name = BJHR71DT
+    dhs_geo_file_name = BJGE71FL
+    country_utm_epsg_code = 32631
+    geom_id = DHSID
+    geom_label = dhs-buffers
+    geoquery_data_file_name = merge_bj_dhs_buffer
+    ntl_year = 2016
+    geospatial_variable_years = [2016]
+    "
+Burundi,BU,BDI,BUHR**DT,BUGE**FL,2016-17,2016,2017,10/2016- 02/2017,DHS-VII,DHS-VII,BUHR71DT,BUGE71FL,2015,BU_2016-17_DHS,BDI,POINT (29.91389229542573 -3.3773910753554657),32735,"
+    [BU_2016-17_DHS]
+    output_name = BU_2016-17_DHS
+    country_name = burundi
+    osm_date = 220101
+    dhs_hh_file_name = BUHR71DT
+    dhs_geo_file_name = BUGE71FL
+    country_utm_epsg_code = 32735
+    geom_id = DHSID
+    geom_label = dhs-buffers
+    geoquery_data_file_name = merge_bu_dhs_buffer
+    ntl_year = 2015
+    geospatial_variable_years = [2015]
+    "
+Cambodia,KH,KHM,KHHR**DT,KHGE**FL,2014,2014,2014,06/2014- 12/2014,DHS-VII,DHS-VI,KHHR73DT,KHGE71FL,2013,KH_2014_DHS,KHM,POINT (104.87608532525192 12.684728629393506),32648,"
+    [KH_2014_DHS]
+    output_name = KH_2014_DHS
+    country_name = cambodia
+    osm_date = 220101
+    dhs_hh_file_name = KHHR73DT
+    dhs_geo_file_name = KHGE71FL
+    country_utm_epsg_code = 32648
+    geom_id = DHSID
+    geom_label = dhs-buffers
+    geoquery_data_file_name = merge_kh_dhs_buffer
+    ntl_year = 2013
+    geospatial_variable_years = [2013]
+    "
+Cameroon,CM,CMR,CMHR**DT,CMGE**FL,2018,2018,2018,06/2018- 12/2018,DHS-VII,DHS-VII,CMHR71DT,CMGE71FL,2017,CM_2018_DHS,CMR,POINT (12.611551546501774 5.663095287992696),32633,"
+    [CM_2018_DHS]
+    output_name = CM_2018_DHS
+    country_name = cameroon
+    osm_date = 220101
+    dhs_hh_file_name = CMHR71DT
+    dhs_geo_file_name = CMGE71FL
+    country_utm_epsg_code = 32633
+    geom_id = DHSID
+    geom_label = dhs-buffers
+    geoquery_data_file_name = merge_cm_dhs_buffer
+    ntl_year = 2017
+    geospatial_variable_years = [2017]
+    "
+Chad,TD,TCD,TDHR**DT,TDGE**FL,2014-15,2014,2015,10/2014- 04/2015,DHS-VII,DHS-VI,TDHR71DT,TDGE71FL,2013,TD_2014-15_DHS,TCD,POINT (18.581329525332894 15.328867399839682),32634,"
+    [TD_2014-15_DHS]
+    output_name = TD_2014-15_DHS
+    country_name = chad
+    osm_date = 220101
+    dhs_hh_file_name = TDHR71DT
+    dhs_geo_file_name = TDGE71FL
+    country_utm_epsg_code = 32634
+    geom_id = DHSID
+    geom_label = dhs-buffers
+    geoquery_data_file_name = merge_td_dhs_buffer
+    ntl_year = 2013
+    geospatial_variable_years = [2013]
+    "
+East Timor,TL,TLS,TLHR**DT,TLGE**FL,2016,2016,2016,09/2016- 12/2016,DHS-VII,DHS-VII,TLHR71DT,TLGE71FL,2015,TL_2016_DHS,TLS,POINT (125.96630027368401 -8.767760362467003),32751,"
+    [TL_2016_DHS]
+    output_name = TL_2016_DHS
+    country_name = east-timor
+    osm_date = 220101
+    dhs_hh_file_name = TLHR71DT
+    dhs_geo_file_name = TLGE71FL
+    country_utm_epsg_code = 32751
+    geom_id = DHSID
+    geom_label = dhs-buffers
+    geoquery_data_file_name = merge_tl_dhs_buffer
+    ntl_year = 2015
+    geospatial_variable_years = [2015]
+    "
+Ethiopia,ET,ETH,ETHR**DT,ETGE**FL,2016,2016,2016,01/2016- 06/2016,DHS-VII,DHS-VII,ETHR81DT,ETGE81FL,2015,ET_2016_DHS,ETH,POINT (39.551255792937745 8.653999188132575),32637,"
+    [ET_2016_DHS]
+    output_name = ET_2016_DHS
+    country_name = ethiopia
+    osm_date = 220101
+    dhs_hh_file_name = ETHR81DT
+    dhs_geo_file_name = ETGE81FL
+    country_utm_epsg_code = 32637
+    geom_id = DHSID
+    geom_label = dhs-buffers
+    geoquery_data_file_name = merge_et_dhs_buffer
+    ntl_year = 2015
+    geospatial_variable_years = [2015]
+    "
+Ghana,GH,GHA,GHHR**DT,GHGE**FL,2014,2014,2014,09/2014- 12/2014,DHS-VII,DHS-VI,GHHR72DT,GHGE71FL,2013,GH_2014_DHS,GHA,POINT (-1.2369685557063992 7.928651813099648),32630,"
+    [GH_2014_DHS]
+    output_name = GH_2014_DHS
+    country_name = ghana
+    osm_date = 220101
+    dhs_hh_file_name = GHHR72DT
+    dhs_geo_file_name = GHGE71FL
+    country_utm_epsg_code = 32630
+    geom_id = DHSID
+    geom_label = dhs-buffers
+    geoquery_data_file_name = merge_gh_dhs_buffer
+    ntl_year = 2013
+    geospatial_variable_years = [2013]
+    "
+Guatemala,GU,GTM,GUHR**DT,GUGE**FL,2014-15,2014,2015,10/2014- 06/2015,DHS-VII,DHS-VI,GUHR71DT,GUGE71FL,2013,GU_2014-15_DHS,GTM,POINT (-90.36945836053154 15.699360612026911),32615,"
+    [GU_2014-15_DHS]
+    output_name = GU_2014-15_DHS
+    country_name = guatemala
+    osm_date = 220101
+    dhs_hh_file_name = GUHR71DT
+    dhs_geo_file_name = GUGE71FL
+    country_utm_epsg_code = 32615
+    geom_id = DHSID
+    geom_label = dhs-buffers
+    geoquery_data_file_name = merge_gu_dhs_buffer
+    ntl_year = 2013
+    geospatial_variable_years = [2013]
+    "
+Guinea,GN,GIN,GNHR**DT,GNGE**FL,2018,2018,2018,02/2018- 06/2018,DHS-VII,DHS-VII,GNHR71DT,GNGE71FL,2017,GN_2018_DHS,GIN,POINT (-11.060853741185456 10.44827287727134),32629,"
+    [GN_2018_DHS]
+    output_name = GN_2018_DHS
+    country_name = guinea
+    osm_date = 220101
+    dhs_hh_file_name = GNHR71DT
+    dhs_geo_file_name = GNGE71FL
+    country_utm_epsg_code = 32629
+    geom_id = DHSID
+    geom_label = dhs-buffers
+    geoquery_data_file_name = merge_gn_dhs_buffer
+    ntl_year = 2017
+    geospatial_variable_years = [2017]
+    "
+Haiti,HT,HTI,HTHR**DT,HTGE**FL,2016-17,2016,2017,11/2016- 04/2017,DHS-VII,DHS-VII,HTHR71DT,HTGE71FL,2015,HT_2016-17_DHS,HTI,POINT (-72.65801330535574 18.900700691843337),32618,"
+    [HT_2016-17_DHS]
+    output_name = HT_2016-17_DHS
+    country_name = haiti
+    osm_date = 220101
+    dhs_hh_file_name = HTHR71DT
+    dhs_geo_file_name = HTGE71FL
+    country_utm_epsg_code = 32618
+    geom_id = DHSID
+    geom_label = dhs-buffers
+    geoquery_data_file_name = merge_ht_dhs_buffer
+    ntl_year = 2015
+    geospatial_variable_years = [2015]
+    "
+India,IN,IND,INHR**DT,INGE**FL,2015-16,2015,2016,01/2015- 12/2016,DHS-VII,DHS-VI,,,2014,IN_2015-16_DHS,IND,POINT (79.59370376325381 22.92500640740852),32644,"
+    [IN_2015-16_DHS]
+    output_name = IN_2015-16_DHS
+    country_name = india
+    osm_date = 220101
+    dhs_hh_file_name = None
+    dhs_geo_file_name = None
+    country_utm_epsg_code = 32644
+    geom_id = DHSID
+    geom_label = dhs-buffers
+    geoquery_data_file_name = merge_in_dhs_buffer
+    ntl_year = 2014
+    geospatial_variable_years = [2014]
+    "
+India,IN,IND,INHR**DT,INGE**FL,2019-21,2019,2021,06/2019- 04/2021,DHS-VII,DHS-VII,,,2018,IN_2019-21_DHS,IND,POINT (79.59370376325381 22.92500640740852),32644,"
+    [IN_2019-21_DHS]
+    output_name = IN_2019-21_DHS
+    country_name = india
+    osm_date = 220101
+    dhs_hh_file_name = None
+    dhs_geo_file_name = None
+    country_utm_epsg_code = 32644
+    geom_id = DHSID
+    geom_label = dhs-buffers
+    geoquery_data_file_name = merge_in_dhs_buffer
+    ntl_year = 2018
+    geospatial_variable_years = [2018]
+    "
+Jordan,JO,JOR,JOHR**DT,JOGE**FL,2017-18,2017,2018,10/2017- 01/2018,DHS-VII,DHS-VII,,,2016,JO_2017-18_DHS,JOR,POINT (36.77945490632519 31.245490584748417),32637,"
+    [JO_2017-18_DHS]
+    output_name = JO_2017-18_DHS
+    country_name = jordan
+    osm_date = 220101
+    dhs_hh_file_name = None
+    dhs_geo_file_name = None
+    country_utm_epsg_code = 32637
+    geom_id = DHSID
+    geom_label = dhs-buffers
+    geoquery_data_file_name = merge_jo_dhs_buffer
+    ntl_year = 2016
+    geospatial_variable_years = [2016]
+    "
+Kenya,KE,KEN,KEHR**DT,KEGE**FL,2014,2014,2014,05/2014- 10/2014,DHS-VII,DHS-VI,KEHR72DT,KEGE71FL,2013,KE_2014_DHS,KEN,POINT (37.791555286661385 0.5959662521769523),32637,"
+    [KE_2014_DHS]
+    output_name = KE_2014_DHS
+    country_name = kenya
+    osm_date = 220101
+    dhs_hh_file_name = KEHR72DT
+    dhs_geo_file_name = KEGE71FL
+    country_utm_epsg_code = 32637
+    geom_id = DHSID
+    geom_label = dhs-buffers
+    geoquery_data_file_name = merge_ke_dhs_buffer
+    ntl_year = 2013
+    geospatial_variable_years = [2013]
+    "
+Lesotho,LS,LSO,LSHR**DT,LSGE**FL,2014,2014,2014,09/2014- 12/2014,DHS-VII,DHS-VI,LSHR71DT,LSGE71FL,2013,LS_2014_DHS,LSO,POINT (28.170105295170494 -29.625290493692013),32735,"
+    [LS_2014_DHS]
+    output_name = LS_2014_DHS
+    country_name = lesotho
+    osm_date = 220101
+    dhs_hh_file_name = LSHR71DT
+    dhs_geo_file_name = LSGE71FL
+    country_utm_epsg_code = 32735
+    geom_id = DHSID
+    geom_label = dhs-buffers
+    geoquery_data_file_name = merge_ls_dhs_buffer
+    ntl_year = 2013
+    geospatial_variable_years = [2013]
+    "
+Liberia,LB,LBR,LBHR**DT,LBGE**FL,2019-20,2019,2020,10/2019- 02/2020,DHS-VII,DHS-VII,LBHR7ADT,LBGE7AFL,2018,LB_2019-20_DHS,LBR,POINT (-9.410836154371117 6.431619862252993),32629,"
+    [LB_2019-20_DHS]
+    output_name = LB_2019-20_DHS
+    country_name = liberia
+    osm_date = 220101
+    dhs_hh_file_name = LBHR7ADT
+    dhs_geo_file_name = LBGE7AFL
+    country_utm_epsg_code = 32629
+    geom_id = DHSID
+    geom_label = dhs-buffers
+    geoquery_data_file_name = merge_lb_dhs_buffer
+    ntl_year = 2018
+    geospatial_variable_years = [2018]
+    "
+Malawi,MW,MWI,MWHR**DT,MWGE**FL,2015-16,2015,2016,10/2015- 02/2016,DHS-VII,DHS-VII,MWHR7ADT,MWGE7AFL,2014,MW_2015-16_DHS,MWI,POINT (34.193605326922366 -13.172834992341919),32736,"
+    [MW_2015-16_DHS]
+    output_name = MW_2015-16_DHS
+    country_name = malawi
+    osm_date = 220101
+    dhs_hh_file_name = MWHR7ADT
+    dhs_geo_file_name = MWGE7AFL
+    country_utm_epsg_code = 32736
+    geom_id = DHSID
+    geom_label = dhs-buffers
+    geoquery_data_file_name = merge_mw_dhs_buffer
+    ntl_year = 2014
+    geospatial_variable_years = [2014]
+    "
+Mali,ML,MLI,MLHR**DT,MLGE**FL,2018,2018,2018,08/2018- 11/2018,DHS-VII,DHS-VII,MLHR7ADT,MLGE7AFL,2017,ML_2018_DHS,MLI,POINT (-3.543294339453343 17.267772061700715),32630,"
+    [ML_2018_DHS]
+    output_name = ML_2018_DHS
+    country_name = mali
+    osm_date = 220101
+    dhs_hh_file_name = MLHR7ADT
+    dhs_geo_file_name = MLGE7AFL
+    country_utm_epsg_code = 32630
+    geom_id = DHSID
+    geom_label = dhs-buffers
+    geoquery_data_file_name = merge_ml_dhs_buffer
+    ntl_year = 2017
+    geospatial_variable_years = [2017]
+    "
+Mauritania,MR,MRT,MRHR**DT,MRGE**FL,2019-21,2019,2020,11/2019- 04/2020,DHS-VII,DHS-VII,MRHR71DT,MRGE71FL,2018,MR_2019-21_DHS,MRT,POINT (-10.326396925234992 20.20926720635376),32629,"
+    [MR_2019-21_DHS]
+    output_name = MR_2019-21_DHS
+    country_name = mauritania
+    osm_date = 220101
+    dhs_hh_file_name = MRHR71DT
+    dhs_geo_file_name = MRGE71FL
+    country_utm_epsg_code = 32629
+    geom_id = DHSID
+    geom_label = dhs-buffers
+    geoquery_data_file_name = merge_mr_dhs_buffer
+    ntl_year = 2018
+    geospatial_variable_years = [2018]
+    "
+Myanmar,MM,MMR,MMHR**DT,MMGE**FL,2015-16,2015,2016,12/2015- 07/2016,DHS-VII,DHS-VII,,,2014,MM_2015-16_DHS,MMR,POINT (96.50584094206161 21.016999873773827),32647,"
+    [MM_2015-16_DHS]
+    output_name = MM_2015-16_DHS
+    country_name = myanmar
+    osm_date = 220101
+    dhs_hh_file_name = None
+    dhs_geo_file_name = None
+    country_utm_epsg_code = 32647
+    geom_id = DHSID
+    geom_label = dhs-buffers
+    geoquery_data_file_name = merge_mm_dhs_buffer
+    ntl_year = 2014
+    geospatial_variable_years = [2014]
+    "
+Nepal,NP,NPL,NPHR**DT,NPGE**FL,2016,2016,2017,06/2016- 01/2017,DHS-VII,DHS-VII,,,2015,NP_2016_DHS,NPL,POINT (84.01317367692529 28.23944001904935),32645,"
+    [NP_2016_DHS]
+    output_name = NP_2016_DHS
+    country_name = nepal
+    osm_date = 220101
+    dhs_hh_file_name = None
+    dhs_geo_file_name = None
+    country_utm_epsg_code = 32645
+    geom_id = DHSID
+    geom_label = dhs-buffers
+    geoquery_data_file_name = merge_np_dhs_buffer
+    ntl_year = 2015
+    geospatial_variable_years = [2015]
+    "
+Nigeria,NG,NGA,NGHR**DT,NGGE**FL,2018,2018,2018,08/2018- 12/2018,DHS-VII,DHS-VII,NGHR7BDT,NGGE7BFL,2017,NG_2018_DHS,NGA,POINT (7.995127754089786 9.548318418209965),32632,"
+    [NG_2018_DHS]
+    output_name = NG_2018_DHS
+    country_name = nigeria
+    osm_date = 220101
+    dhs_hh_file_name = NGHR7BDT
+    dhs_geo_file_name = NGGE7BFL
+    country_utm_epsg_code = 32632
+    geom_id = DHSID
+    geom_label = dhs-buffers
+    geoquery_data_file_name = merge_ng_dhs_buffer
+    ntl_year = 2017
+    geospatial_variable_years = [2017]
+    "
+Pakistan,PK,PAK,PKHR**DT,PKGE**FL,2017-18,2017,2018,11/2017- 04/2018,DHS-VII,DHS-VII,PKHR71DT,PKGE71FL,2016,PK_2017-18_DHS,PAK,POINT (69.41399806318127 29.973460025547393),32642,"
+    [PK_2017-18_DHS]
+    output_name = PK_2017-18_DHS
+    country_name = pakistan
+    osm_date = 220101
+    dhs_hh_file_name = PKHR71DT
+    dhs_geo_file_name = PKGE71FL
+    country_utm_epsg_code = 32642
+    geom_id = DHSID
+    geom_label = dhs-buffers
+    geoquery_data_file_name = merge_pk_dhs_buffer
+    ntl_year = 2016
+    geospatial_variable_years = [2016]
+    "
+Philippines,PH,PHL,PHHR**DT,PHGE**FL,2017,2017,2017,08/2017- 10/2017,DHS-VII,DHS-VII,PHHR71DT,PHGE71FL,2016,PH_2017_DHS,PHL,POINT (122.90267236988682 11.763799362297663),32651,"
+    [PH_2017_DHS]
+    output_name = PH_2017_DHS
+    country_name = philippines
+    osm_date = 220101
+    dhs_hh_file_name = PHHR71DT
+    dhs_geo_file_name = PHGE71FL
+    country_utm_epsg_code = 32651
+    geom_id = DHSID
+    geom_label = dhs-buffers
+    geoquery_data_file_name = merge_ph_dhs_buffer
+    ntl_year = 2016
+    geospatial_variable_years = [2016]
+    "
+Rwanda,RW,RWA,RWHR**DT,RWGE**FL,2014-15,2014,2015,11/2014- 04/2015,DHS-VII,DHS-VI,RWHR81DT,RWGE81FL,2013,RW_2014-15_DHS,RWA,POINT (29.91896392224289 -2.0135144658341346),32735,"
+    [RW_2014-15_DHS]
+    output_name = RW_2014-15_DHS
+    country_name = rwanda
+    osm_date = 220101
+    dhs_hh_file_name = RWHR81DT
+    dhs_geo_file_name = RWGE81FL
+    country_utm_epsg_code = 32735
+    geom_id = DHSID
+    geom_label = dhs-buffers
+    geoquery_data_file_name = merge_rw_dhs_buffer
+    ntl_year = 2013
+    geospatial_variable_years = [2013]
+    "
+Sierra Leone,SL,SLE,SLHR**DT,SLGE**FL,2019,2019,2019,05/2019- 08/2019,DHS-VII,DHS-VII,SLHR7ADT,SLGE7AFL,2018,SL_2019_DHS,SLE,POINT (-11.795257428559948 8.53035372615305),32629,"
+    [SL_2019_DHS]
+    output_name = SL_2019_DHS
+    country_name = sierra-leone
+    osm_date = 220101
+    dhs_hh_file_name = SLHR7ADT
+    dhs_geo_file_name = SLGE7AFL
+    country_utm_epsg_code = 32629
+    geom_id = DHSID
+    geom_label = dhs-buffers
+    geoquery_data_file_name = merge_sl_dhs_buffer
+    ntl_year = 2018
+    geospatial_variable_years = [2018]
+    "
+South Africa,ZA,ZAF,ZAHR**DT,ZAGE**FL,2016,2016,2016,06/2016- 11/2016,DHS-VII,DHS-VII,ZAHR71DT,ZAGE71FL,2015,ZA_2016_DHS,ZAF,POINT (25.048013879861678 -28.947033259979115),32735,"
+    [ZA_2016_DHS]
+    output_name = ZA_2016_DHS
+    country_name = south-africa
+    osm_date = 220101
+    dhs_hh_file_name = ZAHR71DT
+    dhs_geo_file_name = ZAGE71FL
+    country_utm_epsg_code = 32735
+    geom_id = DHSID
+    geom_label = dhs-buffers
+    geoquery_data_file_name = merge_za_dhs_buffer
+    ntl_year = 2015
+    geospatial_variable_years = [2015]
+    "
+Tajikistan,TJ,TJK,TJHR**DT,TJGE**FL,2017,2017,2017,08/2017- 11/2017,DHS-VII,DHS-VII,,,2016,TJ_2017_DHS,TJK,POINT (71.03443504896113 38.58308146421082),32642,"
+    [TJ_2017_DHS]
+    output_name = TJ_2017_DHS
+    country_name = tajikistan
+    osm_date = 220101
+    dhs_hh_file_name = None
+    dhs_geo_file_name = None
+    country_utm_epsg_code = 32642
+    geom_id = DHSID
+    geom_label = dhs-buffers
+    geoquery_data_file_name = merge_tj_dhs_buffer
+    ntl_year = 2016
+    geospatial_variable_years = [2016]
+    "
+Tanzania,TZ,TZA,TZHR**DT,TZGE**FL,2015-16,2015,2016,08/2015- 02/2016,DHS-VII,DHS-VII,TZHR7BDT,TZGE7AFL,2014,TZ_2015-16_DHS,TZA,POINT (34.75298985475595 -6.257732428506092),32736,"
+    [TZ_2015-16_DHS]
+    output_name = TZ_2015-16_DHS
+    country_name = tanzania
+    osm_date = 220101
+    dhs_hh_file_name = TZHR7BDT
+    dhs_geo_file_name = TZGE7AFL
+    country_utm_epsg_code = 32736
+    geom_id = DHSID
+    geom_label = dhs-buffers
+    geoquery_data_file_name = merge_tz_dhs_buffer
+    ntl_year = 2014
+    geospatial_variable_years = [2014]
+    "
+Uganda,UG,UGA,UGHR**DT,UGGE**FL,2016,2016,2016,06/2016- 12/2016,DHS-VII,DHS-VII,UGHR7IDT,UGGE7AFL,2015,UG_2016_DHS,UGA,POINT (32.35755031998686 1.2954855035097297),32636,"
+    [UG_2016_DHS]
+    output_name = UG_2016_DHS
+    country_name = uganda
+    osm_date = 220101
+    dhs_hh_file_name = UGHR7IDT
+    dhs_geo_file_name = UGGE7AFL
+    country_utm_epsg_code = 32636
+    geom_id = DHSID
+    geom_label = dhs-buffers
+    geoquery_data_file_name = merge_ug_dhs_buffer
+    ntl_year = 2015
+    geospatial_variable_years = [2015]
+    "
+Zambia,ZM,ZMB,ZMHR**DT,ZMGE**FL,2018,2018,2019,07/2018- 01/2019,DHS-VII,DHS-VII,ZMHR71DT,ZMGE71FL,2017,ZM_2018_DHS,ZMB,POINT (27.727591918760577 -13.395067553524187),32735,"
+    [ZM_2018_DHS]
+    output_name = ZM_2018_DHS
+    country_name = zambia
+    osm_date = 220101
+    dhs_hh_file_name = ZMHR71DT
+    dhs_geo_file_name = ZMGE71FL
+    country_utm_epsg_code = 32735
+    geom_id = DHSID
+    geom_label = dhs-buffers
+    geoquery_data_file_name = merge_zm_dhs_buffer
+    ntl_year = 2017
+    geospatial_variable_years = [2017]
+    "
+Zimbabwe,ZW,ZWE,ZWHR**DT,ZWGE**FL,2015,2015,2015,07/2015- 12/2015,DHS-VII,DHS-VII,ZWHR72DT,ZWGE72FL,2014,ZW_2015_DHS,ZWE,POINT (29.788548371892524 -18.906987947858802),32735,"
+    [ZW_2015_DHS]
+    output_name = ZW_2015_DHS
+    country_name = zimbabwe
+    osm_date = 220101
+    dhs_hh_file_name = ZWHR72DT
+    dhs_geo_file_name = ZWGE72FL
+    country_utm_epsg_code = 32735
+    geom_id = DHSID
+    geom_label = dhs-buffers
+    geoquery_data_file_name = merge_zw_dhs_buffer
+    ntl_year = 2014
+    geospatial_variable_years = [2014]
+    "

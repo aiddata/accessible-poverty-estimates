@@ -1,12 +1,26 @@
 
 import re
 from pathlib import Path
+import configparser
 
 import pandas as pd
 import pycountry
 
 
-base_path = Path('/home/userx/Desktop/accessible-poverty-estimates')
+if 'config.ini' not in os.listdir():
+    raise FileNotFoundError("config.ini file not found. Make sure you run this from the root directory of the repo.")
+
+config = configparser.ConfigParser()
+config.read('config.ini')
+
+
+project = config["main"]["project"]
+project_dir = Path(config["main"]["project_dir"])
+
+min_year = 2013
+max_year = 2020
+osm_date = 220101
+phase_list = ['DHS-VII']
 
 # Survey Characteristics Search sorted by year
 dhs_status_url = 'https://dhsprogram.com/methodology/survey-search.cfm?sendsearch=1&crt=1&listgrp=2'
@@ -34,8 +48,8 @@ status_df['start_year'] = status_df['Dates of Fieldwork'].apply(lambda x: int(x.
 status_df['end_year'] = status_df['Dates of Fieldwork'].apply(lambda x: int(x.split('-')[1].strip().split('/')[-1]))
 
 
-status_df = status_df.loc[status_df['start_year'] >= 2013]
-status_df = status_df.loc[status_df['start_year'] <= 2020]
+status_df = status_df.loc[status_df['start_year'] >= min_year]
+status_df = status_df.loc[status_df['start_year'] <= max_year]
 
 status_df['country'] = status_df['Country/Year'].apply(lambda x: re.split('(\d+)', x)[0].strip())
 status_df['year_label'] = status_df.apply(lambda x: x['Country/Year'].split(x.country)[1].split('(')[0].strip(), axis=1)
@@ -78,6 +92,7 @@ status_df[['iso2', 'iso3']] = status_df.apply(lambda x: get_iso23(x.country), ax
 
 status_df.loc[status_df['country'] == 'Liberia', 'iso2'] = 'LB'
 status_df.loc[status_df['country'] == 'Burundi', 'iso2'] = 'BU'
+status_df.loc[status_df['country'] == 'Guatemala', 'iso2'] = 'GU'
 status_df.loc[status_df['country'] == 'Timor-Leste', 'country'] = 'East Timor'
 
 def get_file_names(row):
@@ -90,17 +105,17 @@ def get_file_names(row):
 status_df[['hr_regex', 'ge_regex']] = status_df.apply(lambda x: get_file_names(x), axis=1, result_type='expand')
 
 
-status_df = status_df.loc[status_df['Phase'] == 'DHS-VII']
+status_df = status_df.loc[status_df['Phase'].isin(phase_list)]
 
 
 status_df = status_df[['country', 'iso2', 'iso3', 'hr_regex', 'ge_regex', 'year_label', 'start_year', 'end_year', 'Dates of Fieldwork', 'Phase', 'Recode']]
 
-status_df.to_csv(base_path / 'data' / 'dhs_availability.csv', index=False)
+status_df.to_csv(project_dir / 'data' / 'dhs_availability.csv', index=False)
 
 status_df
 
 
-dhs_dir = base_path / 'data' / 'dhs'
+dhs_dir = project_dir / 'data' / 'dhs'
 
 def get_dir_exact_name(x):
     matches = list(dhs_dir.glob(x.replace('**', '*')))
@@ -148,7 +163,7 @@ def build_config_str(row):
     [{row.survey_name}]
     output_name = {row.survey_name}
     country_name = {row.country.lower().replace(' ', '-')}
-    osm_date = 220101
+    osm_date = {osm_date}
     dhs_hh_file_name = {row.hr_fname}
     dhs_geo_file_name = {row.ge_fname}
     country_utm_epsg_code = {row.epsg}
@@ -169,3 +184,4 @@ status_df['config_str'] = status_df.apply(lambda x: build_config_str(x), axis=1)
 
 _ = status_df.loc[~status_df['hr_fname'].isna(), 'config_str'].apply(lambda x: print(x))
 
+status_df.to_csv(project_dir / 'data' / 'dhs_availability.csv', index=False)
