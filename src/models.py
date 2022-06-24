@@ -19,6 +19,9 @@ from pathlib import Path
 import pandas as pd
 import statsmodels.api as sm
 from stargazer.stargazer import Stargazer
+import mlflow
+
+
 
 warnings.filterwarnings('ignore')
 
@@ -59,6 +62,7 @@ os.makedirs(models_dir, exist_ok=True)
 os.makedirs(results_dir, exist_ok=True)
 
 
+mlflow.set_tracking_uri(f"sqlite:///{project_dir}/mlflow.db")
 
 sys.path.insert(0, os.path.join(project_dir, 'src'))
 
@@ -80,7 +84,7 @@ scoring = {
 search_type = 'grid'
 
 # number of folds for cross-validation
-n_splits = 10
+n_splits = 5
 
 
 
@@ -107,6 +111,8 @@ geom_id = json_data['primary_geom_id']
 
 
 def run_model_funcs(data, columns, name, n_splits):
+
+    mlflow.sklearn.autolog(registered_model_name=name)
 
     data_utils.plot_corr(
         data=data,
