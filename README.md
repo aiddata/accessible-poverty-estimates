@@ -31,6 +31,9 @@ Builds on work published by [Thinking Machines Data Science](https://github.com/
 		```
 		conda env export > environment.yml
 		```
+    - Add the `src` directory to your Conda environment Python path:
+        `conda develop /path/to/project/directory/src` (Note: /path/to/project/directory should be the same as your `project_dir` variable in the config.ini)
+
 3. Install SpatiaLite 5.1.0+
     - We use [VirtualKNN2](https://www.gaia-gis.it/fossil/libspatialite/wiki?name=KNN2), which was added in [check-in 03786a62cd](https://www.gaia-gis.it/fossil/libspatialite/info/03786a62cdb4ab17) of SpatialLite.
     - Download and build Spatialite:
