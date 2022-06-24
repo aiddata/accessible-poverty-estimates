@@ -20,6 +20,8 @@ import pandas as pd
 import statsmodels.api as sm
 from stargazer.stargazer import Stargazer
 
+import mlflow
+
 warnings.filterwarnings('ignore')
 
 # %matplotlib inline
@@ -107,6 +109,9 @@ geom_id = json_data['primary_geom_id']
 
 
 def run_model_funcs(data, columns, name, n_splits):
+
+    # log any scikit-learn model runs with MLflow
+    mlflow.sklearn.autolog()
 
     data_utils.plot_corr(
         data=data,
@@ -198,7 +203,7 @@ ntl_r2 = data_utils.plot_regplot(
     show=show_plots
 )
 
-adm1_cols = pd.['ADM1']
+adm1_cols = ['ADM1']
 adm1_ols = run_OLS(final_data_df, 'Wealth Index', adm1_cols, 'adm1')
 
 adm12_cols = ['ADM1', 'ADM2']
