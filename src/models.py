@@ -198,11 +198,20 @@ ntl_r2 = data_utils.plot_regplot(
     show=show_plots
 )
 
-adm1_cols = pd.['ADM1']
-adm1_ols = run_OLS(final_data_df, 'Wealth Index', adm1_cols, 'adm1')
 
-adm12_cols = ['ADM1', 'ADM2']
-adm12_ols = run_OLS(final_data_df, 'Wealth Index', adm12_cols, 'adm12')
+adm1_df = pd.concat([
+    final_data_df[[geom_id] + indicators],
+    pd.get_dummies(final_data_df['ADM1'], drop_first=True)
+], axis=1)
+adm1_cols = [i for i in adm1_df.columns if i not in [geom_id] + indicators]
+adm1_ols = run_OLS(adm1_df, 'Wealth Index', adm1_cols, 'adm1')
+
+adm2_df = pd.concat([
+    final_data_df[[geom_id] + indicators],
+    pd.get_dummies(final_data_df['ADM2'], drop_first=True)
+], axis=1)
+adm2_cols = [i for i in adm2_df.columns if i not in [geom_id] + indicators]
+adm2_ols = run_OLS(adm2_df, 'Wealth Index', adm2_cols, 'adm2')
 
 
 
