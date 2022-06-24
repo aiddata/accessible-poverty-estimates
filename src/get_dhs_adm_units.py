@@ -10,9 +10,11 @@ import requests
 import geopandas as gpd
 
 import prefect
-from prefect import task, Flow, Client
-from prefect.executors import DaskExecutor, LocalExecutor
-from prefect.run_configs import LocalRun
+from prefect import task, Flow, unmapped
+from prefect.executors import DaskExecutor, LocalExecutor, LocalDaskExecutor
+
+
+from utils import run_flow
 
 
 if 'config.ini' not in os.listdir():
@@ -22,11 +24,24 @@ config = configparser.ConfigParser()
 config.read('config.ini')
 
 project = config["main"]["project"]
-project_dir = Path(config["main"]["project_dir"])
-data_dir = project_dir / 'data'
+project_dir = config["main"]["project_dir"]
+data_dir = Path(project_dir, 'data')
 
-dask_enabled = config["main"]["dask_enabled"]
-prefect_cloud_enabled = config["main"]["prefect_cloud_enabled"]
+prefect_cloud_enabled = config.getboolean("main", "prefect_cloud_enabled")
+prefect_project_name = config["main"]["prefect_project_name"]
+
+dask_enabled = config.getboolean("main", "dask_enabled")
+dask_distributed = config.getboolean("main", "dask_distributed") if "dask_distributed" in config["main"] else False
+
+if dask_enabled:
+
+    if dask_distributed:
+        dask_address = config["main"]["dask_address"]
+        executor = DaskExecutor(address=dask_address)
+    else:
+        executor = LocalDaskExecutor(scheduler="processes")
+else:
+    executor = LocalExecutor()
 
 
 # ---------------------------------------------------------
@@ -65,9 +80,16 @@ def download_and_load_geoboundaries(iso3, adm, data_dir):
 
 
 @task(log_stdout=True)
-def join_and_export(dhs_geo_file_name, dhs_gdf, adm1_gdf, adm2_gdf, data_dir):
+def join_and_export(dhs_geo_file_name, dhs_gdf, adm1_gdf, adm2_gdf, data_dir, buffer=0.01):
+    """Join DHS cluster points to ADM1 and ADM2 boundaries
+
+    Buffer slightly to account for lack of overlap with some simplified/or slightly misdefined geometries
+    """
     logger = prefect.context.get("logger")
     logger.info(f'{dhs_geo_file_name}')
+
+    if buffer:
+        dhs_gdf['geometry'] = dhs_gdf['geometry'].buffer(buffer)
 
     adm1_join = dhs_gdf.sjoin(adm1_gdf, how='left', predicate='intersects').rename(columns={'shapeID': 'ADM1'}).drop(columns=['index_right'])
     adm2_join = adm1_join.sjoin(adm2_gdf, how='left', predicate='intersects').rename(columns={'shapeID': 'ADM2'}).drop(columns=['index_right', 'geometry'])
@@ -100,21 +122,4 @@ with Flow("dhs-adm-units") as flow:
         join_and_export(dhs_geo_file_name, dhs_gdf, adm1_gdf, adm2_gdf, data_dir)
 
 
-if dask_enabled:
-    executor = DaskExecutor(address="tcp://127.0.0.1:8786")
-else:
-    executor = LocalExecutor()
-
-# flow.run_config = LocalRun()
-flow.executor = executor
-
-if prefect_cloud_enabled:
-    flow_id = flow.register(project_name="accessible-poverty-estimates")
-    client = Client()
-    run_id = client.create_flow_run(flow_id=flow_id)
-
-else:
-    state = flow.run()
-
-# flow.run_config = LocalRun()
-# state = flow.run()
+state = run_flow(flow, executor, prefect_cloud_enabled, prefect_project_name)
