@@ -106,7 +106,7 @@ Builds on work published by [Thinking Machines Data Science](https://github.com/
 8. Run `dhs_clusters.py` to prepare DHS data
 
 9. Run GeoQuery extract using `extract_job.json` produced by `dhs_clusters.py` [**skip for replication only**]
-    - Note: if you are extening this code beyond countries with data available in this repo, contact geo@aiddata.org with your `dhs_buffers.geojson` and `extract_job.json` and they will generate the data for you.
+    - Note: if you are extending this code beyond countries with data available in this repo, contact geo@aiddata.org with your `dhs_buffers.geojson` and `extract_job.json` and they will generate the data for you.
 
 10. Run `gen_spatialite.py` to convert OSM buildings/roads shapefiles to SpatiaLite databases [**skip for replication only**]
 
@@ -116,6 +116,6 @@ Builds on work published by [Thinking Machines Data Science](https://github.com/
     - `crosswalk_gen.py` by default will check every OSM file in your `data/osm` directory. You can change this to check only a single country specified in your `config.ini` by commenting/uncommented lines specified within the script.
     - After running `crosswalk_gen.py` edit the modified CSV files if new feature types were detected. Excel or any other CSV/spreadsheet editor will work for this. Replace any `0` values in the `group` column with a relevant group (see groups already used in crosswalk files for examples such as an OSM building type of "house" being assigned the group of "residential").
 
-12. Run `models_prep.py` to merge all data required for modeling.
+12. Run `model_prep.py` to merge all data required for modeling.
 
 13. Run `models.py` to train models and produce figures.

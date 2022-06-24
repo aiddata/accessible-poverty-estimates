@@ -23,6 +23,8 @@ import mlflow
 
 
 
+import mlflow
+
 warnings.filterwarnings('ignore')
 
 # %matplotlib inline
@@ -113,6 +115,7 @@ geom_id = json_data['primary_geom_id']
 def run_model_funcs(data, columns, name, n_splits):
 
     mlflow.sklearn.autolog(registered_model_name=name)
+
 
     data_utils.plot_corr(
         data=data,
