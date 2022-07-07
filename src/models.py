@@ -64,7 +64,7 @@ os.makedirs(models_dir, exist_ok=True)
 os.makedirs(results_dir, exist_ok=True)
 
 
-mlflow.set_tracking_uri(f"sqlite:///{project_dir}/mlflow.db")
+mlflow.set_tracking_uri(config["main"]["mlflow_models_location"])
 
 sys.path.insert(0, os.path.join(project_dir, 'src'))
 
