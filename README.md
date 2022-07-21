@@ -38,18 +38,9 @@ This project requires downloaded data from [The DHS Program](https://dhsprogram.
     conda env export > environment.yml
     ```
 
-3. Install SpatiaLite 5.1.0+
-    - We use [VirtualKNN2](https://www.gaia-gis.it/fossil/libspatialite/wiki?name=KNN2), which was added in [check-in 03786a62cd](https://www.gaia-gis.it/fossil/libspatialite/info/03786a62cdb4ab17) of SpatialLite.
-    - Download and build SpatiaLite:
-      ```
-      fossil clone https://www.gaia-gis.it/fossil/libspatialite
-      cd libspatialite
-      # you can build with freexl if you like, but it isn't needed
-      ./configure --disable-freexl
-      make
-      sudo make install
-      ```
-    - Instructions for adding your newly-built mod_spatialite.so to `config.ini` can be found in [set configuration options](#set-configuration-options) below.
+3. Install [QGIS](https://www.qgis.org/en/site/)
+  - Instructions for doing so on your operating system can be found [here](https://www.qgis.org/en/site/forusers/download.html).
+  *While this project does not use QGIS directly, it shares the dependency libspatialite. See [docs/libspatialite_install.md](docs/libspatialite_install.md) if you'd prefer to install it manually.*
 
 ### Downloading data
 
