@@ -1,6 +1,3 @@
-
-
-
 import os
 import configparser
 import glob
@@ -34,7 +31,6 @@ dask_enabled = config.getboolean("main", "dask_enabled")
 dask_distributed = config.getboolean("main", "dask_distributed") if "dask_distributed" in config["main"] else False
 
 if dask_enabled:
-
     if dask_distributed:
         dask_address = config["main"]["dask_address"]
         executor = DaskExecutor(address=dask_address)
@@ -60,12 +56,14 @@ def load_dhs_geo(dhs_geo_file_name, data_dir):
 
 @task
 def download_and_load_geoboundaries(iso3, adm, data_dir):
-    adm_path = data_dir / 'boundaries' / f"{iso3}_ADM{adm}_simplified.geojson"
+    adm_path = data_dir / "boundaries" / f"{iso3}_ADM{adm}_simplified.geojson"
+    # create the boundaries directory, if it does not yet exist
+    adm_path.parent.mkdir(exist_ok = True)
     if not adm_path.exists():
 
         # decided to skip actual api call and just use direct github url
-        #  api is available at: f'https://www.geoboundaries.org/api/v4/gbOpen/{iso3/ADM{adm}'
-        #  and simplified geojson url is in the 'simplifiedGeometryGeoJSON' field
+        # api is available at: f'https://www.geoboundaries.org/api/v4/gbOpen/{iso3/ADM{adm}'
+        # and simplified geojson url is in the 'simplifiedGeometryGeoJSON' field
         adm_url = f'https://github.com/wmgeolab/geoBoundaries/blob/v4.0.0/releaseData/gbOpen/{iso3}/ADM{adm}/geoBoundaries-{iso3}-ADM{adm}_simplified.geojson?raw=true'
 
         # stream to local output
@@ -91,8 +89,8 @@ def join_and_export(dhs_geo_file_name, dhs_gdf, adm1_gdf, adm2_gdf, data_dir, bu
     if buffer:
         dhs_gdf['geometry'] = dhs_gdf['geometry'].buffer(buffer)
 
-    adm1_join = dhs_gdf.sjoin(adm1_gdf, how='left', predicate='intersects').rename(columns={'shapeID': 'ADM1'}).drop(columns=['index_right'])
-    adm2_join = adm1_join.sjoin(adm2_gdf, how='left', predicate='intersects').rename(columns={'shapeID': 'ADM2'}).drop(columns=['index_right', 'geometry'])
+    adm1_join = gpd.sjoin(dhs_gdf, adm1_gdf, how='left').rename(columns={'shapeID': 'ADM1'}).drop(columns=['index_right'])
+    adm2_join = gpd.sjoin(adm1_join, adm2_gdf, how='left').rename(columns={'shapeID': 'ADM2'}).drop(columns=['index_right', 'geometry'])
 
     adm2_join.to_csv(str(data_dir / 'dhs' / f'{dhs_geo_file_name}_adm_units.csv'), index=False)
 
