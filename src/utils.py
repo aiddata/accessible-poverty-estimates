@@ -38,7 +38,7 @@ class SpatiaLite():
         return conn
 
 
-def run_flow(flow, executor, prefect_cloud_enabled, project_name):
+def run_flow(flow, executor, prefect_cloud_enabled=False, project_name=None):
 
     # flow.run_config = LocalRun()
     flow.executor = executor
