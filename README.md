@@ -17,21 +17,27 @@ This project requires downloaded data from [The DHS Program](https://dhsprogram.
    ```
 
 2. Create Conda environment
+  - Create new environment from env file:
+    ```
+    conda env create --file environment.yml
+    conda activate osm-rf
+    ```
+  - or from scratch (if you prefer):
+    ```
+    conda create -n osm-rf python=3.9 -c conda-forge
+    conda activate osm-rf
+    conda install -c conda-forge --file requirements.txt
+    ```
+  - to update your environment (if needed):
+    ```
+    conda activate osm-rf
+    conda env update --file environment.yml  --prune
+    ```
+  - to export/save your environment (if needed):
+    ```
+    conda env export > environment.yml
+    ```
 
-	- Create new environment from env file:
-		```
-		conda env create --file environment.yml
-		conda activate osm-rf
-		```
-	- To update your environment (if needed):
-		```
-		conda activate osm-rf
-		conda env update --file environment.yml  --prune
-		```
-	- To export/save your environment (if needed):
-		```
-		conda env export > environment.yml
-		```
 3. Install SpatiaLite 5.1.0+
     - We use [VirtualKNN2](https://www.gaia-gis.it/fossil/libspatialite/wiki?name=KNN2), which was added in [check-in 03786a62cd](https://www.gaia-gis.it/fossil/libspatialite/info/03786a62cdb4ab17) of SpatialLite.
     - Download and build SpatiaLite:
