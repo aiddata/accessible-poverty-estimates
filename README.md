@@ -20,12 +20,13 @@ This project requires downloaded data from [The DHS Program](https://dhsprogram.
 
 	- Create new environment from env file:
 		```
-		conda env create -f environment.yml
+		conda env create --file environment.yml
 		conda activate osm-rf
 		```
 	- To update your environment (if needed):
 		```
-		conda env update --prefix ./env --file environment.yml  --prune
+		conda activate osm-rf
+		conda env update --file environment.yml  --prune
 		```
 	- To export/save your environment (if needed):
 		```

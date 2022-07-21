@@ -268,4 +268,3 @@ dependencies:
     - toolz==0.11.2
     - utm==0.7.0
     - zict==2.2.0
-prefix: /home/userv/anaconda3/envs/osm-rf
