@@ -213,56 +213,87 @@ for dhs_item in dhs_list:
     sqlite_road_table_name = 'DATA_TABLE'
     osm_type_field = 'fclass'
 
-    road_type_crosswalk_df = oft.load_crosswalk("roads", data_dir)
-
-    road_group_lists = oft.get_spatialite_groups(road_type_crosswalk_df, group_field, sqlite_access, sqlite_road_table_name, osm_type_field)
-
-    geom_path = os.path.join(data_dir, 'outputs', output_name, 'dhs_buffers.geojson')
-    buffers_gdf = oft.load_dhs_data(geom_path, geom_id, country_utm_epsg_code)
-
-    # ---------
-    #length specific
-    task_list = oft.create_sqlite_task_list(road_group_lists, buffers_gdf, sqlite_road_table_name, osm_type_field)
-
-    # results_list = [run_sqlite_query(i, sqlite_access) for i in task_list]
-    results_list = oft.run_sqlite_query.map(task_list, sqlite_access=unmapped(sqlite_access))
-
-    roads_length_gdf = oft.process_sqlite_results(results_list, buffers_gdf, country_utm_epsg_code, geom_id, 'roads')
-
-    roads_length_gdf = oft.create_aggegate_metrics(roads_length_gdf, road_group_lists, 'roads')
-
-    oft.flow_print(roads_length_gdf)
-
-    # ---------
-    # nearest specific
-
-    roads_geo_raw = oft.load_osm_shp("roads", data_dir, country_name, osm_date)
-
-    roads_geo = oft.merge_crosswalk(roads_geo_raw, road_type_crosswalk_df)
-
-    road_group_list = oft.simple(road_group_lists)
-
-    # nearest_results_list = [find_nearest(i, group_field, roads_geo, buffers_gdf, geom_id) for i in road_group_list]
-    nearest_results_list = oft.find_nearest.map(road_group_list, group_field=unmapped(group_field), osm_gdf=unmapped(roads_geo), query_gdf=unmapped(buffers_gdf), geom_id=unmapped(geom_id))
-
-    roads_nearest_gdf = oft.merge_road_nearest_features_data(buffers_gdf, nearest_results_list)
-
-    # # create nearest aggregates
-    roads_nearest_gdf = oft.create_aggegate_metrics(roads_nearest_gdf, road_group_lists, 'nearest')
-
-    oft.flow_print(roads_nearest_gdf)
-
-    # ---------
+    roads_length_features_path = os.path.join(osm_features_dir, '{}_roads-length_{}.csv'.format(geom_label, osm_date))
+    roads_nearest_features_path = os.path.join(osm_features_dir, '{}_roads-nearest_{}.csv'.format(geom_label, osm_date))
 
 
-    # merge length gdf and nearest gdf
-    roads_merge_gdf = oft.merge_road_features(roads_length_gdf, roads_nearest_gdf)
+    with Flow(f"osm-features-roads-length:{output_name}") as flow_03:
 
-    roads_features_path = os.path.join(osm_features_dir, '{}_roads_{}.csv'.format(geom_label, osm_date))
-    oft.export_road_features(roads_merge_gdf, geom_id, 'roads', roads_features_path)
+        sqlite_access = oft.init_spatialite(sqlite_road_path, sqlite_lib_path)
+
+        road_type_crosswalk_df = oft.load_crosswalk("roads", data_dir)
+
+        road_group_lists = oft.get_spatialite_groups(road_type_crosswalk_df, group_field, sqlite_access, sqlite_road_table_name, osm_type_field)
+
+        buffers_gdf = oft.load_dhs_data(geom_path, geom_id, country_utm_epsg_code)
+
+        # ---------
+        # length specific
+
+        task_list = oft.create_sqlite_task_list(road_group_lists, buffers_gdf, sqlite_road_table_name, osm_type_field)
+
+        # results_list = [oft.run_sqlite_query.run(i, sqlite_access) for i in task_list]
+        results_list = oft.run_sqlite_query.map(task_list, sqlite_access=unmapped(sqlite_access))
+
+        roads_length_gdf = oft.process_sqlite_results(results_list, buffers_gdf, country_utm_epsg_code, geom_id, 'roads')
+
+        roads_length_gdf = oft.create_aggegate_metrics(roads_length_gdf, road_group_lists, 'roads')
+
+        oft.flow_print(roads_length_gdf)
+
+        # ---------
+
+        oft.export_road_features(roads_length_gdf, geom_id, 'roads', roads_length_features_path)
+
+
+    with Flow(f"osm-features-roads-nearest:{output_name}") as flow_04:
+
+        sqlite_access = oft.init_spatialite(sqlite_road_path, sqlite_lib_path)
+
+        road_type_crosswalk_df = oft.load_crosswalk("roads", data_dir)
+
+        road_group_lists = oft.get_spatialite_groups(road_type_crosswalk_df, group_field, sqlite_access, sqlite_road_table_name, osm_type_field)
+
+        buffers_gdf = oft.load_dhs_data(geom_path, geom_id, country_utm_epsg_code)
+
+        # ---------
+        # nearest specific
+
+        roads_geo = oft.load_osm_shp("roads", data_dir, country_name, osm_date)
+
+        roads_geo = oft.merge_crosswalk(roads_geo, road_type_crosswalk_df)
+
+        road_group_list = oft.get_group_list(road_group_lists)
+
+        # nearest_results_list = [oft.find_nearest.run(i, group_field, roads_geo, buffers_gdf, geom_id) for i in road_group_list]
+        # nearest_results_list = oft.find_nearest.map(road_group_list, group_field=unmapped(group_field), osm_gdf=unmapped(roads_geo), query_gdf=unmapped(buffers_gdf), geom_id=unmapped(geom_id))
+
+        nearest_results_list = oft.find_nearest(road_group_list, group_field, roads_geo, buffers_gdf)
+
+
+        roads_nearest_gdf = oft.merge_road_nearest_features_data(buffers_gdf, nearest_results_list)
+
+        # # create nearest aggregates
+        roads_nearest_gdf = oft.create_aggegate_metrics(roads_nearest_gdf, road_group_lists, 'nearest')
+
+        oft.flow_print(roads_nearest_gdf)
+
+        # ---------
+
+        oft.export_road_features(roads_nearest_gdf, geom_id, 'roads', roads_nearest_features_path)
 
 
 
+    with Flow(f"osm-features-roads-merge:{output_name}") as flow_05:
+
+        roads_length_gdf =  oft.load_geodataframe(roads_length_features_path)
+        roads_nearest_gdf = oft.load_geodataframe(roads_nearest_features_path)
+
+        # merge length gdf and nearest gdf
+        roads_merge_gdf = oft.merge_road_features(roads_length_gdf, roads_nearest_gdf)
+
+        roads_features_path = os.path.join(osm_features_dir, '{}_roads_{}.csv'.format(geom_label, osm_date))
+        oft.export_road_features(roads_merge_gdf, geom_id, 'roads', roads_features_path)
 
 state = run_flow(flow, executor, prefect_cloud_enabled, prefect_project_name)
 
