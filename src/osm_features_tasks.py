@@ -227,24 +227,43 @@ def process_sqlite_results(results_list, query_gdf, country_utm_epsg_code, geom_
 
 
 @task(log_stdout=True, max_retries=5, retry_delay=datetime.timedelta(seconds=10))
-def create_aggegate_metrics(query_gdf_output, osm_group_lists, osm_type):
+def create_aggegate_metrics(query_gdf_output, osm_group_lists, osm_type, require_all_groups=False):
     # use group results to generate "all" results
     group = 'all'
-
+    group_list = osm_group_lists['group']
     if osm_type == 'buildings':
-        query_gdf_output[f"{group}_{osm_type}_count"] = query_gdf_output[[f"{g}_{osm_type}_count" for g in osm_group_lists['group']]].sum(axis=1)
-        query_gdf_output[f"{group}_{osm_type}_totalarea"] = query_gdf_output[[f"{g}_{osm_type}_totalarea" for g  in osm_group_lists['group']]].sum(axis=1)
+        if not require_all_groups:
+            group_list = [
+                g for g in group_list
+                if f"{g}_{osm_type}_count" in query_gdf_output.columns
+                and f"{g}_{osm_type}_totalarea" in query_gdf_output.columns
+            ]
+
+        query_gdf_output[f"{group}_{osm_type}_count"] = query_gdf_output[[f"{g}_{osm_type}_count" for g in group_list]].sum(axis=1)
+        query_gdf_output[f"{group}_{osm_type}_totalarea"] = query_gdf_output[[f"{g}_{osm_type}_totalarea" for g  in group_list]].sum(axis=1)
+
         query_gdf_output[f"{group}_{osm_type}_avgarea"] = query_gdf_output[f"{group}_{osm_type}_totalarea"] / query_gdf_output[f"{group}_{osm_type}_count"]
         query_gdf_output[f"{group}_{osm_type}_ratio"] = query_gdf_output[f"{group}_{osm_type}_totalarea"] / query_gdf_output['buffer_area']
 
     elif osm_type == 'roads':
-        query_gdf_output[f"{group}_{osm_type}_length"] = query_gdf_output[[f"{g}_{osm_type}_length" for g  in osm_group_lists['group']]].sum(axis=1)
+        if not require_all_groups:
+            group_list = [
+                g for g in group_list
+                if f"{g}_{osm_type}_length" in query_gdf_output.columns
+            ]
+
+        query_gdf_output[f"{group}_{osm_type}_length"] = query_gdf_output[[f"{g}_{osm_type}_length" for g in group_list]].sum(axis=1)
 
     elif osm_type == 'nearest':
+        if not require_all_groups:
+            group_list = [
+                g for g in group_list
+                if f"{g}_roads_nearestdist" in query_gdf_output.columns
+            ]
 
-        query_gdf_output[f"{group}_roads_nearestdist"] = query_gdf_output[[f"{g}_roads_nearestdist" for g  in osm_group_lists['group']]].min(axis=1)
+        query_gdf_output[f"{group}_roads_nearestdist"] = query_gdf_output[[f"{g}_roads_nearestdist" for g in group_list]].min(axis=1)
 
-        field_with_min_val = query_gdf_output[[f"{g}_roads_nearestdist" for g  in osm_group_lists['group']]].idxmin(axis=1)
+        field_with_min_val = query_gdf_output[[f"{g}_roads_nearestdist" for g in group_list]].idxmin(axis=1)
         query_gdf_output[f"{group}_roads_nearestid"] = [query_gdf_output.loc[ix, osm_id] for ix, osm_id in field_with_min_val.apply(lambda x: x.replace('nearestdist', 'nearestid')).iteritems()]
 
     else:
