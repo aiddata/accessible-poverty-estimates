@@ -56,9 +56,7 @@ def load_osm_shp(type, data_dir, country_name, osm_date):
         os.path.join(data_dir, f'osm/{country_name}-{osm_date}-free.shp/gis_osm_{type}_a_free_1.shp')
     ]
 
-    gdf_list = [gpd.read_file(p) for p in paths if os.path.exists(p)]
-
-    gdf = pd.concat(gdf_list)
+    gdf = pd.concat([gpd.read_file(p) for p in paths if os.path.exists(p)])
     return gdf
 
 
@@ -256,7 +254,7 @@ def create_aggegate_metrics(query_gdf_output, osm_group_lists, osm_type):
 
 
 @task(log_stdout=True, max_retries=5, retry_delay=datetime.timedelta(seconds=10))
-def export_sqlite(query_gdf_output, features_path, osm_type):
+def export_sqlite(query_gdf_output, features_path, osm_type, geom_id):
     query_gdf_output[geom_id] = query_gdf_output.index
     cols = [geom_id] + [i for i in query_gdf_output.columns if f'_{osm_type}_' in i]
     features = query_gdf_output[cols].copy(deep=True)
