@@ -1,6 +1,3 @@
-
-
-
 import os
 import configparser
 import glob
@@ -34,7 +31,6 @@ dask_enabled = config.getboolean("main", "dask_enabled")
 dask_distributed = config.getboolean("main", "dask_distributed") if "dask_distributed" in config["main"] else False
 
 if dask_enabled:
-
     if dask_distributed:
         dask_address = config["main"]["dask_address"]
         executor = DaskExecutor(address=dask_address)
@@ -60,12 +56,14 @@ def load_dhs_geo(dhs_geo_file_name, data_dir):
 
 @task
 def download_and_load_geoboundaries(iso3, adm, data_dir):
-    adm_path = data_dir / 'boundaries' / f"{iso3}_ADM{adm}_simplified.geojson"
+    adm_path = data_dir / "boundaries" / f"{iso3}_ADM{adm}_simplified.geojson"
+    # create the boundaries directory, if it does not yet exist
+    adm_path.parent.mkdir(exist_ok = True)
     if not adm_path.exists():
 
         # decided to skip actual api call and just use direct github url
-        #  api is available at: f'https://www.geoboundaries.org/api/v4/gbOpen/{iso3/ADM{adm}'
-        #  and simplified geojson url is in the 'simplifiedGeometryGeoJSON' field
+        # api is available at: f'https://www.geoboundaries.org/api/v4/gbOpen/{iso3/ADM{adm}'
+        # and simplified geojson url is in the 'simplifiedGeometryGeoJSON' field
         adm_url = f'https://github.com/wmgeolab/geoBoundaries/blob/v4.0.0/releaseData/gbOpen/{iso3}/ADM{adm}/geoBoundaries-{iso3}-ADM{adm}_simplified.geojson?raw=true'
 
         # stream to local output
