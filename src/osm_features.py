@@ -295,14 +295,18 @@ for dhs_item in dhs_list:
         roads_features_path = os.path.join(osm_features_dir, '{}_roads_{}.csv'.format(geom_label, osm_date))
         oft.export_road_features(roads_merge_gdf, geom_id, 'roads', roads_features_path)
 
-state = run_flow(flow, executor, prefect_cloud_enabled, prefect_project_name)
 
 
 
+    flow_list.extend([flow_01, flow_02, flow_03, flow_04, flow_05])
+
+    # state_01 = run_flow(flow_01, executor, prefect_cloud_enabled, prefect_project_name)
+    # state_02 = run_flow(flow_02, executor, prefect_cloud_enabled, prefect_project_name)
+    # state_03 = run_flow(flow_03, executor, prefect_cloud_enabled, prefect_project_name)
 
 
 
-
+state = run_flow(flow_list, executor, prefect_cloud_enabled, prefect_project_name, parent_flow_name='osm-features')
 
 
 
