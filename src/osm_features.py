@@ -59,7 +59,7 @@ project = config["main"]["project"]
 project_dir = config["main"]["project_dir"]
 data_dir = os.path.join(project_dir, 'data')
 
-prefect_cloud_enabled = config["main"]["prefect_cloud_enabled"]
+prefect_cloud_enabled =  config.getboolean("main", "prefect_cloud_enabled")
 prefect_project_name = config["main"]["prefect_project_name"]
 
 dask_enabled = config["main"]["dask_enabled"]
@@ -71,7 +71,7 @@ if dask_enabled:
         dask_address = config["main"]["dask_address"]
         executor = DaskExecutor(address=dask_address)
     else:
-        executor = LocalDaskExecutor(scheduler="processes")
+        executor = LocalDaskExecutor(scheduler="processes", num_workers=12)
 else:
     executor = LocalExecutor()
 
@@ -81,31 +81,30 @@ else:
 
 
 
-output_name = config[project]['output_name']
-country_utm_epsg_code = config[project]['country_utm_epsg_code']
-
-country_name = config[project]["country_name"]
-osm_date = config[project]["osm_date"]
-geom_id = config[project]["geom_id"]
-geom_label = config[project]["geom_label"]
-
-group_field = "group"
-
-osm_features_dir = os.path.join(data_dir, 'outputs', output_name, 'osm_features')
-os.makedirs(osm_features_dir, exist_ok=True)
+if 'combination' in config[project] and config[project]['combination'] == 'True':
+    dhs_list = config[project]['project_list'].replace(' ', '').split(',')
+else:
+    dhs_list = [project]
 
 
+flow_list = []
 
-with Flow("osm-features-pois") as flow:
+for dhs_item in dhs_list:
+
+    output_name = config[dhs_item]['output_name']
+    country_utm_epsg_code = config[dhs_item]['country_utm_epsg_code']
+
+    country_name = config[dhs_item]["country_name"]
+    osm_date = config[dhs_item]["osm_date"]
+    geom_id = config[dhs_item]["geom_id"]
+    geom_label = config[dhs_item]["geom_label"]
+
+    group_field = "group"
+
+    osm_features_dir = os.path.join(data_dir, 'outputs', output_name, 'osm_features')
+    os.makedirs(osm_features_dir, exist_ok=True)
 
     geom_path = os.path.join(data_dir, 'outputs', output_name, 'dhs_buffers.geojson')
-    buffers_gdf = oft.load_dhs_data(geom_path, geom_id, country_utm_epsg_code)
-
-    # ---------------------------------------------------------
-    # pois
-    # count of each type of pois (100+) in each buffer
-
-    pois_geo_raw = oft.load_osm_shp("pois", data_dir, country_name, osm_date)
 
     pois_type_crosswalk_df = oft.load_crosswalk("pois", data_dir)
 
