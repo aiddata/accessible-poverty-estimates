@@ -290,7 +290,7 @@ for dhs_item in dhs_list:
         roads_nearest_gdf = oft.load_geodataframe(roads_nearest_features_path)
 
         # merge length gdf and nearest gdf
-        roads_merge_gdf = oft.merge_road_features(roads_length_gdf, roads_nearest_gdf)
+        roads_merge_gdf = oft.merge_road_features(roads_length_gdf, roads_nearest_gdf, geom_id)
 
         roads_features_path = os.path.join(osm_features_dir, '{}_roads_{}.csv'.format(geom_label, osm_date))
         oft.export_road_features(roads_merge_gdf, geom_id, 'roads', roads_features_path)

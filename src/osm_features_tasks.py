@@ -352,11 +352,11 @@ def load_geodataframe(path):
 
 
 @task
-def merge_road_features(x, y):
-    x = x[['DHSID'] + [i for i in x.columns if 'roads' in i]]
-    y = y[['DHSID'] + [i for i in y.columns if 'roads' in i]]
-    gdf = x.merge(y, on='DHSID')
-    gdf.set_index('DHSID', inplace=True)
+def merge_road_features(x, y, geom_id):
+    x = x[[geom_id] + [i for i in x.columns if 'roads' in i]]
+    y = y[[geom_id] + [i for i in y.columns if 'roads' in i]]
+    gdf = x.merge(y, on=geom_id)
+    gdf.set_index(geom_id, inplace=True)
     return gdf
 
 
