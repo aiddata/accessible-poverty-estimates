@@ -338,19 +338,25 @@ def flow_print(x):
 
 @task(log_stdout=True, max_retries=5, retry_delay=datetime.timedelta(seconds=10))
 def merge_road_nearest_features_data(gdf, group_df_list):
-    print(gdf)
+    # print(gdf)
     for df in group_df_list:
         # merge group columns back to main cluster dataframe
         gdf = gdf.merge(df, left_index=True, right_index=True)
-        print(gdf)
+        # print(gdf)
     return gdf
 
 
 @task
+def load_geodataframe(path):
+    return gpd.read_file(path)
+
+
+@task
 def merge_road_features(x, y):
-    x = x[[i for i in x.columns if 'roads' in i]]
-    y = y[[i for i in y.columns if 'roads' in i]]
-    gdf = x.merge(y, left_index=True, right_index=True)
+    x = x[['DHSID'] + [i for i in x.columns if 'roads' in i]]
+    y = y[['DHSID'] + [i for i in y.columns if 'roads' in i]]
+    gdf = x.merge(y, on='DHSID')
+    gdf.set_index('DHSID', inplace=True)
     return gdf
 
 
