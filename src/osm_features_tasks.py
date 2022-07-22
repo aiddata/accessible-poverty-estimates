@@ -327,7 +327,7 @@ def find_nearest(group_list, group_field, osm_gdf, query_gdf):
 
 
 @task
-def simple(x):
+def get_group_list(x):
     return x['group'].to_list()
 
 
