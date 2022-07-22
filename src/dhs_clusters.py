@@ -120,6 +120,15 @@ def create_extract_file(output_name, data_dir):
     extract_job_text = base_extract_job_path.read_text().replace('[[ISO2]]', iso2).replace('[[DHS_ROUND]]', output_name)
     extract_job_path.write_text(extract_job_text)
 
+@task
+def extract_steps_file(output_name, data_dir):
+    """create extract job file to use with resulting dhs buffers geojson for geoquery extract
+    """
+    base_extract_steps_path = data_dir.parent / 'src' / 'extract_steps_template.sh'
+    extract_steps_path = data_dir / 'outputs' / output_name / 'extract_steps.sh'
+    extract_steps_text = base_extract_steps_path.read_text().replace('[[DATA_DIR]]', str(data_dir)).replace('[[OUTPUT_NAME]]', output_name)
+    extract_steps_path.write_text(extract_steps_text)
+
 
 @task(nout=1)
 def load_dhs_data(var_dict, data_dir):
@@ -224,6 +233,9 @@ def export_data(gdf, output_name, data_dir):
     Returns:
         None
     """
+    if isinstance(gdf, list):
+        gdf = gpd.GeoDataFrame(pd.concat(gdf))
+
     # output all dhs cluster data to CSV
     final_df = gdf[[i for i in gdf.columns if i != "geometry"]]
     final_path = data_dir / 'outputs' / output_name / 'dhs_data.csv'
@@ -232,7 +244,7 @@ def export_data(gdf, output_name, data_dir):
     # save buffer geometry as geojson
     geo_path = data_dir / 'outputs' / output_name / 'dhs_buffers.geojson'
     gdf[['DHSID', 'geometry']].to_file(geo_path, driver='GeoJSON')
-
+    return gdf
 
 
 # ---------------------------------------------------------
@@ -245,20 +257,25 @@ else:
 
 
 
-with Flow("dhs-clusters") as flow:
+flow_list = []
+# gdf_list = []
+for dhs_item in dhs_list:
 
-    for dhs_item in dhs_list:
+    with Flow(f"dhs-clusters:{dhs_item}") as flow:
 
-        output_name = config[dhs_item]['output_name']
+        item_output_name = config[dhs_item]['output_name']
         dhs_hh_file_name = config[dhs_item]['dhs_hh_file_name']
         dhs_geo_file_name = config[dhs_item]['dhs_geo_file_name']
         country_utm_epsg_code = config[dhs_item]['country_utm_epsg_code']
         var_dict = gen_var_dict(dhs_hh_file_name)
 
-        (data_dir / 'outputs' / output_name).mkdir(exist_ok=True)
+        (data_dir / 'outputs' / item_output_name).mkdir(exist_ok=True)
 
         # create extract job file to use with resulting dhs buffers geojson for geoquery extract
-        create_extract_file(output_name, data_dir)
+        create_extract_file(item_output_name, data_dir)
+
+        # create instructions for running geoquery data extract
+        extract_steps_file(item_output_name, data_dir)
 
         # prepare DHS cluster indicators
         cluster_data = load_dhs_data(var_dict, data_dir)
@@ -273,8 +290,17 @@ with Flow("dhs-clusters") as flow:
         gdf_merge = merge_dhs_data(cluster_data, gdf)
 
         # export
-        export_data(gdf_merge, output_name, data_dir)
+        gdf = export_data(gdf_merge, item_output_name, data_dir)
+
+        # gdf_list.append(gdf)
+        flow_list.append(flow)
 
 
+# output_name = config[project]['output_name']
+# (data_dir / 'outputs' / output_name).mkdir(exist_ok=True)
 
-state = run_flow(flow, executor, prefect_cloud_enabled, prefect_project_name)
+# create_extract_file(output_name, data_dir)
+# gdf = export_data(gdf_list, output_name, data_dir)
+
+
+state = run_flow(flow_list, executor, prefect_cloud_enabled, prefect_project_name)
