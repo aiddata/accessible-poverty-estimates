@@ -91,8 +91,8 @@ def join_and_export(dhs_geo_file_name, dhs_gdf, adm1_gdf, adm2_gdf, data_dir, bu
     if buffer:
         dhs_gdf['geometry'] = dhs_gdf['geometry'].buffer(buffer)
 
-    adm1_join = dhs_gdf.sjoin(adm1_gdf, how='left', predicate='intersects').rename(columns={'shapeID': 'ADM1'}).drop(columns=['index_right'])
-    adm2_join = adm1_join.sjoin(adm2_gdf, how='left', predicate='intersects').rename(columns={'shapeID': 'ADM2'}).drop(columns=['index_right', 'geometry'])
+    adm1_join = gpd.sjoin(dhs_gdf, adm1_gdf, how='left', predicate='intersects').rename(columns={'shapeID': 'ADM1'}).drop(columns=['index_right'])
+    adm2_join = gpd.sjoin(adm1_join, adm2_gdf, how='left', predicate='intersects').rename(columns={'shapeID': 'ADM2'}).drop(columns=['index_right', 'geometry'])
 
     adm2_join.to_csv(str(data_dir / 'dhs' / f'{dhs_geo_file_name}_adm_units.csv'), index=False)
 
@@ -106,10 +106,11 @@ if 'combination' in config[project] and config[project]['combination'] == 'True'
 else:
     dhs_list = [project]
 
+flow_name = 'dhs_adm_units'
+flow_list = []
+for dhs_item in dhs_list:
+    with Flow(f"{flow_name}:{dhs_item}") as flow:
 
-with Flow("dhs-adm-units") as flow:
-
-    for dhs_item in dhs_list:
         output_name = config[dhs_item]['output_name']
         dhs_geo_file_name = config[dhs_item]['dhs_geo_file_name']
         gb_iso3 = config[dhs_item]['gb_iso3']
@@ -121,5 +122,7 @@ with Flow("dhs-adm-units") as flow:
 
         join_and_export(dhs_geo_file_name, dhs_gdf, adm1_gdf, adm2_gdf, data_dir)
 
+        flow_list.append(flow)
 
-state = run_flow(flow, executor, prefect_cloud_enabled, prefect_project_name)
+
+state = run_flow(flow_list, executor, prefect_cloud_enabled, prefect_project_name, parent_flow_name=flow_name)
