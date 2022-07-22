@@ -38,18 +38,70 @@ class SpatiaLite():
         return conn
 
 
-def run_flow(flow, executor, prefect_cloud_enabled=False, project_name=None):
+from prefect import Flow
+from prefect.tasks.prefect import create_flow_run, wait_for_flow_run
 
-    # flow.run_config = LocalRun()
-    flow.executor = executor
+def run_flow(flow, executor, prefect_cloud_enabled=False, project_name=None, parent_flow_name=None):
+
 
     if prefect_cloud_enabled:
-        flow_id = flow.register(project_name=project_name)
         client = Client()
-        run_id = client.create_flow_run(flow_id=flow_id)
-        state = run_id
+
+        if isinstance(flow, list):
+            if parent_flow_name is None:
+                parent_flow_name == "parent-flow"
+
+            for existing_flow in flow:
+                existing_flow.executor = executor
+                _ = existing_flow.register(project_name=project_name)
+
+            with Flow(parent_flow_name) as parent_flow:
+
+                for ix, existing_flow in enumerate(flow):
+
+                    # assumes you have registered the following flows in a project named "examples"
+                    sub_flow = create_flow_run(flow_name=existing_flow.name, project_name=project_name)
+
+                    if ix > 0:
+                        sub_flow.set_upstream(wait_for_flow)
+
+                    # if ix < len(flow) - 1:
+                    wait_for_flow = wait_for_flow_run(sub_flow, raise_final_state=True)
+
+            parent_flow.executor = executor
+            flow_id = parent_flow.register(project_name=project_name)
+            run_id = client.create_flow_run(flow_id=flow_id)
+            state = run_id
+
+        else:
+            flow.executor = executor
+            flow_id = flow.register(project_name=project_name)
+            run_id = client.create_flow_run(flow_id=flow_id)
+            state = run_id
+
     else:
-        state = flow.run()
+        if isinstance(flow, list):
+            for ix, existing_flow in enumerate(flow):
+                existing_flow.executor = executor
+                state = existing_flow.run()
+
+
+        else:
+            flow.executor = executor
+            state = flow.run()
+
+    # # flow.run_config = LocalRun()
+    # flow.executor = executor
+
+    # if prefect_cloud_enabled:
+    #     client = Client()
+
+    #     flow_id = flow.register(project_name=project_name)
+
+    #     run_id = client.create_flow_run(flow_id=flow_id)
+    #     state = run_id
+    # else:
+    #     state = flow.run()
 
     return state
 
