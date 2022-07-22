@@ -128,9 +128,9 @@ base_url = 'http://download.geofabrik.de'
 
 # key is region, value is list of country names in region
 country_dict = {
-    'africa': ['Liberia', 'Sierra Leone', 'Cameroon', 'Guinea', 'Mali', 'Nigeria', 'Zambia', 'Benin', 'Burundi', 'Ethiopia', 'South Africa', 'Uganda', 'Angola', 'Malawi', 'Rwanda', 'Tanzania', 'Zimbabwe', 'Chad', 'Ghana', 'Kenya', 'Lesotho'],
+    'africa': ['Liberia', 'Sierra Leone', 'Cameroon', 'Guinea', 'Mali', 'Nigeria', 'Zambia', 'Benin', 'Burundi', 'Ethiopia', 'South Africa', 'Uganda', 'Angola', 'Malawi', 'Rwanda', 'Tanzania', 'Zimbabwe', 'Chad', 'Ghana', 'Kenya', 'Lesotho', 'Mauritania'],
     'antarctica': [],
-    'asia': ['Jordan', 'Pakistan', 'Philippines'],
+    'asia': ['Jordan', 'Pakistan', 'Philippines', 'Bangladesh'],
     'australia': [],
     'central-america': [],
     'europe': [],
