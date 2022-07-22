@@ -282,44 +282,48 @@ def export_sqlite(query_gdf_output, features_path, osm_type, geom_id):
 
 
 @task
-def find_nearest(group, group_field, osm_gdf, query_gdf, geom_id):
-
-    print(f'Roads nearest ({group})')
+def find_nearest(group_list, group_field, osm_gdf, query_gdf):
 
     query_gdf = query_gdf.copy(deep=True)
     src_points = query_gdf.apply(lambda x: (x.longitude, x.latitude), axis=1).to_list()
 
-    # subset based on group
-    if group == "all":
-        subset_osm_gdf = osm_gdf.copy(deep=True)
-    else:
-        subset_osm_gdf = osm_gdf.loc[osm_gdf[group_field] == group].reset_index().copy(deep=True)
+    results = []
 
-    # generate list of all road vertices and convert to geodataframe
-    line_xy = subset_osm_gdf.apply(lambda x: (x.osm_id, x.geometry.xy), axis=1)
-    line_xy_lookup = [j for i in line_xy for j in list(zip([i[0]]*len(i[1][0]), *i[1]))]
-    line_xy_df = pd.DataFrame(line_xy_lookup, columns=["osm_id", "x", "y"])
-    line_xy_points = [(i[1], i[2]) for i in line_xy_lookup]
+    for group in group_list:
 
-    # create ball tree for nearest point lookup
-    #  see https://automating-gis-processes.github.io/site/notebooks/L3/nearest-neighbor-faster.html
-    tree = BallTree(line_xy_points, leaf_size=50, metric='haversine')
+        print(f'Roads nearest ({group})')
 
-    # query tree
-    distances, indices = tree.query(src_points, k=1)
-    distances = distances.transpose()
-    indices = indices.transpose()
-    # k=1 so output length is array of len=1
-    closest = indices[0]
-    closest_dist = distances[0]
-    # def func to get osm id for closest locations
-    osm_id_lookup = lambda idx: line_xy_df.loc[idx].osm_id
+        # subset based on group
+        if group != "all":
+            sub_osm_gdf = osm_gdf.loc[osm_gdf[group_field] == group].reset_index().copy(deep=True)
 
-    # set final data
-    query_gdf["{}_roads_nearestid".format(group)] = list(map(osm_id_lookup, closest))
-    query_gdf["{}_roads_nearestdist".format(group)] = closest_dist
+        # generate list of all road vertices and convert to geodataframe
+        line_xy = sub_osm_gdf.apply(lambda x: (x.osm_id, x.geometry.xy), axis=1)
+        line_xy_lookup = [j for i in line_xy for j in list(zip([i[0]]*len(i[1][0]), *i[1]))]
+        line_xy_df = pd.DataFrame(line_xy_lookup, columns=["osm_id", "x", "y"])
+        line_xy_points = [(i[1], i[2]) for i in line_xy_lookup]
 
-    return query_gdf[["{}_roads_nearestid".format(group), "{}_roads_nearestdist".format(group)]]
+        # create ball tree for nearest point lookup
+        #  see https://automating-gis-processes.github.io/site/notebooks/L3/nearest-neighbor-faster.html
+        tree = BallTree(line_xy_points, leaf_size=50, metric='haversine')
+
+        # query tree
+        distances, indices = tree.query(src_points, k=1)
+        distances = distances.transpose()
+        indices = indices.transpose()
+        # k=1 so output length is array of len=1
+        closest = indices[0]
+        closest_dist = distances[0]
+        # def func to get osm id for closest locations
+        osm_id_lookup = lambda idx: line_xy_df.loc[idx].osm_id
+
+        # set final data
+        query_gdf["{}_roads_nearestid".format(group)] = list(map(osm_id_lookup, closest))
+        query_gdf["{}_roads_nearestdist".format(group)] = closest_dist
+
+        results.append(query_gdf[["{}_roads_nearestid".format(group), "{}_roads_nearestdist".format(group)]])
+
+    return results
 
 
 @task
