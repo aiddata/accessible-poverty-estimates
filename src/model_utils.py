@@ -14,6 +14,7 @@ from joblib import dump, load
 from sklearn.decomposition import PCA
 from sklearn.pipeline import Pipeline
 import xgboost as xgb
+import mlflow
 
 from sklearn.model_selection import (
     GridSearchCV,
@@ -197,6 +198,10 @@ def evaluate_model(
 
         # Get best estimator
         cv.fit(X, y)
+
+        if mlflow.active_run() is not None:
+            mlflow.sklearn.eval_and_log_metrics(cv, X, y_true, prefix="val_")
+
         print(
             "Best estimator: {}".format(cv.best_estimator_)
         )

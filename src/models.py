@@ -19,11 +19,11 @@ from pathlib import Path
 import pandas as pd
 import statsmodels.api as sm
 from stargazer.stargazer import Stargazer
-import mlflow
-
-
 
 import mlflow
+
+import model_utils
+import data_utils
 
 warnings.filterwarnings('ignore')
 
@@ -68,15 +68,6 @@ mlflow.set_tracking_uri(config["main"]["mlflow_models_location"])
 
 sys.path.insert(0, os.path.join(project_dir, 'src'))
 
-import model_utils
-import data_utils
-
-
-# import importlib
-# importlib.reload(model_utils)
-# importlib.reload(data_utils)
-
-
 # Scoring metrics
 scoring = {
     'r2': data_utils.pearsonr2,
@@ -114,7 +105,7 @@ geom_id = json_data['primary_geom_id']
 
 def run_model_funcs(data, columns, name, n_splits):
 
-    mlflow.sklearn.autolog(registered_model_name=name)
+    # mlflow.sklearn.autolog(registered_model_name=name)
 
 
     data_utils.plot_corr(
@@ -138,26 +129,24 @@ def run_model_funcs(data, columns, name, n_splits):
         output_file=os.path.join(results_dir, f'{name}_spearman_corr.png'),
         show=show_plots
     )
+    with mlflow.start_run() as run:
 
-    cv, predictions = model_utils.evaluate_model(
-        data=data,
-        feature_cols=columns,
-        indicator_cols=indicators,
-        clust_str=geom_id,
-        wandb=None,
-        scoring=scoring,
-        model_type='random_forest',
-        refit='r2',
-        search_type=search_type,
-        n_splits=n_splits,
-        n_iter=10,
-        plot_importance=True,
-        verbose=2,
-        output_file=os.path.join(results_dir, f'{name}_model_cv{n_splits}_'),
-        show=show_plots
-    )
-
-    model_utils.save_model(cv, data, columns, 'Wealth Index', os.path.join(models_dir, f'{name}_cv{n_splits}_best.joblib'))
+        cv, predictions = model_utils.evaluate_model(
+            data=data,
+            feature_cols=columns,
+            indicator_cols=indicators,
+            clust_str=geom_id,
+            scoring=scoring,
+            model_type='random_forest',
+            refit='r2',
+            search_type=search_type,
+            n_splits=n_splits,
+            n_iter=10,
+            plot_importance=True,
+            verbose=2,
+            output_file=os.path.join(results_dir, f'{name}_model_cv{n_splits}_'),
+            show=show_plots
+        )
 
     return cv, predictions
 
