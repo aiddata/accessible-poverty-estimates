@@ -65,6 +65,7 @@ def evaluate_model(
     feature_cols,
     indicator_cols,
     clust_str,
+    model_name=None,
     wandb=None,
     model_type="ridge",
     scoring={"r2": "r2"},
@@ -200,11 +201,17 @@ def evaluate_model(
         cv.fit(X, y)
 
         if mlflow.active_run() is not None:
-            mlflow.sklearn.eval_and_log_metrics(cv, X, y_true, prefix="val_")
+            mlflow.sklearn.log_model(cv.best_estimator_,
+                                     "best model",
+                                     registered_model_name=model_name)
+            for k in cv.best_params_.keys():
+                mlflow.log_param(k, cv.best_score_)
 
+        """
         print(
             "Best estimator: {}".format(cv.best_estimator_)
         )
+        """
 
         # Save results
         results[indicator + "_pred"] = y_pred

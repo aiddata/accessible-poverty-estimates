@@ -105,9 +105,6 @@ geom_id = json_data['primary_geom_id']
 
 def run_model_funcs(data, columns, name, n_splits):
 
-    # mlflow.sklearn.autolog(registered_model_name=name)
-
-
     data_utils.plot_corr(
         data=data,
         features_cols=columns,
@@ -136,6 +133,7 @@ def run_model_funcs(data, columns, name, n_splits):
             feature_cols=columns,
             indicator_cols=indicators,
             clust_str=geom_id,
+            model_name=name,
             scoring=scoring,
             model_type='random_forest',
             refit='r2',
