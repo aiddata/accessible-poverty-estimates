@@ -1,0 +1,20 @@
+artifact_path: best_estimator
+flavors:
+  python_function:
+    env: conda.yaml
+    loader_module: mlflow.sklearn
+    model_path: model.pkl
+    python_version: 3.9.10
+  sklearn:
+    code: null
+    pickled_model: model.pkl
+    serialization_format: cloudpickle
+    sklearn_version: 1.0.2
+mlflow_version: 1.26.1
+model_uuid: 82b7b4dbc1a3418aaa540e466310159f
+run_id: 0caf0a6bf8414e59a402498eafb7c3f3
+signature:
+  inputs: '[{"name": "longitude", "type": "double"}, {"name": "latitude", "type":
+    "double"}]'
+  outputs: '[{"type": "tensor", "tensor-spec": {"dtype": "float64", "shape": [-1]}}]'
+utc_time_created: '2022-06-15 18:26:45.038972'
