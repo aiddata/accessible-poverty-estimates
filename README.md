@@ -40,7 +40,7 @@ This project requires downloaded data from [The DHS Program](https://dhsprogram.
 
 3. Install [QGIS](https://www.qgis.org/en/site/)
   - Instructions for doing so on your operating system can be found [here](https://www.qgis.org/en/site/forusers/download.html).
-  *While this project does not use QGIS directly, it shares the dependency libspatialite. See [docs/libspatialite_install.md](docs/libspatialite_install.md) if you'd prefer to install it manually.*
+  *While this project does not use QGIS directly, it shares the dependency libspatialite. See [docs/libspatialite_install.md](docs/install_libspatialite.md) if you'd prefer to install it manually.*
 
 ### Downloading data
 
