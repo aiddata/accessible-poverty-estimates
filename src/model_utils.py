@@ -198,6 +198,7 @@ def evaluate_model(
         #         show=show
         #     )
 
+        print("Fitting CV on full dataset")
         # Get best estimator
         print("About to fit: ")
         print(type(cv))
@@ -483,6 +484,7 @@ def nested_cross_validation(
             refit=refit,
         )
 
+    print("Running cross_validate")
     # Commence cross validation
     nested_scores = cross_validate(
         cv,
@@ -496,6 +498,7 @@ def nested_cross_validation(
     )
     # print("RESULTS 1A: ", cv.cv_results_)
 
+    print("Running cross_val_predict")
     # Get cross validated predictions
     # y_pred = cross_val_predict(
     #     cv,

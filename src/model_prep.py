@@ -312,7 +312,7 @@ output_name = config[project]['output_name']
 output_dir = data_dir / 'outputs' / output_name
 output_dir.mkdir(exist_ok=True)
 
-with Flow("model_prep") as flow:
+with Flow(f"model_prep:{output_name}") as flow:
 
     project_data_list = prepare_dhs_item.map(dhs_list, config=unmapped(config), primary_geom_id=unmapped(primary_geom_id), indicators=unmapped(indicators))
 

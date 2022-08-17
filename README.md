@@ -37,6 +37,8 @@ This project requires downloaded data from [The DHS Program](https://dhsprogram.
     ```
     conda env export > environment.yml
     ```
+  - Add the `src` directory to your Conda environment Python path:
+    `conda develop /path/to/project/directory/src` (Note: /path/to/project/directory should be the same as your `project_dir` variable in the config.ini)
 
 3. Install [QGIS](https://www.qgis.org/en/site/)
   - Instructions for doing so on your operating system can be found [here](https://www.qgis.org/en/site/forusers/download.html).

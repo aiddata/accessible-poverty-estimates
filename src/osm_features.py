@@ -59,7 +59,7 @@ project = config["main"]["project"]
 project_dir = config["main"]["project_dir"]
 data_dir = os.path.join(project_dir, 'data')
 
-prefect_cloud_enabled = config["main"]["prefect_cloud_enabled"]
+prefect_cloud_enabled =  config.getboolean("main", "prefect_cloud_enabled")
 prefect_project_name = config["main"]["prefect_project_name"]
 
 dask_enabled = config["main"]["dask_enabled"]
@@ -71,7 +71,7 @@ if dask_enabled:
         dask_address = config["main"]["dask_address"]
         executor = DaskExecutor(address=dask_address)
     else:
-        executor = LocalDaskExecutor(scheduler="processes")
+        executor = LocalDaskExecutor(scheduler="processes", num_workers=12)
 else:
     executor = LocalExecutor()
 
@@ -81,128 +81,131 @@ else:
 
 
 
-output_name = config[project]['output_name']
-country_utm_epsg_code = config[project]['country_utm_epsg_code']
-
-country_name = config[project]["country_name"]
-osm_date = config[project]["osm_date"]
-geom_id = config[project]["geom_id"]
-geom_label = config[project]["geom_label"]
-
-group_field = "group"
-
-osm_features_dir = os.path.join(data_dir, 'outputs', output_name, 'osm_features')
-os.makedirs(osm_features_dir, exist_ok=True)
+if 'combination' in config[project] and config[project]['combination'] == 'True':
+    dhs_list = config[project]['project_list'].replace(' ', '').split(',')
+else:
+    dhs_list = [project]
 
 
+flow_list = []
 
-with Flow("osm-features-pois") as flow:
+for dhs_item in dhs_list:
 
-    geom_path = os.path.join(data_dir, 'outputs', output_name, 'dhs_buffers.geojson')
-    buffers_gdf = oft.load_dhs_data(geom_path, geom_id, country_utm_epsg_code)
+    output_name = config[dhs_item]['output_name']
+    country_utm_epsg_code = config[dhs_item]['country_utm_epsg_code']
 
-    # ---------------------------------------------------------
-    # pois
-    # count of each type of pois (100+) in each buffer
+    country_name = config[dhs_item]["country_name"]
+    osm_date = config[dhs_item]["osm_date"]
+    geom_id = config[dhs_item]["geom_id"]
+    geom_label = config[dhs_item]["geom_label"]
 
-    pois_geo_raw = oft.load_osm_shp("pois", data_dir, country_name, osm_date)
+    group_field = "group"
 
-    pois_type_crosswalk_df = oft.load_crosswalk("pois", data_dir)
-
-    pois_geo = oft.merge_crosswalk(pois_geo_raw, pois_type_crosswalk_df)
-
-    pois_group_list = oft.get_groups(pois_geo, group_field)
-
-    pois_group_data = oft.point_query.map(pois_group_list, group_field=unmapped(group_field), query_gdf=unmapped(buffers_gdf), osm_gdf=unmapped(pois_geo), osm_type=unmapped("pois"))
-
-    buffers_gdf_pois = oft.merge_features_data(buffers_gdf, pois_group_data)
-
-    pois_features_path = os.path.join(osm_features_dir, '{}_pois_{}.csv'.format(geom_label, osm_date))
-
-    oft.export_point_features(buffers_gdf_pois, geom_id, 'pois', pois_features_path)
-
-
-    # ---------------------------------------------------------
-    # traffic
-    # count of each type of traffic item in each buffer
-
-    traffic_geo_raw = oft.load_osm_shp("traffic", data_dir, country_name, osm_date)
-
-    traffic_type_crosswalk_df = oft.load_crosswalk("traffic", data_dir)
-
-    traffic_geo = oft.merge_crosswalk(traffic_geo_raw, traffic_type_crosswalk_df)
-
-    traffic_group_list = oft.get_groups(traffic_geo, group_field)
-
-    traffic_group_data = oft.point_query.map(traffic_group_list, group_field=unmapped(group_field), query_gdf=unmapped(buffers_gdf), osm_gdf=unmapped(traffic_geo), osm_type=unmapped("traffic"))
-
-    buffers_gdf_traffic = oft.merge_features_data(buffers_gdf, traffic_group_data)
-
-    traffic_features_path = os.path.join(osm_features_dir, '{}_traffic_{}.csv'.format(geom_label, osm_date))
-
-    oft.export_point_features(buffers_gdf_traffic, geom_id, 'traffic', traffic_features_path)
-
-
-    # ---------------------------------------------------------
-    # transport
-    # count of each type of transport item in each buffer
-
-    transport_geo_raw = oft.load_osm_shp("transport", data_dir, country_name, osm_date)
-
-    transport_type_crosswalk_df = oft.load_crosswalk("transport", data_dir)
-
-    transport_geo = oft.merge_crosswalk(transport_geo_raw, transport_type_crosswalk_df)
-
-    transport_group_list = oft.get_groups(transport_geo, group_field)
-
-    transport_group_data = oft.point_query.map(transport_group_list, group_field=unmapped(group_field), query_gdf=unmapped(buffers_gdf), osm_gdf=unmapped(transport_geo), osm_type=unmapped("transport"))
-
-    buffers_gdf_transport = oft.merge_features_data(buffers_gdf, transport_group_data)
-
-    transport_features_path = os.path.join(osm_features_dir, '{}_transport_{}.csv'.format(geom_label, osm_date))
-
-    oft.export_point_features(buffers_gdf_transport, geom_id, 'transport', transport_features_path)
-
-
-
-
-with Flow("osm-features-buildings") as flow:
-
-    sqlite_building_path = os.path.join(data_dir, f'osm/{country_name}-{osm_date}-free.shp/gis_osm_buildings_a_free_1.sqlite')
-    sqlite_lib_path = config["main"]["spatialite_lib_path"]
-
-    sqlite_access = oft.init_spatialite(sqlite_building_path, sqlite_lib_path)
-
-    sqlite_building_table_name = 'DATA_TABLE'
-    osm_type_field = 'type'
-    # sqlite_building_conn = build_gpkg_connection(sqlite_building_path)
-    # sqlite_building_conn.execute("SELECT tbl_name FROM sqlite_master WHERE type = 'table'").fetchall()
-    # sqlite_building_conn.execute(f'PRAGMA table_info({sqlite_building_table_name})').fetchall()
-
-    building_type_crosswalk_df = oft.load_crosswalk("buildings", data_dir)
-
-    building_group_lists = oft.get_spatialite_groups(building_type_crosswalk_df, group_field, sqlite_access, sqlite_building_table_name, osm_type_field)
+    osm_features_dir = os.path.join(data_dir, 'outputs', output_name, 'osm_features')
+    os.makedirs(osm_features_dir, exist_ok=True)
 
     geom_path = os.path.join(data_dir, 'outputs', output_name, 'dhs_buffers.geojson')
-    buffers_gdf = oft.load_dhs_data(geom_path, geom_id, country_utm_epsg_code)
 
-    task_list = oft.create_sqlite_task_list(building_group_lists, buffers_gdf, sqlite_building_table_name, osm_type_field)
+    with Flow(f"osm-features-pois:{output_name}") as flow_01:
 
-    # results_list = [run_sqlite_query(i, sqlite_access) for i in task_list]
-    results_list = oft.run_sqlite_query.map(task_list[:30], sqlite_access=unmapped(sqlite_access))
+        buffers_gdf = oft.load_dhs_data(geom_path, geom_id, country_utm_epsg_code)
 
-    buffers_gdf_buildings = oft.process_sqlite_results(results_list, buffers_gdf, country_utm_epsg_code, geom_id, 'buildings')
+        # ---------------------------------------------------------
+        # pois
+        # count of each type of pois (100+) in each buffer
 
-    buffers_gdf_buildings = oft.create_aggegate_metrics(buffers_gdf_buildings, building_group_lists, 'buildings')
+        pois_geo_raw = oft.load_osm_shp("pois", data_dir, country_name, osm_date)
 
-    buildings_features_path = os.path.join(osm_features_dir, f'{geom_label}_buildings_{osm_date}.csv')
+        pois_type_crosswalk_df = oft.load_crosswalk("pois", data_dir)
 
-    buildings_features = oft.export_sqlite(buffers_gdf_buildings, buildings_features_path, 'buildings')
+        pois_geo = oft.merge_crosswalk(pois_geo_raw, pois_type_crosswalk_df)
+
+        pois_group_list = oft.get_groups(pois_geo, group_field)
+
+        pois_group_data = oft.point_query.map(pois_group_list, group_field=unmapped(group_field), query_gdf=unmapped(buffers_gdf), osm_gdf=unmapped(pois_geo), osm_type=unmapped("pois"))
+
+        buffers_gdf_pois = oft.merge_features_data(buffers_gdf, pois_group_data)
+
+        pois_features_path = os.path.join(osm_features_dir, '{}_pois_{}.csv'.format(geom_label, osm_date))
+
+        oft.export_point_features(buffers_gdf_pois, geom_id, 'pois', pois_features_path)
 
 
+        # ---------------------------------------------------------
+        # traffic
+        # count of each type of traffic item in each buffer
+
+        traffic_geo_raw = oft.load_osm_shp("traffic", data_dir, country_name, osm_date)
+
+        traffic_type_crosswalk_df = oft.load_crosswalk("traffic", data_dir)
+
+        traffic_geo = oft.merge_crosswalk(traffic_geo_raw, traffic_type_crosswalk_df)
+
+        traffic_group_list = oft.get_groups(traffic_geo, group_field)
+
+        traffic_group_data = oft.point_query.map(traffic_group_list, group_field=unmapped(group_field), query_gdf=unmapped(buffers_gdf), osm_gdf=unmapped(traffic_geo), osm_type=unmapped("traffic"))
+
+        buffers_gdf_traffic = oft.merge_features_data(buffers_gdf, traffic_group_data)
+
+        traffic_features_path = os.path.join(osm_features_dir, '{}_traffic_{}.csv'.format(geom_label, osm_date))
+
+        oft.export_point_features(buffers_gdf_traffic, geom_id, 'traffic', traffic_features_path)
 
 
-with Flow("osm-features-roads") as flow:
+        # ---------------------------------------------------------
+        # transport
+        # count of each type of transport item in each buffer
+
+        transport_geo_raw = oft.load_osm_shp("transport", data_dir, country_name, osm_date)
+
+        transport_type_crosswalk_df = oft.load_crosswalk("transport", data_dir)
+
+        transport_geo = oft.merge_crosswalk(transport_geo_raw, transport_type_crosswalk_df)
+
+        transport_group_list = oft.get_groups(transport_geo, group_field)
+
+        transport_group_data = oft.point_query.map(transport_group_list, group_field=unmapped(group_field), query_gdf=unmapped(buffers_gdf), osm_gdf=unmapped(transport_geo), osm_type=unmapped("transport"))
+
+        buffers_gdf_transport = oft.merge_features_data(buffers_gdf, transport_group_data)
+
+        transport_features_path = os.path.join(osm_features_dir, '{}_transport_{}.csv'.format(geom_label, osm_date))
+
+        oft.export_point_features(buffers_gdf_transport, geom_id, 'transport', transport_features_path)
+
+
+    with Flow(f"osm-features-buildings:{output_name}") as flow_02:
+
+        sqlite_building_path = os.path.join(data_dir, f'osm/{country_name}-{osm_date}-free.shp/gis_osm_buildings_a_free_1.sqlite')
+        sqlite_lib_path = config["main"]["spatialite_lib_path"]
+
+        sqlite_access = oft.init_spatialite(sqlite_building_path, sqlite_lib_path)
+
+        sqlite_building_table_name = 'DATA_TABLE'
+        osm_type_field = 'type'
+        # sqlite_building_conn = build_gpkg_connection(sqlite_building_path)
+        # sqlite_building_conn.execute("SELECT tbl_name FROM sqlite_master WHERE type = 'table'").fetchall()
+        # sqlite_building_conn.execute(f'PRAGMA table_info({sqlite_building_table_name})').fetchall()
+
+        building_type_crosswalk_df = oft.load_crosswalk("buildings", data_dir)
+
+        building_group_lists = oft.get_spatialite_groups(building_type_crosswalk_df, group_field, sqlite_access, sqlite_building_table_name, osm_type_field)
+
+        buffers_gdf = oft.load_dhs_data(geom_path, geom_id, country_utm_epsg_code)
+
+        task_list = oft.create_sqlite_task_list(building_group_lists, buffers_gdf, sqlite_building_table_name, osm_type_field)
+
+        # results_list = [oft.run_sqlite_query.run(i, sqlite_access) for i in task_list]
+        results_list = oft.run_sqlite_query.map(task_list, sqlite_access=unmapped(sqlite_access))
+
+        buffers_gdf_buildings = oft.process_sqlite_results(results_list, buffers_gdf, country_utm_epsg_code, geom_id, 'buildings')
+
+        buffers_gdf_buildings = oft.create_aggegate_metrics(buffers_gdf_buildings, building_group_lists, 'buildings')
+
+        buildings_features_path = os.path.join(osm_features_dir, f'{geom_label}_buildings_{osm_date}.csv')
+
+        buildings_features = oft.export_sqlite(buffers_gdf_buildings, buildings_features_path, 'buildings', geom_id)
+
+
 
     sqlite_road_path = os.path.join(data_dir, f'osm/{country_name}-{osm_date}-free.shp/gis_osm_roads_free_1.sqlite')
     sqlite_lib_path = config["main"]["spatialite_lib_path"]
@@ -210,65 +213,100 @@ with Flow("osm-features-roads") as flow:
     sqlite_road_table_name = 'DATA_TABLE'
     osm_type_field = 'fclass'
 
-    road_type_crosswalk_df = oft.load_crosswalk("roads", data_dir)
-
-    road_group_lists = oft.get_spatialite_groups(road_type_crosswalk_df, group_field, sqlite_access, sqlite_road_table_name, osm_type_field)
-
-    geom_path = os.path.join(data_dir, 'outputs', output_name, 'dhs_buffers.geojson')
-    buffers_gdf = oft.load_dhs_data(geom_path, geom_id, country_utm_epsg_code)
-
-    # ---------
-    #length specific
-    task_list = oft.create_sqlite_task_list(road_group_lists, buffers_gdf, sqlite_road_table_name, osm_type_field)
-
-    # results_list = [run_sqlite_query(i, sqlite_access) for i in task_list]
-    results_list = oft.run_sqlite_query.map(task_list, sqlite_access=unmapped(sqlite_access))
-
-    roads_length_gdf = oft.process_sqlite_results(results_list, buffers_gdf, country_utm_epsg_code, geom_id, 'roads')
-
-    roads_length_gdf = oft.create_aggegate_metrics(roads_length_gdf, road_group_lists, 'roads')
-
-    oft.flow_print(roads_length_gdf)
-
-    # ---------
-    # nearest specific
-
-    roads_geo_raw = oft.load_osm_shp("roads", data_dir, country_name, osm_date)
-
-    roads_geo = oft.merge_crosswalk(roads_geo_raw, road_type_crosswalk_df)
-
-    road_group_list = oft.simple(road_group_lists)
-
-    # nearest_results_list = [find_nearest(i, group_field, roads_geo, buffers_gdf, geom_id) for i in road_group_list]
-    nearest_results_list = oft.find_nearest.map(road_group_list, group_field=unmapped(group_field), osm_gdf=unmapped(roads_geo), query_gdf=unmapped(buffers_gdf), geom_id=unmapped(geom_id))
-
-    roads_nearest_gdf = oft.merge_road_nearest_features_data(buffers_gdf, nearest_results_list)
-
-    # # create nearest aggregates
-    roads_nearest_gdf = oft.create_aggegate_metrics(roads_nearest_gdf, road_group_lists, 'nearest')
-
-    oft.flow_print(roads_nearest_gdf)
-
-    # ---------
+    roads_length_features_path = os.path.join(osm_features_dir, '{}_roads-length_{}.csv'.format(geom_label, osm_date))
+    roads_nearest_features_path = os.path.join(osm_features_dir, '{}_roads-nearest_{}.csv'.format(geom_label, osm_date))
 
 
-    # merge length gdf and nearest gdf
-    roads_merge_gdf = oft.merge_road_features(roads_length_gdf, roads_nearest_gdf)
+    with Flow(f"osm-features-roads-length:{output_name}") as flow_03:
 
-    roads_features_path = os.path.join(osm_features_dir, '{}_roads_{}.csv'.format(geom_label, osm_date))
-    oft.export_road_features(roads_merge_gdf, geom_id, 'roads', roads_features_path)
+        sqlite_access = oft.init_spatialite(sqlite_road_path, sqlite_lib_path)
+
+        road_type_crosswalk_df = oft.load_crosswalk("roads", data_dir)
+
+        road_group_lists = oft.get_spatialite_groups(road_type_crosswalk_df, group_field, sqlite_access, sqlite_road_table_name, osm_type_field)
+
+        buffers_gdf = oft.load_dhs_data(geom_path, geom_id, country_utm_epsg_code)
+
+        # ---------
+        # length specific
+
+        task_list = oft.create_sqlite_task_list(road_group_lists, buffers_gdf, sqlite_road_table_name, osm_type_field)
+
+        # results_list = [oft.run_sqlite_query.run(i, sqlite_access) for i in task_list]
+        results_list = oft.run_sqlite_query.map(task_list, sqlite_access=unmapped(sqlite_access))
+
+        roads_length_gdf = oft.process_sqlite_results(results_list, buffers_gdf, country_utm_epsg_code, geom_id, 'roads')
+
+        roads_length_gdf = oft.create_aggegate_metrics(roads_length_gdf, road_group_lists, 'roads')
+
+        oft.flow_print(roads_length_gdf)
+
+        # ---------
+
+        oft.export_road_features(roads_length_gdf, geom_id, 'roads', roads_length_features_path)
+
+
+    with Flow(f"osm-features-roads-nearest:{output_name}") as flow_04:
+
+        sqlite_access = oft.init_spatialite(sqlite_road_path, sqlite_lib_path)
+
+        road_type_crosswalk_df = oft.load_crosswalk("roads", data_dir)
+
+        road_group_lists = oft.get_spatialite_groups(road_type_crosswalk_df, group_field, sqlite_access, sqlite_road_table_name, osm_type_field)
+
+        buffers_gdf = oft.load_dhs_data(geom_path, geom_id, country_utm_epsg_code)
+
+        # ---------
+        # nearest specific
+
+        roads_geo = oft.load_osm_shp("roads", data_dir, country_name, osm_date)
+
+        roads_geo = oft.merge_crosswalk(roads_geo, road_type_crosswalk_df)
+
+        road_group_list = oft.get_group_list(road_group_lists)
+
+        # nearest_results_list = [oft.find_nearest.run(i, group_field, roads_geo, buffers_gdf, geom_id) for i in road_group_list]
+        # nearest_results_list = oft.find_nearest.map(road_group_list, group_field=unmapped(group_field), osm_gdf=unmapped(roads_geo), query_gdf=unmapped(buffers_gdf), geom_id=unmapped(geom_id))
+
+        nearest_results_list = oft.find_nearest(road_group_list, group_field, roads_geo, buffers_gdf)
+
+
+        roads_nearest_gdf = oft.merge_road_nearest_features_data(buffers_gdf, nearest_results_list)
+
+        # # create nearest aggregates
+        roads_nearest_gdf = oft.create_aggegate_metrics(roads_nearest_gdf, road_group_lists, 'nearest')
+
+        oft.flow_print(roads_nearest_gdf)
+
+        # ---------
+
+        oft.export_road_features(roads_nearest_gdf, geom_id, 'roads', roads_nearest_features_path)
+
+
+
+    with Flow(f"osm-features-roads-merge:{output_name}") as flow_05:
+
+        roads_length_gdf =  oft.load_geodataframe(roads_length_features_path)
+        roads_nearest_gdf = oft.load_geodataframe(roads_nearest_features_path)
+
+        # merge length gdf and nearest gdf
+        roads_merge_gdf = oft.merge_road_features(roads_length_gdf, roads_nearest_gdf, geom_id)
+
+        roads_features_path = os.path.join(osm_features_dir, '{}_roads_{}.csv'.format(geom_label, osm_date))
+        oft.export_road_features(roads_merge_gdf, geom_id, 'roads', roads_features_path)
 
 
 
 
-state = run_flow(flow, executor, prefect_cloud_enabled, prefect_project_name)
+    flow_list.extend([flow_01, flow_02, flow_03, flow_04, flow_05])
+
+    # state_01 = run_flow(flow_01, executor, prefect_cloud_enabled, prefect_project_name)
+    # state_02 = run_flow(flow_02, executor, prefect_cloud_enabled, prefect_project_name)
+    # state_03 = run_flow(flow_03, executor, prefect_cloud_enabled, prefect_project_name)
 
 
 
-
-
-
-
+state = run_flow(flow_list, executor, prefect_cloud_enabled, prefect_project_name, parent_flow_name='osm-features')
 
 
 

@@ -56,9 +56,7 @@ def load_osm_shp(type, data_dir, country_name, osm_date):
         os.path.join(data_dir, f'osm/{country_name}-{osm_date}-free.shp/gis_osm_{type}_a_free_1.shp')
     ]
 
-    gdf_list = [gpd.read_file(p) for p in paths if os.path.exists(p)]
-
-    gdf = pd.concat(gdf_list)
+    gdf = pd.concat([gpd.read_file(p) for p in paths if os.path.exists(p)])
     return gdf
 
 
@@ -229,24 +227,43 @@ def process_sqlite_results(results_list, query_gdf, country_utm_epsg_code, geom_
 
 
 @task(log_stdout=True, max_retries=5, retry_delay=datetime.timedelta(seconds=10))
-def create_aggegate_metrics(query_gdf_output, osm_group_lists, osm_type):
+def create_aggegate_metrics(query_gdf_output, osm_group_lists, osm_type, require_all_groups=False):
     # use group results to generate "all" results
     group = 'all'
-
+    group_list = osm_group_lists['group']
     if osm_type == 'buildings':
-        query_gdf_output[f"{group}_{osm_type}_count"] = query_gdf_output[[f"{g}_{osm_type}_count" for g in osm_group_lists['group']]].sum(axis=1)
-        query_gdf_output[f"{group}_{osm_type}_totalarea"] = query_gdf_output[[f"{g}_{osm_type}_totalarea" for g  in osm_group_lists['group']]].sum(axis=1)
+        if not require_all_groups:
+            group_list = [
+                g for g in group_list
+                if f"{g}_{osm_type}_count" in query_gdf_output.columns
+                and f"{g}_{osm_type}_totalarea" in query_gdf_output.columns
+            ]
+
+        query_gdf_output[f"{group}_{osm_type}_count"] = query_gdf_output[[f"{g}_{osm_type}_count" for g in group_list]].sum(axis=1)
+        query_gdf_output[f"{group}_{osm_type}_totalarea"] = query_gdf_output[[f"{g}_{osm_type}_totalarea" for g  in group_list]].sum(axis=1)
+
         query_gdf_output[f"{group}_{osm_type}_avgarea"] = query_gdf_output[f"{group}_{osm_type}_totalarea"] / query_gdf_output[f"{group}_{osm_type}_count"]
         query_gdf_output[f"{group}_{osm_type}_ratio"] = query_gdf_output[f"{group}_{osm_type}_totalarea"] / query_gdf_output['buffer_area']
 
     elif osm_type == 'roads':
-        query_gdf_output[f"{group}_{osm_type}_length"] = query_gdf_output[[f"{g}_{osm_type}_length" for g  in osm_group_lists['group']]].sum(axis=1)
+        if not require_all_groups:
+            group_list = [
+                g for g in group_list
+                if f"{g}_{osm_type}_length" in query_gdf_output.columns
+            ]
+
+        query_gdf_output[f"{group}_{osm_type}_length"] = query_gdf_output[[f"{g}_{osm_type}_length" for g in group_list]].sum(axis=1)
 
     elif osm_type == 'nearest':
+        if not require_all_groups:
+            group_list = [
+                g for g in group_list
+                if f"{g}_roads_nearestdist" in query_gdf_output.columns
+            ]
 
-        query_gdf_output[f"{group}_roads_nearestdist"] = query_gdf_output[[f"{g}_roads_nearestdist" for g  in osm_group_lists['group']]].min(axis=1)
+        query_gdf_output[f"{group}_roads_nearestdist"] = query_gdf_output[[f"{g}_roads_nearestdist" for g in group_list]].min(axis=1)
 
-        field_with_min_val = query_gdf_output[[f"{g}_roads_nearestdist" for g  in osm_group_lists['group']]].idxmin(axis=1)
+        field_with_min_val = query_gdf_output[[f"{g}_roads_nearestdist" for g in group_list]].idxmin(axis=1)
         query_gdf_output[f"{group}_roads_nearestid"] = [query_gdf_output.loc[ix, osm_id] for ix, osm_id in field_with_min_val.apply(lambda x: x.replace('nearestdist', 'nearestid')).iteritems()]
 
     else:
@@ -256,7 +273,7 @@ def create_aggegate_metrics(query_gdf_output, osm_group_lists, osm_type):
 
 
 @task(log_stdout=True, max_retries=5, retry_delay=datetime.timedelta(seconds=10))
-def export_sqlite(query_gdf_output, features_path, osm_type):
+def export_sqlite(query_gdf_output, features_path, osm_type, geom_id):
     query_gdf_output[geom_id] = query_gdf_output.index
     cols = [geom_id] + [i for i in query_gdf_output.columns if f'_{osm_type}_' in i]
     features = query_gdf_output[cols].copy(deep=True)
@@ -265,48 +282,52 @@ def export_sqlite(query_gdf_output, features_path, osm_type):
 
 
 @task
-def find_nearest(group, group_field, osm_gdf, query_gdf, geom_id):
-
-    print(f'Roads nearest ({group})')
+def find_nearest(group_list, group_field, osm_gdf, query_gdf):
 
     query_gdf = query_gdf.copy(deep=True)
     src_points = query_gdf.apply(lambda x: (x.longitude, x.latitude), axis=1).to_list()
 
-    # subset based on group
-    if group == "all":
-        subset_osm_gdf = osm_gdf.copy(deep=True)
-    else:
-        subset_osm_gdf = osm_gdf.loc[osm_gdf[group_field] == group].reset_index().copy(deep=True)
+    results = []
 
-    # generate list of all road vertices and convert to geodataframe
-    line_xy = subset_osm_gdf.apply(lambda x: (x.osm_id, x.geometry.xy), axis=1)
-    line_xy_lookup = [j for i in line_xy for j in list(zip([i[0]]*len(i[1][0]), *i[1]))]
-    line_xy_df = pd.DataFrame(line_xy_lookup, columns=["osm_id", "x", "y"])
-    line_xy_points = [(i[1], i[2]) for i in line_xy_lookup]
+    for group in group_list:
 
-    # create ball tree for nearest point lookup
-    #  see https://automating-gis-processes.github.io/site/notebooks/L3/nearest-neighbor-faster.html
-    tree = BallTree(line_xy_points, leaf_size=50, metric='haversine')
+        print(f'Roads nearest ({group})')
 
-    # query tree
-    distances, indices = tree.query(src_points, k=1)
-    distances = distances.transpose()
-    indices = indices.transpose()
-    # k=1 so output length is array of len=1
-    closest = indices[0]
-    closest_dist = distances[0]
-    # def func to get osm id for closest locations
-    osm_id_lookup = lambda idx: line_xy_df.loc[idx].osm_id
+        # subset based on group
+        if group != "all":
+            sub_osm_gdf = osm_gdf.loc[osm_gdf[group_field] == group].reset_index().copy(deep=True)
 
-    # set final data
-    query_gdf["{}_roads_nearestid".format(group)] = list(map(osm_id_lookup, closest))
-    query_gdf["{}_roads_nearestdist".format(group)] = closest_dist
+        # generate list of all road vertices and convert to geodataframe
+        line_xy = sub_osm_gdf.apply(lambda x: (x.osm_id, x.geometry.xy), axis=1)
+        line_xy_lookup = [j for i in line_xy for j in list(zip([i[0]]*len(i[1][0]), *i[1]))]
+        line_xy_df = pd.DataFrame(line_xy_lookup, columns=["osm_id", "x", "y"])
+        line_xy_points = [(i[1], i[2]) for i in line_xy_lookup]
 
-    return query_gdf[["{}_roads_nearestid".format(group), "{}_roads_nearestdist".format(group)]]
+        # create ball tree for nearest point lookup
+        #  see https://automating-gis-processes.github.io/site/notebooks/L3/nearest-neighbor-faster.html
+        tree = BallTree(line_xy_points, leaf_size=50, metric='haversine')
+
+        # query tree
+        distances, indices = tree.query(src_points, k=1)
+        distances = distances.transpose()
+        indices = indices.transpose()
+        # k=1 so output length is array of len=1
+        closest = indices[0]
+        closest_dist = distances[0]
+        # def func to get osm id for closest locations
+        osm_id_lookup = lambda idx: line_xy_df.loc[idx].osm_id
+
+        # set final data
+        query_gdf["{}_roads_nearestid".format(group)] = list(map(osm_id_lookup, closest))
+        query_gdf["{}_roads_nearestdist".format(group)] = closest_dist
+
+        results.append(query_gdf[["{}_roads_nearestid".format(group), "{}_roads_nearestdist".format(group)]])
+
+    return results
 
 
 @task
-def simple(x):
+def get_group_list(x):
     return x['group'].to_list()
 
 
@@ -317,19 +338,25 @@ def flow_print(x):
 
 @task(log_stdout=True, max_retries=5, retry_delay=datetime.timedelta(seconds=10))
 def merge_road_nearest_features_data(gdf, group_df_list):
-    print(gdf)
+    # print(gdf)
     for df in group_df_list:
         # merge group columns back to main cluster dataframe
         gdf = gdf.merge(df, left_index=True, right_index=True)
-        print(gdf)
+        # print(gdf)
     return gdf
 
 
 @task
-def merge_road_features(x, y):
-    x = x[[i for i in x.columns if 'roads' in i]]
-    y = y[[i for i in y.columns if 'roads' in i]]
-    gdf = x.merge(y, left_index=True, right_index=True)
+def load_geodataframe(path):
+    return gpd.read_file(path)
+
+
+@task
+def merge_road_features(x, y, geom_id):
+    x = x[[geom_id] + [i for i in x.columns if 'roads' in i]]
+    y = y[[geom_id] + [i for i in y.columns if 'roads' in i]]
+    gdf = x.merge(y, on=geom_id)
+    gdf.set_index(geom_id, inplace=True)
     return gdf
 
 
