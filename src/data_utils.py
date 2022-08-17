@@ -5,8 +5,10 @@
 import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
+import plotly.graph_objects as go
 import numpy as np
 from tqdm import tqdm
+import re
 
 import seaborn as sns
 from sklearn import preprocessing
@@ -16,6 +18,8 @@ from scipy.stats import percentileofscore
 from sklearn.metrics import r2_score
 from sklearn.metrics import mean_squared_error
 from sklearn.metrics import mean_absolute_error
+from sklearn_evaluation.plot import grid_search
+
 
 TM_pal_categorical_3 = ("#ef4631", "#10b9ce", "#ff9138")
 sns.set(
@@ -392,4 +396,117 @@ def subset_dataframe(df,feature_cols, remove_cols):
     updated_cols = [col for col in df.columns if col not in remove_cols ]  #update list of column names for dataframe
     new_features = [col for col in feature_cols if col not in remove_cols] #update column list of feature columns
     return df.copy()[updated_cols], new_features
+
+
+#from sklearn_evaluation.plot import grid_search
+def plot_bar_grid_search(cv_results, grid_param, output_name, figsize = (18, 8), show = False, output_file = None):
+
+    if 'mean_test_score' not in cv_results.keys():
+        cv_results['mean_test_score'] = cv_results.pop('mean_test_r2')                  #Set scoring metric to score of choice frrom scoring dict
+    if 'std_test_score' not in cv_results.keys():
+        cv_results['std_test_score'] = cv_results.pop('std_test_r2')
+    
+    plt.figure(figsize = figsize)
+    grid_search(cv_results, change = grid_param, kind = 'bar', sort = False)
+    plt.subplot().legend(loc = 'upper left', bbox_to_anchor = (0, -.1))
+    plt.subplot().set_ybound(lower = 0.6)
+    plt.title('Grid Search Bar Graph for ' + output_name)
+    print("Saving figure:")
+    if output_file:
+        plt.savefig(fname=output_file, bbox_inches="tight")
+    if show: 
+        plt.show()
+
+#import plotly.graphics_objects as go
+#import re
+#Also, add plotly to list of requirements
+def plot_parallel_coordinates(cv_results, output_name, show = False, output_file = None, color_scale = 'picnic', show_colorbar = True):
+
+    if 'mean_test_score' not in cv_results.keys():
+        cv_results['mean_test_score'] = cv_results.pop('mean_test_r2')                  #Set scoring metric to score of choice from scoring dict
+
+    df = pd.DataFrame(cv_results)
+    # print("Default: \n", df, type(df))
+
+    category_dict=dict()  #store dict of lists, where each key/value pair represents a categorical hyperparameter and its list of mappings between categorical and quantitative values
+    for column in df.columns:
+        if ((not re.search('mean_test_score|param_', column)) or (column != 'mean_test_score' and len(df[column].unique()) == 1)): # Remove columns from dataframe that don't contain parameters with variation or the score under consideration
+            df.drop(column, inplace = True, axis = 1)
+        else: #if the column is valid, transform the data into valid int types and shorten name of parameters
+            if column == 'mean_test_score':
+                df[column] = df.pop(column)
+            else:
+                shortened = column.rsplit("param_regressor__", 1)[1] #Remove long "param_regressor__" phrase from parameters
+                df[shortened] = df[column]
+                df.drop(column, inplace = True, axis = 1)
+                try:
+                    df[shortened] = pd.to_numeric(df[shortened]) 
+                except: #Convert categorical data to quantitative data if necessary, storing mappings in category_list
+                    category_dict[shortened] = df[shortened].unique().tolist()
+                    df[shortened] = df[shortened].apply(lambda x: category_dict[shortened].index(x))
+
+
+
+    # print("After filter: \n", df, type(df))
+    # # df.drop(labels = ["param_regressor__criterion", "param_regressor__bootstrap"], inplace=True, axis = 1)
+    # # df = df.filter(regex='mean_test_score|param_')
+    # # df.drop(["param_regressor__criterion", "param_regressor__bootstrap"], inplace=True, axis = 1)
+    # print(df.dtypes)
+
+    # print("Shortened df: \n", df, type(df))
+    # print(df.columns)
+    # print(df.dtypes)
+    # print(category_dict)
+
+
+    # for col in df.columns:
+    #     print(col)
+    #     print(df[col].values[3], "type: ", type(df[col].values[3]))
+    #     print(df[col])
+    
+    col_list = []
+
+    for col in df.columns:
+        if (col) in category_dict.keys():
+            col_dict = dict(
+                label=col,
+                tickvals=list(range(len(category_dict[col]))),
+                ticktext=category_dict[col],
+                values = df[col]
+            )
+        else:
+            col_dict = dict(
+                range = (df[col].min(), df[col].max()),
+                label = col,
+                values=df[col]
+            )
+        col_list.append(col_dict)
+
+    parCoords = go.Parcoords(
+        dimensions=col_list,
+        line=dict(color=df['mean_test_score'], colorscale=color_scale, reversescale=True)
+    )
+
+    fig = go.Figure(
+        data = parCoords
+    )
+
+    fig.update_layout(              #Theming
+        paper_bgcolor='#000',
+        plot_bgcolor='#000',
+        title_text='Parallel Coordinates Plot for ' + output_name,
+        font_color='#DDD',
+        font_size=18
+    )
+
+    fig.update_traces(       
+        line_showscale=show_colorbar, #Show colorbar
+        selector=dict(type='parcoords')
+    )
+
+    if output_file:
+        fig.write_html(output_file + '.html')
+        fig.write_image(output_file + '.png')
+    if show: 
+        fig.show()
 

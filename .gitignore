@@ -9,3 +9,5 @@ data/outputs/*/final_data.csv
 data/ecopia_data/
 data/kc_surveys/
 test_*/
+.prefect_key
+dask-worker-space
