@@ -16,6 +16,10 @@ from pathlib import Path
 
 import pandas as pd
 
+from prefect import task, Flow, unmapped
+from prefect.executors import DaskExecutor, LocalExecutor, LocalDaskExecutor
+
+from utils import run_flow
 
 
 if 'config.ini' not in os.listdir():
@@ -24,80 +28,31 @@ if 'config.ini' not in os.listdir():
 config = configparser.ConfigParser()
 config.read('config.ini')
 
-
 project = config["main"]["project"]
 project_dir = config["main"]["project_dir"]
+data_dir = Path(project_dir, 'data')
 
-primary_geom_id = config[project]["geom_id"]
+prefect_cloud_enabled = config.getboolean("main", "prefect_cloud_enabled")
+prefect_project_name = config["main"]["prefect_project_name"]
 
-indicators = json.loads(config["main"]['indicators'])
-# indicators = [
-#     'Wealth Index',
-#     'Education completed (years)',
-#     'Access to electricity',
-#     'Access to water (minutes)'
-# ]
+dask_enabled = config.getboolean("main", "dask_enabled")
+dask_distributed = config.getboolean("main", "dask_distributed") if "dask_distributed" in config["main"] else False
 
+if dask_enabled:
 
-data_dir = os.path.join(project_dir, 'data')
-
-output_name = config[project]['output_name']
-
-outut_dir = os.path.join(data_dir, 'outputs', output_name)
-
-os.makedirs(outut_dir, exist_ok=True)
-
-
-
-
-if 'combination' in config[project] and config[project]['combination'] == 'True':
-    dhs_list = config[project]['project_list'].replace(' ', '').split(',')
-
+    if dask_distributed:
+        dask_address = config["main"]["dask_address"]
+        executor = DaskExecutor(address=dask_address)
+    else:
+        executor = LocalDaskExecutor(scheduler="processes")
 else:
-    dhs_list = [project]
+    executor = LocalExecutor()
 
 
-
-project_data_dict = {}
-
-for dhs_item in dhs_list:
-
-    tmp_output_name = config[dhs_item]['output_name']
-    country_utm_epsg_code = config[dhs_item]['country_utm_epsg_code']
-
-    osm_date = config[dhs_item]["osm_date"]
-    geom_id = config[dhs_item]["geom_id"]
-    geom_label = config[dhs_item]["geom_label"]
-    dhs_geo_file_name = config[dhs_item]['dhs_geo_file_name']
-
-    geoquery_data_file_name = config[dhs_item]["geoquery_data_file_name"]
-
-    ntl_year = config[dhs_item]["ntl_year"]
-
-    geospatial_variable_years = json.loads(config[dhs_item]['geospatial_variable_years'])
+# ---------------------------------------------------------
 
 
-    # -------------------------------------
-    # load in dhs data
-
-
-    adm_path =  os.path.join(data_dir, 'dhs', f'{dhs_geo_file_name}_adm_units.csv')
-    adm_df = pd.read_csv(adm_path)
-
-    dhs_path =  os.path.join(data_dir, 'outputs', tmp_output_name, 'dhs_data.csv')
-    raw_dhs_df = pd.read_csv(dhs_path)
-
-    raw_dhs_df = raw_dhs_df.merge(adm_df, on=geom_id, how='left')
-
-    dhs_cols = [geom_id, 'latitude', 'longitude'] + indicators + ['ADM1','ADM2']
-
-    dhs_df = raw_dhs_df[dhs_cols]
-
-
-    # -------------------------------------
-    # OSM data prep
-
-    osm_features_dir = os.path.join(data_dir, 'outputs', tmp_output_name, 'osm_features')
+def load_osm_data(osm_features_dir, geom_label, osm_date):
 
     # new osm data
     osm_roads_file = os.path.join(osm_features_dir, '{}_roads_{}.csv'.format(geom_label, osm_date))
@@ -132,15 +87,12 @@ for dhs_item in dhs_list:
 
     print("Shape of OSM dataframe after drops: {}".format(osm_df.shape))
 
+    return osm_df
 
-    # -------------------------------------
-    # geoquery spatial data prep
 
-    # join GeoQuery spatial data to osm_data
-    geoquery_path = os.path.join(data_dir, 'outputs', tmp_output_name, f'{geoquery_data_file_name}.csv')
+def load_geoquery_data(geoquery_path):
     geoquery_df = pd.read_csv(geoquery_path)
     geoquery_df.fillna(-999, inplace=True)
-
 
     for c1 in set([i[:i.index('categorical')] for i in geoquery_df.columns if 'categorical' in i]):
         for c2 in [i for i in geoquery_df.columns if i.startswith(c1) and not i.endswith('count')]:
@@ -152,11 +104,53 @@ for dhs_item in dhs_list:
     for y in esa_landcover_years:
         geoquery_df[f'esa_landcover.{y}.categorical_cropland'] = geoquery_df[[f'esa_landcover.{y}.categorical_irrigated_cropland', f'esa_landcover.{y}.categorical_rainfed_cropland', f'esa_landcover.{y}.categorical_mosaic_cropland']].sum(axis=1)
 
+    return geoquery_df
+
+
+@task
+def prepare_dhs_item(dhs_item, config, primary_geom_id, indicators):
+
+    tmp_output_name = config[dhs_item]['output_name']
+    country_utm_epsg_code = config[dhs_item]['country_utm_epsg_code']
+
+    osm_date = config[dhs_item]["osm_date"]
+    geom_id = config[dhs_item]["geom_id"]
+    geom_label = config[dhs_item]["geom_label"]
+    dhs_geo_file_name = config[dhs_item]['dhs_geo_file_name']
+
+    geoquery_data_file_name = config[dhs_item]["geoquery_data_file_name"]
+
+    ntl_year = config[dhs_item]["ntl_year"]
+
+    geospatial_variable_years = json.loads(config[dhs_item]['geospatial_variable_years'])
+
+    # -------------------------------------
+    # load dhs and adm data
+
+    adm_path = data_dir / 'dhs' / f'{dhs_geo_file_name}_adm_units.csv'
+    adm_df = pd.read_csv(adm_path)
+
+    dhs_path = data_dir / 'outputs' / tmp_output_name / 'dhs_data.csv'
+    raw_dhs_df = pd.read_csv(dhs_path)
+
+    # load osm data
+    osm_features_dir = data_dir / 'outputs' / tmp_output_name / 'osm_features'
+    osm_df = load_osm_data(osm_features_dir, geom_label, osm_date)
+
+    # load geoquery data
+    geoquery_path = data_dir / 'outputs' / tmp_output_name / f'{geoquery_data_file_name}.csv'
+    geoquery_df = load_geoquery_data(geoquery_path)
+
+
+    # -------------------------------------
+    # merge dhs, osm, geoquery
+
+    raw_dhs_df = raw_dhs_df.merge(adm_df, on=geom_id, how='left')
+    dhs_cols = [geom_id, 'latitude', 'longitude'] + indicators + ['ADM1','ADM2']
+    dhs_df = raw_dhs_df[dhs_cols]
 
     spatial_df = osm_df.merge(geoquery_df, on=geom_id, how="left")
-
     all_data_df = spatial_df.merge(dhs_df, on=geom_id, how='left')
-
 
     all_data_df = all_data_df.loc[all_data_df['Wealth Index'].notnull()].copy()
 
@@ -193,7 +187,6 @@ for dhs_item in dhs_list:
 
     main_geoquery_cols = list(atemporal_replacement_dict.values()) + data_keep_geoquery_cols
     all_data_df.rename(atemporal_replacement_dict, axis=1, inplace=True)
-
 
 
     # sub_geoquery_cols = ['srtm_slope_500m_na_mean', 'srtm_elevation_500m_na_mean', 'distance_to_coast_236_na_mean', 'dist_to_water_na_mean', 'accessibility_to_cities_2015_v1_0_mean', 'gpw_v4r11_density_2015_mean', 'gpw_v4r11_count_2015_sum',  'globalwindatlas_windspeed_na_mean', 'distance_to_gemdata_201708_na_mean', 'dist_to_onshore_petroleum_v12_na_mean']
@@ -237,12 +230,12 @@ for dhs_item in dhs_list:
 
     ntl_cols = [f'viirs_mean', f'viirs_min', f'viirs_max', f'viirs_sum', f'viirs_median']
 
-
-    project_data_df = all_data_df[dhs_cols + all_osm_cols + main_geoquery_cols]
+    project_data_df = all_data_df[dhs_cols + all_osm_cols + main_geoquery_cols].copy()
 
     project_data_df.rename(columns={geom_id: primary_geom_id}, inplace=True)
 
-    project_data_dict[dhs_item] = {
+    return {
+        'dhs_item': dhs_item,
         'all_osm_cols': all_osm_cols,
         'sub_osm_cols': sub_osm_cols,
         'all_geo_cols': all_geo_cols,
@@ -256,37 +249,75 @@ for dhs_item in dhs_list:
         'data': project_data_df
     }
 
+@task
+def export_model_data(project_data_list, output_dir, primary_geom_id):
+
+    project_data_dict = {i['dhs_item']:i for i in project_data_list}
+
+    all_osm_cols = list(set.union(*[set(i['all_osm_cols']) for i in project_data_dict.values()]))
+    sub_osm_cols = list(set.union(*[set(i['sub_osm_cols']) for i in project_data_dict.values()]))
+    all_geo_cols = list(set.union(*[set(i['all_geo_cols']) for i in project_data_dict.values()]))
+    sub_geo_cols = list(set.union(*[set(i['sub_geo_cols']) for i in project_data_dict.values()]))
+    ntl_cols = list(set.union(*[set(i['ntl_cols']) for i in project_data_dict.values()]))
+
+    final_data_df = pd.concat([i['data'] for i in project_data_dict.values()], axis=0)
+
+    final_data_df.fillna(0, inplace=True)
+
+    # for i in final_data.columns:
+    #     x = final_data[i].isna().sum()
+    #     if x>0: print(i, x)
 
 
-all_osm_cols = list(set.union(*[set(i['all_osm_cols']) for i in project_data_dict.values()]))
-sub_osm_cols = list(set.union(*[set(i['sub_osm_cols']) for i in project_data_dict.values()]))
-all_geo_cols = list(set.union(*[set(i['all_geo_cols']) for i in project_data_dict.values()]))
-sub_geo_cols = list(set.union(*[set(i['sub_geo_cols']) for i in project_data_dict.values()]))
-ntl_cols = list(set.union(*[set(i['ntl_cols']) for i in project_data_dict.values()]))
-
-final_data_df = pd.concat([i['data'] for i in project_data_dict.values()], axis=0)
-
-final_data_df.fillna(0, inplace=True)
-
-# for i in final_data.columns:
-#     x = final_data[i].isna().sum()
-#     if x>0: print(i, x)
+    final_data_path = output_dir / 'final_data.csv'
+    final_data_df.to_csv(final_data_path, index=False)
 
 
-final_data_path = os.path.join(data_dir, 'outputs', output_name, 'final_data.csv')
-final_data_df.to_csv(final_data_path, index=False)
+    json_data = {
+        'all_osm_cols': all_osm_cols,
+        'sub_osm_cols': sub_osm_cols,
+        'all_geo_cols': all_geo_cols,
+        'sub_geo_cols': sub_geo_cols,
+        'ntl_cols': ntl_cols,
+        'primary_geom_id': primary_geom_id,
+    }
+
+    json_path = output_dir / 'final_data.json'
+    with open(json_path, 'w', encoding='utf-8') as f:
+        json.dump(json_data, f, ensure_ascii=False, indent=4)
 
 
-json_data = {
-    'all_osm_cols': all_osm_cols,
-    'sub_osm_cols': sub_osm_cols,
-    'all_geo_cols': all_geo_cols,
-    'sub_geo_cols': sub_geo_cols,
-    'ntl_cols': ntl_cols,
-    'primary_geom_id': primary_geom_id,
-}
 
-json_path = os.path.join(data_dir, 'outputs', output_name, 'final_data.json')
-with open(json_path, 'w', encoding='utf-8') as f:
-    json.dump(json_data, f, ensure_ascii=False, indent=4)
 
+
+primary_geom_id = config[project]["geom_id"]
+
+indicators = json.loads(config["main"]['indicators'])
+# indicators = [
+#     'Wealth Index',
+#     'Education completed (years)',
+#     'Access to electricity',
+#     'Access to water (minutes)'
+# ]
+
+
+
+if 'combination' in config[project] and config[project]['combination'] == 'True':
+    dhs_list = config[project]['project_list'].replace(' ', '').split(',')
+else:
+    dhs_list = [project]
+
+
+output_name = config[project]['output_name']
+output_dir = data_dir / 'outputs' / output_name
+output_dir.mkdir(exist_ok=True)
+
+with Flow(f"model_prep:{output_name}") as flow:
+
+    project_data_list = prepare_dhs_item.map(dhs_list, config=unmapped(config), primary_geom_id=unmapped(primary_geom_id), indicators=unmapped(indicators))
+
+    export_model_data(project_data_list, output_dir, primary_geom_id)
+
+
+
+state = run_flow(flow, executor, prefect_cloud_enabled, prefect_project_name)

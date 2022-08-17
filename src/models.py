@@ -16,6 +16,8 @@ import statsmodels.api as sm
 from stargazer.stargazer import Stargazer
 import mlflow
 
+import model_utils
+import data_utils
 
 warnings.filterwarnings('ignore')
 
@@ -55,16 +57,9 @@ results_dir = os.path.join(data_dir, 'outputs', output_name, 'results')
 os.makedirs(models_dir, exist_ok=True)
 os.makedirs(results_dir, exist_ok=True)
 
+mlflow.set_tracking_uri(config["main"]["mlflow_models_location"])
+
 sys.path.insert(0, os.path.join(project_dir, 'src'))
-
-import model_utils
-import data_utils
-
-
-# import importlib
-# importlib.reload(model_utils)
-# importlib.reload(data_utils)
-
 
 # Scoring metrics
 scoring = {
@@ -76,7 +71,6 @@ search_type = 'grid'
 
 # number of folds for cross-validation
 n_splits = 5
-
 
 
 # -----------------------------------------------------------------------------
@@ -124,39 +118,41 @@ def run_model_funcs(data, columns, name, n_splits):
         output_file=os.path.join(results_dir, f'{name}_spearman_corr.png'),
         show=show_plots
     )
+    with mlflow.start_run() as run:
 
-    cv = model_utils.evaluate_model(
-        data=data,
-        feature_cols=columns,
-        indicator_cols=indicators,
-        clust_str=geom_id,
-        wandb=None,
-        scoring=scoring,
-        model_type='random_forest',
-        refit='r2',
-        search_type=search_type,
-        n_splits=n_splits,
-        n_iter=10,
-        plot_importance=True,
-        verbose=1,
-        output_file=os.path.join(results_dir, f'{name}_model_cv{n_splits}_'),
-        show=show_plots
-    )
+        cv = model_utils.evaluate_model(
+            data=data,
+            feature_cols=columns,
+            indicator_cols=indicators,
+            clust_str=geom_id,
+            model_name=name,
+            scoring=scoring,
+            model_type='random_forest',
+            refit='r2',
+            search_type=search_type,
+            n_splits=n_splits,
+            n_iter=10,
+            plot_importance=True,
+            verbose=1,
+            output_file=os.path.join(results_dir, f'{name}_model_cv{n_splits}_'),
+            show=show_plots)
 
 
-    data_utils.plot_bar_grid_search(
-        output_file=os.path.join(results_dir, f'{name}_model_grid_search_bar'),
-        output_name=output_name,
-        cv_results = cv.cv_results_,
-        grid_param="regressor__n_estimators",
-    )
+        data_utils.plot_bar_grid_search(
+            output_file=os.path.join(results_dir, f'{name}_model_grid_search_bar'),
+            output_name=output_name,
+            cv_results = cv.cv_results_,
+            grid_param="regressor__n_estimators",
+        )
 
-    # print("RESULTS: ", cv.cv_results_)
-    data_utils.plot_parallel_coordinates(
-        output_file=os.path.join(results_dir, f'{name}_model_grid_search_parallel_coordinates'),
-        output_name=output_name,
-        cv_results = cv.cv_results_
-    )
+        plot_file_path = os.path.join(results_dir, f'{name}_model_grid_search_parallel_coordinates')
+        data_utils.plot_parallel_coordinates(
+            output_file = plot_file_path,
+            output_name = output_name,
+            cv_results = cv.cv_results_
+        )
+
+        mlflow.log_artifact(plot_file_path + ".html")
 
 
     model_utils.save_model(cv, data, columns, 'Wealth Index', os.path.join(models_dir, f'{name}_cv{n_splits}_best.joblib'))
@@ -224,6 +220,17 @@ adm2_df = pd.concat([
 adm2_cols = [i for i in adm2_df.columns if i not in [geom_id] + indicators]
 adm2_ols = run_OLS(adm2_df, 'Wealth Index', adm2_cols, 'adm2')
 
+
+# =========
+final_featuresx = [f'viirs_median', f'worldpop_pop_count_1km_mosaic_mean',  f'viirs_max', 'longitude', 'latitude', 'all_roads_length', 'all_buildings_ratio']
+
+xxx_df = pd.concat([
+    final_data_df[[geom_id] + indicators + final_featuresx],
+    pd.get_dummies(final_data_df[['ADM2']], drop_first=True)
+], axis=1)
+xxx_cols = [i for i in xxx_df.columns if i not in [geom_id] + indicators]
+xxx_ols = run_OLS(xxx_df, 'Wealth Index', xxx_cols, 'adm2-final-noesa')
+# =========
 
 
 # # all OSM + NTL

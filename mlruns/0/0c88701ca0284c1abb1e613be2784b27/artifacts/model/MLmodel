@@ -1,0 +1,20 @@
+artifact_path: model
+flavors:
+  python_function:
+    env: conda.yaml
+    loader_module: mlflow.sklearn
+    model_path: model.pkl
+    python_version: 3.9.10
+  sklearn:
+    code: null
+    pickled_model: model.pkl
+    serialization_format: cloudpickle
+    sklearn_version: 1.0.2
+mlflow_version: 1.26.1
+model_uuid: 9d0e1e80e80240d8aec635ae7ddf81df
+run_id: 0c88701ca0284c1abb1e613be2784b27
+signature:
+  inputs: '[{"name": "longitude", "type": "double"}, {"name": "latitude", "type":
+    "double"}]'
+  outputs: '[{"type": "tensor", "tensor-spec": {"dtype": "float64", "shape": [-1]}}]'
+utc_time_created: '2022-06-15 18:26:48.678122'

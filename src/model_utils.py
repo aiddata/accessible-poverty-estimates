@@ -14,6 +14,7 @@ from joblib import dump, load
 from sklearn.decomposition import PCA
 from sklearn.pipeline import Pipeline
 import xgboost as xgb
+import mlflow
 
 from sklearn.model_selection import (
     GridSearchCV,
@@ -62,6 +63,7 @@ def evaluate_model(
     feature_cols,
     indicator_cols,
     clust_str,
+    model_name=None,
     wandb=None,
     model_type="ridge",
     scoring={"r2": "r2"},
@@ -196,14 +198,22 @@ def evaluate_model(
         #         show=show
         #     )
 
+        print("Fitting CV on full dataset")
         # Get best estimator
         print("About to fit: ")
         print(type(cv))
         cv.fit(X, y)
+
+        if mlflow.active_run() is not None:
+            mlflow.sklearn.log_model(cv.best_estimator_,
+                                     "best model",
+                                     registered_model_name=model_name)
+            for k in cv.best_params_.keys():
+                mlflow.log_param(k, cv.best_score_)
+
         print(
             "Best estimator: {}".format(cv.best_estimator_)
         )
-        # print("RESULTS 2: ", cv.cv_results_)
 
         # Save results
         # results[indicator + "_pred"] = y_pred
@@ -474,6 +484,7 @@ def nested_cross_validation(
             refit=refit,
         )
 
+    print("Running cross_validate")
     # Commence cross validation
     nested_scores = cross_validate(
         cv,
@@ -487,6 +498,7 @@ def nested_cross_validation(
     )
     # print("RESULTS 1A: ", cv.cv_results_)
 
+    print("Running cross_val_predict")
     # Get cross validated predictions
     # y_pred = cross_val_predict(
     #     cv,
