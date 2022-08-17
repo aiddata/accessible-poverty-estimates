@@ -73,7 +73,6 @@ search_type = 'grid'
 n_splits = 5
 
 
-
 # -----------------------------------------------------------------------------
 
 
@@ -139,19 +138,21 @@ def run_model_funcs(data, columns, name, n_splits):
             show=show_plots)
 
 
-    data_utils.plot_bar_grid_search(
-        output_file=os.path.join(results_dir, f'{name}_model_grid_search_bar'),
-        output_name=output_name,
-        cv_results = cv.cv_results_,
-        grid_param="regressor__n_estimators",
-    )
+        data_utils.plot_bar_grid_search(
+            output_file=os.path.join(results_dir, f'{name}_model_grid_search_bar'),
+            output_name=output_name,
+            cv_results = cv.cv_results_,
+            grid_param="regressor__n_estimators",
+        )
 
-    # print("RESULTS: ", cv.cv_results_)
-    data_utils.plot_parallel_coordinates(
-        output_file=os.path.join(results_dir, f'{name}_model_grid_search_parallel_coordinates'),
-        output_name=output_name,
-        cv_results = cv.cv_results_
-    )
+        plot_file_path = os.path.join(results_dir, f'{name}_model_grid_search_parallel_coordinates')
+        data_utils.plot_parallel_coordinates(
+            output_file = plot_file_path,
+            output_name = output_name,
+            cv_results = cv.cv_results_
+        )
+
+        mlflow.log_artifact(plot_file_path + ".html")
 
 
     model_utils.save_model(cv, data, columns, 'Wealth Index', os.path.join(models_dir, f'{name}_cv{n_splits}_best.joblib'))
