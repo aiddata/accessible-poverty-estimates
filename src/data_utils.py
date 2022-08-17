@@ -420,7 +420,7 @@ def plot_bar_grid_search(cv_results, grid_param, output_name, figsize = (18, 8),
 #import plotly.graphics_objects as go
 #import re
 #Also, add plotly to list of requirements
-def plot_parallel_coordinates(cv_results, output_name, show = False, output_file = None):
+def plot_parallel_coordinates(cv_results, output_name, show = False, output_file = None, color_scale = 'picnic', show_colorbar = True):
 
     if 'mean_test_score' not in cv_results.keys():
         cv_results['mean_test_score'] = cv_results.pop('mean_test_r2')                  #Set scoring metric to score of choice from scoring dict
@@ -428,7 +428,7 @@ def plot_parallel_coordinates(cv_results, output_name, show = False, output_file
     df = pd.DataFrame(cv_results)
     # print("Default: \n", df, type(df))
 
-    category_dict=dict()  #store dict of lists, where each key/value pair reprsents a categorical hyperparameter and its list of mappings between categorical and quantitative values
+    category_dict=dict()  #store dict of lists, where each key/value pair represents a categorical hyperparameter and its list of mappings between categorical and quantitative values
     for column in df.columns:
         if ((not re.search('mean_test_score|param_', column)) or (column != 'mean_test_score' and len(df[column].unique()) == 1)): # Remove columns from dataframe that don't contain parameters with variation or the score under consideration
             df.drop(column, inplace = True, axis = 1)
@@ -463,6 +463,7 @@ def plot_parallel_coordinates(cv_results, output_name, show = False, output_file
     #     print(col)
     #     print(df[col].values[3], "type: ", type(df[col].values[3]))
     #     print(df[col])
+    
     col_list = []
 
     for col in df.columns:
@@ -472,18 +473,18 @@ def plot_parallel_coordinates(cv_results, output_name, show = False, output_file
                 tickvals=list(range(len(category_dict[col]))),
                 ticktext=category_dict[col],
                 values = df[col]
-                )
+            )
         else:
             col_dict = dict(
-            range = (df[col].min(), df[col].max()),
-            label = col,
-            values=df[col]
-        )
+                range = (df[col].min(), df[col].max()),
+                label = col,
+                values=df[col]
+            )
         col_list.append(col_dict)
 
     parCoords = go.Parcoords(
         dimensions=col_list,
-        line=dict(color=df['mean_test_score'], colorscale='picnic', reversescale=True)
+        line=dict(color=df['mean_test_score'], colorscale=color_scale, reversescale=True)
     )
 
     fig = go.Figure(
@@ -498,10 +499,14 @@ def plot_parallel_coordinates(cv_results, output_name, show = False, output_file
         font_size=18
     )
 
+    fig.update_traces(       
+        line_showscale=show_colorbar, #Show colorbar
+        selector=dict(type='parcoords')
+    )
+
     if output_file:
-        fig.write_html(output_file)
+        fig.write_html(output_file + '.html')
         fig.write_image(output_file + '.png')
     if show: 
         fig.show()
-
 
