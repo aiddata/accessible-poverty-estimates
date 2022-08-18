@@ -420,7 +420,7 @@ def plot_bar_grid_search(cv_results, grid_param, output_name, figsize = (18, 8),
 #import plotly.graphics_objects as go
 #import re
 #Also, add plotly to list of requirements
-def plot_parallel_coordinates(cv_results, output_name, show = False, output_file = None, color_scale = 'picnic', show_colorbar = True):
+def plot_parallel_coordinates(cv_results, output_name = 'Unidentified Region', show = False, output_file = None, color_scale = 'picnic', show_colorbar = True):
 
     if 'mean_test_score' not in cv_results.keys():
         cv_results['mean_test_score'] = cv_results.pop('mean_test_r2')                  #Set scoring metric to score of choice from scoring dict
