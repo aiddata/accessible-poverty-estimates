@@ -420,7 +420,38 @@ def plot_bar_grid_search(cv_results, grid_param, output_name, figsize = (18, 8),
 #import plotly.graphics_objects as go
 #import re
 #Also, add plotly to list of requirements
-def plot_parallel_coordinates(cv_results, output_name = 'Unidentified Region', show = False, output_file = None, color_scale = 'picnic', show_colorbar = True):
+def plot_parallel_coordinates(
+    cv_results, 
+    output_name = 'Unidentified Region', 
+    show = False, 
+    output_file = None, 
+    color_scale = 'picnic', 
+    show_colorbar = True, 
+    logistic_data=None): 
+
+    """Produces a parallel coordinates plot of the values of the hyperparameters used in
+    a grid search operation with respect to test score. 
+
+    Parameters
+    ----------
+    cv_results : expects a cv_results_ dictionary, an attribute of a fitted GridSearchCV object
+        The dictionary containing the data to analyze (the mean test scores of every
+        hyperparameter configuration executed during a grid search)
+    output_name : str (default is "Unidentified Region")
+        The country in question, used for titling the graph. Currently uses the
+        corresponding "output_name" from config.ini
+        (e.g., BJ_2017-18_DHS for benin)
+    show : bool (default is False)
+        Whether to show parallel coordinates plot on screen or not
+    output_file : str (default is None)
+        The desired pathway to output the plot. If set to None, no file is saved.
+    color_scale : str or list (default is 'picnic')
+        The desired color scale to use for indicating score. Options can be found in the 
+        documentation for colorscales for Plotly parcoords lines, currently located at
+        https://plotly.github.io/plotly.py-docs/generated/plotly.graph_objects.parcoords.html#plotly.graph_objects.parcoords.Line.colorscale    
+    show_colorbar : bool (default is True)
+        Whether to show the separate colorbar that indicates how scores are colorcoded
+    """
 
     if 'mean_test_score' not in cv_results.keys():
         cv_results['mean_test_score'] = cv_results.pop('mean_test_r2')                  #Set scoring metric to score of choice from scoring dict
