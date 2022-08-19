@@ -2,6 +2,7 @@
 
 """Utility methods for Exploratory Data Analysis and Pre-processing"""
 
+from math import log, ceil
 import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
@@ -427,7 +428,7 @@ def plot_parallel_coordinates(
     output_file = None, 
     color_scale = 'picnic', 
     show_colorbar = True, 
-    logistic_params=None): 
+    logistic_params=dict()): 
 
     """Produces a parallel coordinates plot of the values of the hyperparameters used in
     a grid search operation with respect to test score. 
@@ -452,10 +453,10 @@ def plot_parallel_coordinates(
     show_colorbar : bool (default is True)
         Whether to display the separate colorbar that indicates how scores are colorcoded
     logistic_params : dictionary whose keys are strings and whose values are integers 
-    (default is None)
+    (default is empty dictionary)
         Dictionary whose keys are the shortened names of the quantitative hyperparameters 
         whose axes to display on a logistic scale rather than a linear scale. Corresponding
-        values are the desired integer base to use for logistic scaling. If set to None, 
+        values are the desired integer base to use for logistic scaling. If set to empty, 
         all quantitative hyperparameters will be displayed on a linear scale.
             -e.g., {"n_estimators": 10, "max_depth": 2} for approximate values of 
             10, 100, and 1000 for n_estimators and approximate values of 3, 6, and 12 
@@ -507,7 +508,7 @@ def plot_parallel_coordinates(
     col_list = []
 
     for col in df.columns:
-        if (col) in category_dict.keys():
+        if col in category_dict:
             col_dict = dict(
                 label=col,
                 tickvals=list(range(len(category_dict[col]))),
@@ -516,12 +517,16 @@ def plot_parallel_coordinates(
             )
         else:
             if col in logistic_params:
+                logged_vals = df[col].apply(lambda x: log(x, logistic_params[col]))
+                tickvals = np.unique(np.array(list(range(ceil(max(logged_vals))+1)) + list(logged_vals)))
                 col_dict = dict(
-
+                    label = col, 
+                    values = logged_vals,
+                    tickvals = tickvals,
+                    ticktext = list(round(pow(logistic_params[col], x)) for x in tickvals)
                 )
             else:
                 col_dict = dict(
-                    range = (df[col].min(), df[col].max()),
                     label = col,
                     values=df[col]
                 )
