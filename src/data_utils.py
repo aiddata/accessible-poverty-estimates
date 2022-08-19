@@ -427,7 +427,7 @@ def plot_parallel_coordinates(
     output_file = None, 
     color_scale = 'picnic', 
     show_colorbar = True, 
-    logistic_data=None): 
+    logistic_params=None): 
 
     """Produces a parallel coordinates plot of the values of the hyperparameters used in
     a grid search operation with respect to test score. 
@@ -442,7 +442,7 @@ def plot_parallel_coordinates(
         corresponding "output_name" from config.ini
         (e.g., BJ_2017-18_DHS for benin)
     show : bool (default is False)
-        Whether to show parallel coordinates plot on screen or not
+        Whether to display parallel coordinates plot on screen or not
     output_file : str (default is None)
         The desired pathway to output the plot. If set to None, no file is saved.
     color_scale : str or list (default is 'picnic')
@@ -450,7 +450,16 @@ def plot_parallel_coordinates(
         documentation for colorscales for Plotly parcoords lines, currently located at
         https://plotly.github.io/plotly.py-docs/generated/plotly.graph_objects.parcoords.html#plotly.graph_objects.parcoords.Line.colorscale    
     show_colorbar : bool (default is True)
-        Whether to show the separate colorbar that indicates how scores are colorcoded
+        Whether to display the separate colorbar that indicates how scores are colorcoded
+    logistic_params : dictionary whose keys are strings and whose values are integers 
+    (default is None)
+        Dictionary whose keys are the shortened names of the quantitative hyperparameters 
+        whose axes to display on a logistic scale rather than a linear scale. Corresponding
+        values are the desired integer base to use for logistic scaling. If set to None, 
+        all quantitative hyperparameters will be displayed on a linear scale.
+            -e.g., {"n_estimators": 10, "max_depth": 2} for approximate values of 
+            10, 100, and 1000 for n_estimators and approximate values of 3, 6, and 12 
+            for max_depth.
     """
 
     if 'mean_test_score' not in cv_results.keys():
@@ -506,11 +515,16 @@ def plot_parallel_coordinates(
                 values = df[col]
             )
         else:
-            col_dict = dict(
-                range = (df[col].min(), df[col].max()),
-                label = col,
-                values=df[col]
-            )
+            if col in logistic_params:
+                col_dict = dict(
+
+                )
+            else:
+                col_dict = dict(
+                    range = (df[col].min(), df[col].max()),
+                    label = col,
+                    values=df[col]
+                )
         col_list.append(col_dict)
 
     parCoords = go.Parcoords(
