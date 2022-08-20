@@ -426,9 +426,10 @@ def plot_parallel_coordinates(
     output_name = 'Unidentified Region', 
     show = False, 
     output_file = None, 
-    color_scale = 'picnic', 
+    color_scale = None, 
     show_colorbar = True, 
-    logistic_params=dict()): 
+    logistic_params=dict(),
+    visual_mode = "dark"): 
 
     """Produces a parallel coordinates plot of the values of the hyperparameters used in
     a grid search operation with respect to test score. 
@@ -446,10 +447,11 @@ def plot_parallel_coordinates(
         Whether to display parallel coordinates plot on screen or not
     output_file : str (default is None)
         The desired pathway to output the plot. If set to None, no file is saved.
-    color_scale : str or list (default is 'picnic')
+    color_scale : str or list (default is None)
         The desired color scale to use for indicating score. Options can be found in the 
         documentation for colorscales for Plotly parcoords lines, currently located at
-        https://plotly.github.io/plotly.py-docs/generated/plotly.graph_objects.parcoords.html#plotly.graph_objects.parcoords.Line.colorscale    
+        https://plotly.github.io/plotly.py-docs/generated/plotly.graph_objects.parcoords.html#plotly.graph_objects.parcoords.Line.colorscale   
+        If set to None, color_scale is automatically set according to the selected visual mode 
     show_colorbar : bool (default is True)
         Whether to display the separate colorbar that indicates how scores are colorcoded
     logistic_params : dictionary whose keys are strings and whose values are integers 
@@ -461,7 +463,12 @@ def plot_parallel_coordinates(
             -e.g., {"n_estimators": 10, "max_depth": 2} for approximate values of 
             10, 100, and 1000 for n_estimators and approximate values of 3, 6, and 12 
             for max_depth.
+    visual_mode : str (default is "dark")
+        The overall color theme of the plot. Currently two options: "dark" and "light".
     """
+    color_dict = {'dark': 'picnic_r', 'light': 'RdBu'}
+    if color_scale is None:
+        color_scale = color_dict[visual_mode]
 
     if 'mean_test_score' not in cv_results.keys():
         cv_results['mean_test_score'] = cv_results.pop('mean_test_r2')                  #Set scoring metric to score of choice from scoring dict
@@ -534,20 +541,29 @@ def plot_parallel_coordinates(
 
     parCoords = go.Parcoords(
         dimensions=col_list,
-        line=dict(color=df['mean_test_score'], colorscale=color_scale, reversescale=True)
+        line=dict(color=df['mean_test_score'], colorscale=color_scale)
     )
 
     fig = go.Figure(
         data = parCoords
     )
-
-    fig.update_layout(              #Theming
-        paper_bgcolor='#000',
-        plot_bgcolor='#000',
-        title_text='Parallel Coordinates Plot for ' + output_name,
-        font_color='#DDD',
-        font_size=18
-    )
+ 
+    if visual_mode == "dark":  #Display Theming
+        fig.update_layout(              
+            paper_bgcolor='#000',
+            plot_bgcolor='#000',
+            title_text='Parallel Coordinates Plot for ' + output_name,
+            font_color='#DDD',
+            font_size=18
+        )
+    else:
+        fig.update_layout(              
+            paper_bgcolor='#FFF',
+            plot_bgcolor='#FFF',
+            title_text='Parallel Coordinates Plot for ' + output_name,
+            font_color='#000',
+            font_size=18
+        )
 
     fig.update_traces(       
         line_showscale=show_colorbar, #Show colorbar
