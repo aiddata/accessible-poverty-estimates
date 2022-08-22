@@ -431,8 +431,8 @@ def plot_parallel_coordinates(
     logistic_params=dict(),
     visual_mode = "dark"): 
 
-    """Produces a parallel coordinates plot of the values of the hyperparameters used in
-    a grid search operation with respect to test score. 
+    """Produces a parallel coordinates plot that displays the relationship between the various
+    hyperparameter configurations used during grid search and the corresponding test scores. 
 
     Parameters
     ----------
@@ -523,10 +523,17 @@ def plot_parallel_coordinates(
                 values = df[col]
             )
         else:
+            if col[:4] == "min_": #Invert columns for "min_" hyperparams so values with typically higher scores (lower values)
+                                                # are placed next to high scores more often, minimizing crossing lines in graph
+                dim_range = [df[col].max(), df[col].min()]
+            else:
+                dim_range = [df[col].min(), df[col].max()]
+            
             if col in logistic_params:
                 logged_vals = df[col].apply(lambda x: log(x, logistic_params[col]))
                 tickvals = np.unique(np.array(list(range(ceil(max(logged_vals))+1)) + list(logged_vals)))
                 col_dict = dict(
+                    range = dim_range,
                     label = col, 
                     values = logged_vals,
                     tickvals = tickvals,
@@ -534,6 +541,7 @@ def plot_parallel_coordinates(
                 )
             else:
                 col_dict = dict(
+                    range = dim_range,
                     label = col,
                     values=df[col]
                 )
