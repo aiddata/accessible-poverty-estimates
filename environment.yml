@@ -21,7 +21,7 @@ dependencies:
   - brotlipy=0.7.0=py39h27cfd23_1003
   - bzip2=1.0.8=h7b6447c_0
   - c-ares=1.18.1=h7f8727e_0
-  - ca-certificates=2022.4.26=h06a4308_0
+  - ca-certificates=2022.07.19=h06a4308_0
   - cairo=1.16.0=ha00ac49_1009
   - certifi=2022.6.15=py39h06a4308_0
   - cffi=1.15.0=py39hd667e15_1
@@ -155,8 +155,9 @@ dependencies:
   - numpy=1.22.3=py39h7a5d4dd_0
   - numpy-base=1.22.3=py39hb8be1f0_0
   - olefile=0.46=pyhd3eb1b0_0
+  - openblas=0.3.18=pthreads_h4748800_0
   - openjpeg=2.4.0=h3ad879b_0
-  - openssl=1.1.1p=h5eee18b_0
+  - openssl=1.1.1q=h7f8727e_0
   - packaging=21.3=pyhd3eb1b0_0
   - pandas=1.4.2=py39h295c915_0
   - patsy=0.5.2=py39h06a4308_1
@@ -164,6 +165,7 @@ dependencies:
   - pillow=9.0.1=py39h22f2fdc_0
   - pip=21.2.4=py39h06a4308_0
   - pixman=0.40.0=h7f8727e_1
+  - plotly=5.9.0=py39h06a4308_0
   - poppler=21.11.0=ha39eefc_0
   - poppler-data=0.4.11=h06a4308_0
   - postgresql=14.1=h2510834_1
@@ -241,30 +243,63 @@ dependencies:
   - zlib=1.2.11=h36c2ea0_1013
   - zstd=1.5.2=ha95c52a_0
   - pip:
+    - asttokens==2.0.8
+    - backcall==0.2.0
+    - backoff==1.11.1
+    - black==22.6.0
     - croniter==1.3.5
     - dask==2022.6.1
+    - decorator==5.1.1
     - distributed==2022.6.1
+    - executing==0.10.0
+    - fastjsonschema==2.16.1
     - fsspec==2022.5.0
     - heapdict==1.0.1
+    - ipython==8.4.0
+    - jedi==0.18.1
+    - jsonschema==4.14.0
+    - jupyter-core==4.11.1
+    - kaleido==0.2.1
     - locket==1.0.0
     - lxml==4.9.0
     - marshmallow==3.17.0
     - marshmallow-oneofschema==3.0.1
+    - matplotlib-inline==0.1.6
+    - mistune==2.0.4
+    - monotonic==1.6
     - msgpack==1.0.4
     - mypy-extensions==0.4.3
+    - nbformat==5.4.0
+    - parso==0.8.3
     - partd==1.2.0
+    - pathspec==0.9.0
     - pendulum==2.1.2
+    - pexpect==4.8.0
+    - pickleshare==0.7.5
+    - platformdirs==2.5.2
+    - ploomber-core==0.0.6
+    - posthog==2.1.0
     - prefect==1.2.2
+    - prompt-toolkit==3.0.30
     - psutil==5.9.1
+    - ptyprocess==0.7.0
+    - pure-eval==0.2.2
     - pycountry==22.3.5
+    - pygments==2.13.0
+    - pyrsistent==0.18.1
     - python-box==6.0.2
     - python-slugify==6.1.2
     - pytzdata==2020.1
+    - sklearn-evaluation==0.7
     - sortedcontainers==2.4.0
+    - stack-data==0.4.0
     - stargazer==0.0.5
     - tblib==1.7.0
     - text-unidecode==1.3
     - toml==0.10.2
+    - tomli==2.0.1
     - toolz==0.11.2
+    - traitlets==5.3.0
     - utm==0.7.0
+    - wcwidth==0.2.5
     - zict==2.2.0
