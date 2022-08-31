@@ -123,6 +123,19 @@ This section describes options that should be set in `config.ini`
 
 7. Run `models.py` to train models and produce figures.
 
+## Using MLflow to track models
+
+[MLflow](https://mlflow.org/) is a platform that helps keep track of machine learning models and their performance.
+Running `models.py` by following the instructions above will use MLflow to log models to `mlflow.db`, a SQLite database in the top level of this repository.
+
+To access the MLflow dashboard, run the following command:
+```
+mlflow ui --backend-store-uri=sqlite:///mlflow.db
+```
+then, navigate to http://localhost:5000 in your web browser.
+
+In the list of runs on the dashboard homepage, click on one to view a parallel coordinates plot and graph of feature importances.
+
 ## License
 
 This work is released under the MIT License. Please see [LICENSE.md](LICENSE.md) for more information.
