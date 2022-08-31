@@ -204,6 +204,11 @@ def evaluate_model(
         print(type(cv))
         cv.fit(X, y)
 
+        # Log each feature's importance as a MLflow metric
+        for z in range(len(X.columns)):
+            mlflow.log_metric(f"{X.columns[z]}_importance",
+                              cv.best_estimator_.named_steps["regressor"].feature_importances_[z])
+
         if mlflow.active_run() is not None:
             mlflow.sklearn.log_model(cv.best_estimator_,
                                      "best model",
@@ -228,12 +233,14 @@ def evaluate_model(
                     output_file=output_file + f"rf_feature_importance_{index}.png",
                     show=show
                 )
+                mlflow.log_artifact(output_file + f"rf_feature_importance_{index}.png")
             elif model_type == "xgboost":
                 xgb_feature_importance(
                     cv, X, y, size=figsize,
                     output_file=output_file + f"xgb_feature_importance_{index}.png",
                     show=show
                 )
+                mlflow.log_artifact(output_file + f"xgb_feature_importance_{index}.png")
 
     return cv #, pd.DataFrame(results)
 
