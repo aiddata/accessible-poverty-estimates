@@ -99,7 +99,7 @@ geom_id = json_data['primary_geom_id']
 # -----------------------------------------------------------------------------
 
 
-def run_model_funcs(data, columns, name, n_splits, tags=dict()):
+def run_model_funcs(data, columns, name, n_splits, project=project, tags=dict()):
 
     data_utils.plot_corr(
         data=data,
@@ -123,7 +123,7 @@ def run_model_funcs(data, columns, name, n_splits, tags=dict()):
         show=show_plots
     )
 
-    with mlflow.start_run() as run:
+    with mlflow.start_run(run_name=f"{project} - {name}") as run:
 
         mlflow.set_tags(tags)
         cv = model_utils.evaluate_model(
