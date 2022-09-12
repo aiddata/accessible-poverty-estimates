@@ -38,7 +38,7 @@ config.read('config.ini')
 project = config["main"]["project"]
 project_dir = config["main"]["project_dir"]
 
-indicators = json.loads(config["main"]['indicators'])
+indicators = [config["main"]['indicator']]
 # indicators = [
 #     'Wealth Index',
 #     'Education completed (years)',
@@ -124,8 +124,16 @@ def run_model_funcs(data, columns, name, n_splits, project=project, tags=dict())
     )
 
     with mlflow.start_run(run_name=f"{project} - {name}") as run:
-
+        
+        default_tags = {
+            "project": project,
+            "model_name": name,
+            "output_name": output_name,
+            "indicator": indicators[0]
+        }
+        tags.update(default_tags)
         mlflow.set_tags(tags)
+
         cv = model_utils.evaluate_model(
             data=data,
             feature_cols=columns,
