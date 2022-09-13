@@ -242,7 +242,7 @@ def evaluate_model(
                 )
                 mlflow.log_artifact(output_file + f"xgb_feature_importance_{index}.png")
 
-    return cv #, pd.DataFrame(results)
+    return cv, pd.DataFrame(results)
 
 
 def get_param_grid(model_type='ridge'):
