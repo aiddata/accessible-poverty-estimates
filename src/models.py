@@ -1,12 +1,7 @@
 """
 python 3.9
-
 portions of code and methodology based on https://github.com/thinkingmachines/ph-poverty-mapping
-
-
 Run models based on OSM features and additional geospatial data
-
-
 """
 
 import os
@@ -21,9 +16,8 @@ import statsmodels.api as sm
 from stargazer.stargazer import Stargazer
 import mlflow
 
-
-
-import mlflow
+import model_utils
+import data_utils
 
 warnings.filterwarnings('ignore')
 
@@ -34,7 +28,7 @@ warnings.filterwarnings('ignore')
 show_plots = False
 
 
-if 'config.ini' not in os.listdir():
+if 'config.ini' not in os.listdir():    
     raise FileNotFoundError("config.ini file not found. Make sure you run this from the root directory of the repo.")
 
 config = configparser.ConfigParser()
@@ -44,7 +38,7 @@ config.read('config.ini')
 project = config["main"]["project"]
 project_dir = config["main"]["project_dir"]
 
-indicators = json.loads(config["main"]['indicators'])
+indicators = [config["main"]['indicator']]
 # indicators = [
 #     'Wealth Index',
 #     'Education completed (years)',
@@ -63,19 +57,13 @@ results_dir = os.path.join(data_dir, 'outputs', output_name, 'results')
 os.makedirs(models_dir, exist_ok=True)
 os.makedirs(results_dir, exist_ok=True)
 
-
 mlflow.set_tracking_uri(config["main"]["mlflow_models_location"])
 
+tags_dict = dict(config["mlflow_tags"])
+if f"{project}.tags" in config.sections():
+    tags_dict.update(dict(config[f"{project}.tags"]))
+
 sys.path.insert(0, os.path.join(project_dir, 'src'))
-
-import model_utils
-import data_utils
-
-
-# import importlib
-# importlib.reload(model_utils)
-# importlib.reload(data_utils)
-
 
 # Scoring metrics
 scoring = {
@@ -87,7 +75,6 @@ search_type = 'grid'
 
 # number of folds for cross-validation
 n_splits = 5
-
 
 
 # -----------------------------------------------------------------------------
@@ -112,10 +99,7 @@ geom_id = json_data['primary_geom_id']
 # -----------------------------------------------------------------------------
 
 
-def run_model_funcs(data, columns, name, n_splits):
-
-    mlflow.sklearn.autolog(registered_model_name=name)
-
+def run_model_funcs(data, columns, name, n_splits, project=project, tags=dict()):
 
     data_utils.plot_corr(
         data=data,
@@ -139,28 +123,55 @@ def run_model_funcs(data, columns, name, n_splits):
         show=show_plots
     )
 
-    cv, predictions = model_utils.evaluate_model(
-        data=data,
-        feature_cols=columns,
-        indicator_cols=indicators,
-        clust_str=geom_id,
-        wandb=None,
-        scoring=scoring,
-        model_type='random_forest',
-        refit='r2',
-        search_type=search_type,
-        n_splits=n_splits,
-        n_iter=10,
-        plot_importance=True,
-        verbose=2,
-        output_file=os.path.join(results_dir, f'{name}_model_cv{n_splits}_'),
-        show=show_plots
-    )
+    with mlflow.start_run(run_name=f"{project} - {name}") as run:
+        
+        default_tags = {
+            "project": project,
+            "model_name": name,
+            "output_name": output_name,
+            "indicator": indicators[0]
+        }
+        tags.update(default_tags)
+        mlflow.set_tags(tags)
+
+        cv = model_utils.evaluate_model(
+            data=data,
+            feature_cols=columns,
+            indicator_cols=indicators,
+            clust_str=geom_id,
+            model_name=name,
+            scoring=scoring,
+            model_type='random_forest',
+            refit='r2',
+            search_type=search_type,
+            n_splits=n_splits,
+            n_iter=10,
+            plot_importance=True,
+            verbose=1,
+            output_file=os.path.join(results_dir, f'{name}_model_cv{n_splits}_'),
+            show=show_plots)
+
+
+        data_utils.plot_bar_grid_search(
+            output_file=os.path.join(results_dir, f'{name}_model_grid_search_bar'),
+            output_name=output_name,
+            cv_results = cv.cv_results_,
+            grid_param="regressor__n_estimators",
+        )
+
+        plot_file_path = os.path.join(results_dir, f'{name}_model_grid_search_parallel_coordinates')
+        data_utils.plot_parallel_coordinates(
+            output_file = plot_file_path,
+            output_name = output_name,
+            cv_results = cv.cv_results_
+        )
+
+        mlflow.log_artifact(plot_file_path + ".html")
+
 
     model_utils.save_model(cv, data, columns, 'Wealth Index', os.path.join(models_dir, f'{name}_cv{n_splits}_best.joblib'))
 
-    return cv, predictions
-
+    return cv #, predictions
 
 
 def run_OLS(data, y_var, x_vars, name):
@@ -235,57 +246,57 @@ xxx_ols = run_OLS(xxx_df, 'Wealth Index', xxx_cols, 'adm2-final-noesa')
 # =========
 
 
-# all OSM + NTL
+# # all OSM + NTL
 all_osm_ntl_cols = all_osm_cols + ntl_cols
-all_osm_ntl_cv, all_osm_ntl_predictions = run_model_funcs(final_data_df, all_osm_ntl_cols, 'all-osm-ntl', n_splits=n_splits)
+all_osm_ntl_cv = run_model_funcs(final_data_df, all_osm_ntl_cols, 'all-osm-ntl', n_splits=n_splits, tags=tags_dict)
 all_osm_ntl_ols = run_OLS(final_data_df, 'Wealth Index', all_osm_ntl_cols, 'all-osm-ntl')
 
-# NTL only
-ntl_cv, ntl_predictions = run_model_funcs(final_data_df, ntl_cols, 'ntl', n_splits=n_splits)
+# # NTL only
+ntl_cv = run_model_funcs(final_data_df, ntl_cols, 'ntl', n_splits=n_splits, tags=tags_dict)
 ntl_ols = run_OLS(final_data_df, 'Wealth Index', ntl_cols, 'ntl')
 
-# all OSM only
-all_osm_cv, all_osm_predictions = run_model_funcs(final_data_df, all_osm_cols, 'all-osm', n_splits=n_splits)
+# # all OSM only
+all_osm_cv = run_model_funcs(final_data_df, all_osm_cols, 'all-osm', n_splits=n_splits, tags=tags_dict)
 all_osm_ols = run_OLS(final_data_df, 'Wealth Index', all_osm_cols, 'all-osm')
 
 # all OSM + all geo
 all_data_cols = all_osm_cols + all_geo_cols
-all_cv, all_predictions = run_model_funcs(final_data_df, all_data_cols, 'all', n_splits=n_splits)
+all_cv = run_model_funcs(final_data_df, all_data_cols, 'all', n_splits=n_splits, tags=tags_dict)
 all_ols = run_OLS(final_data_df, 'Wealth Index', all_data_cols, 'all')
 
 # location only
-loc_cv, loc_predictions = run_model_funcs(final_data_df, ['longitude', 'latitude'], 'loc', n_splits=n_splits)
+loc_cv = run_model_funcs(final_data_df, ['longitude', 'latitude'], 'loc', n_splits=n_splits, tags=tags_dict)
 loc_ols = run_OLS(final_data_df, 'Wealth Index', ['longitude', 'latitude'], 'loc')
 
-# -----------------
+# # -----------------
 
 # sub OSM + NTL
 sub_osm_ntl_cols = sub_osm_cols + ntl_cols
-sub_osm_ntl_cv, sub_osm_ntl_predictions = run_model_funcs(final_data_df, sub_osm_ntl_cols, 'sub-osm-ntl', n_splits=n_splits)
+sub_osm_ntl_cv = run_model_funcs(final_data_df, sub_osm_ntl_cols, 'sub-osm-ntl', n_splits=n_splits, tags=tags_dict)
 sub_osm_ntl_ols = run_OLS(final_data_df, 'Wealth Index', sub_osm_ntl_cols, 'sub-osm-ntl')
 
 # sub OSM only
-sub_osm_cv, sub_osm_predictions = run_model_funcs(final_data_df, sub_osm_cols, 'sub-osm', n_splits=n_splits)
+sub_osm_cv = run_model_funcs(final_data_df, sub_osm_cols, 'sub-osm', n_splits=n_splits, tags=tags_dict)
 sub_osm_ols = run_OLS(final_data_df, 'Wealth Index', sub_osm_cols, 'sub-osm')
 
 # sub OSM + all geo
 sub_osm_all_geo_cols = sub_osm_cols + all_geo_cols
-sub_osm_all_geo_cv, sub_osm_all_geo_predictions = run_model_funcs(final_data_df, sub_osm_all_geo_cols, 'sub-osm-all-geo', n_splits=n_splits)
+sub_osm_all_geo_cv = run_model_funcs(final_data_df, sub_osm_all_geo_cols, 'sub-osm-all-geo', n_splits=n_splits, tags=tags_dict)
 sub_osm_all_geo_ols = run_OLS(final_data_df, 'Wealth Index', sub_osm_all_geo_cols, 'sub-osm-all-geo')
 
 # all geo only
-all_geo_cv, all_geo_predictions = run_model_funcs(final_data_df, all_geo_cols, 'all-geo', n_splits=n_splits)
+all_geo_cv = run_model_funcs(final_data_df, all_geo_cols, 'all-geo', n_splits=n_splits, tags=tags_dict)
 all_geo_ols = run_OLS(final_data_df, 'Wealth Index', all_geo_cols, 'all-geo')
 
 # -----------------
 
 # sub geo
-sub_geo_cv, sub_geo_predictions = run_model_funcs(final_data_df, sub_geo_cols, 'sub-geo', n_splits=n_splits)
+sub_geo_cv = run_model_funcs(final_data_df, sub_geo_cols, 'sub-geo', n_splits=n_splits, tags=tags_dict)
 sub_geo_ols = run_OLS(final_data_df, 'Wealth Index', sub_geo_cols, 'sub-geo')
 
 # sub OSM + sub geo
 sub_data_cols = sub_osm_cols + sub_geo_cols
-sub_cv, sub_predictions = run_model_funcs(final_data_df, sub_data_cols, 'sub', n_splits=n_splits)
+sub_cv = run_model_funcs(final_data_df, sub_data_cols, 'sub', n_splits=n_splits, tags=tags_dict)
 sub_ols = run_OLS(final_data_df, 'Wealth Index', sub_data_cols, 'sub')
 
 # -----------------
@@ -298,7 +309,7 @@ sub_ols = run_OLS(final_data_df, 'Wealth Index', sub_data_cols, 'sub')
 final_features = [f'viirs_median', f'worldpop_pop_count_1km_mosaic_mean',  f'viirs_max', f'esa_landcover_categorical_urban', 'longitude', 'latitude', 'all_roads_length', 'all_buildings_ratio']
 
 
-final_cv, final_predictions = run_model_funcs(final_data_df, final_features, 'final', n_splits=n_splits)
+final_cv, final_predictions = run_model_funcs(final_data_df, final_features, 'final', n_splits=n_splits, tags=tags_dict)
 final_ols = run_OLS(final_data_df, 'Wealth Index', final_features, 'final')
 
 
@@ -306,24 +317,23 @@ final_ols = run_OLS(final_data_df, 'Wealth Index', final_features, 'final')
 
 def print_scores():
     print(f'{project} best r-squared scores ({n_splits}-fold cv):')
-    print(f'NTL linear model    & 1     & {round(ntl_r2, 3)} \\\\')
-    print(f"Location only       & {loc_cv.n_features_in_}   & {round(loc_cv.best_score_, 3)} \\\\")
-    print(f"All OSM + NTL       & {all_osm_ntl_cv.n_features_in_}   & {round(all_osm_ntl_cv.best_score_, 3)} \\\\")
-    print(f"NTL                 & {ntl_cv.n_features_in_}   & {round(ntl_cv.best_score_, 3)} \\\\")
-    print(f"All OSM             & {all_osm_cv.n_features_in_}   & {round(all_osm_cv.best_score_, 3)} \\\\")
-    print(f"All OSM + All geo   & {all_cv.n_features_in_}   & {round(all_cv.best_score_, 3)} \\\\")
-    print(f"Sub OSM + NTL       & {sub_osm_ntl_cv.n_features_in_}   & {round(sub_osm_ntl_cv.best_score_, 3)} \\\\")
-    print(f"Sub OSM             & {sub_osm_cv.n_features_in_}   & {round(sub_osm_cv.best_score_, 3)} \\\\")
-    print(f"Sub OSM + All geo   & {sub_osm_all_geo_cv.n_features_in_}   & {round(sub_osm_all_geo_cv.best_score_, 3)} \\\\")
-    print(f"All geo             & {all_geo_cv.n_features_in_}   & {round(all_geo_cv.best_score_, 3)} \\\\")
-    print(f"Sub geo             & {sub_geo_cv.n_features_in_}   & {round(sub_geo_cv.best_score_, 3)} \\\\")
+    # print(f'NTL linear model    & 1     & {round(ntl_r2, 3)} \\\\')
+    # print(f"Location only       & {loc_cv.n_features_in_}   & {round(loc_cv.best_score_, 3)} \\\\")
+    # print(f"All OSM + NTL       & {all_osm_ntl_cv.n_features_in_}   & {round(all_osm_ntl_cv.best_score_, 3)} \\\\")
+    # print(f"NTL                 & {ntl_cv.n_features_in_}   & {round(ntl_cv.best_score_, 3)} \\\\")
+    # print(f"All OSM             & {all_osm_cv.n_features_in_}   & {round(all_osm_cv.best_score_, 3)} \\\\")
+    # print(f"All OSM + All geo   & {all_cv.n_features_in_}   & {round(all_cv.best_score_, 3)} \\\\")
+    # print(f"Sub OSM + NTL       & {sub_osm_ntl_cv.n_features_in_}   & {round(sub_osm_ntl_cv.best_score_, 3)} \\\\")
+    # print(f"Sub OSM             & {sub_osm_cv.n_features_in_}   & {round(sub_osm_cv.best_score_, 3)} \\\\")
+    # print(f"Sub OSM + All geo   & {sub_osm_all_geo_cv.n_features_in_}   & {round(sub_osm_all_geo_cv.best_score_, 3)} \\\\")
+    # print(f"All geo             & {all_geo_cv.n_features_in_}   & {round(all_geo_cv.best_score_, 3)} \\\\")
+    # print(f"Sub geo             & {sub_geo_cv.n_features_in_}   & {round(sub_geo_cv.best_score_, 3)} \\\\")
     print(f"Sub OSM + Sub geo   & {sub_cv.n_features_in_}   & {round(sub_cv.best_score_, 3)} \\\\")
-    print(f"Final               & {final_cv.n_features_in_}   & {round(final_cv.best_score_, 3)} \\\\")
+    # print(f"Final               & {final_cv.n_features_in_}   & {round(final_cv.best_score_, 3)} \\\\")
 
 print_scores()
 
 '''
-
 PH_2017_DHS best r-squared scores (5-fold cv):
 NTL linear model    & 1     & 0.489 \\
 Location only       & 2   & 0.487 \\
@@ -338,8 +348,6 @@ All geo             & 33   & 0.659 \\
 Sub geo             & 16   & 0.664 \\
 Sub OSM + Sub geo   & 22   & 0.662 \\
 Final               & 8   & 0.652 \\
-
-
 GH_2014_DHS best r-squared scores (5-fold cv):
 NTL linear model    & 1     & 0.663 \\
 Location only       & 2   & 0.574 \\
@@ -355,7 +363,6 @@ Sub geo             & 16   & 0.85 \\
 Sub OSM + Sub geo   & 22   & 0.85 \\
 Final               & 8   & 0.833 \\
 Ecopia              & 8   & 0.843 \\
-
 TG_2013-14_DHS best r-squared scores (5-fold cv):
 NTL linear model    & 1     & 0.778 \\
 Location only       & 2   & 0.742 \\
@@ -370,7 +377,6 @@ All geo             & 33   & 0.93 \\
 Sub geo             & 16   & 0.913 \\
 Sub OSM + Sub geo   & 22   & 0.913 \\
 Final               & 8   & 0.909 \\
-
 BJ_2017_DHS best r-squared scores (5-fold cv):
 NTL linear model    & 1     & 0.75 \\
 Location only       & 2   & 0.646 \\
@@ -385,7 +391,6 @@ All geo             & 33   & 0.79 \\
 Sub geo             & 16   & 0.788 \\
 Sub OSM + Sub geo   & 22   & 0.787 \\
 Final               & 8   & 0.781 \\
-
 BJ_2017_DHS best r-squared scores (10-fold cv):
 NTL linear model    & 1     & 0.75 \\
 Location only       & 2   & 0.643 \\
@@ -400,7 +405,6 @@ All geo             & 33   & 0.792 \\
 Sub geo             & 16   & 0.786 \\
 Sub OSM + Sub geo   & 22   & 0.788 \\
 Final               & 8   & 0.781 \\
-
 KE_2014_DHS best r-squared scores (5-fold cv):
 NTL linear model    & 1     & 0.42 \\
 Location only       & 2   & 0.557 \\
@@ -415,32 +419,38 @@ All geo             & 33   & 0.767 \\
 Sub geo             & 16   & 0.76 \\
 Sub OSM + Sub geo   & 22   & 0.765 \\
 Final               & 8   & 0.751 \\
-
-
 '''
 
 # -----------------------------------------------------------------------------
 
 
-if project in ['GH_2014_DHS']:
+# if project in ['GH_2014_DHS']:
 
-    ecopia_base_path = base_path = Path(f'/home/userx/Desktop/accessible-poverty-estimates/data/ecopia_data/ghana')
+#     ecopia_base_path = base_path = Path(f'/home/userx/Desktop/accessible-poverty-estimates/data/ecopia_data/ghana')
 
-    ecopia_roads_features_path = base_path / f'ghana_{geom_label}_ecopia_roads.csv'
-    ecopia_roads_features_df = pd.read_csv(ecopia_roads_features_path)
+#     ecopia_roads_features_path = base_path / f'ghana_{geom_label}_ecopia_roads.csv'
+#     ecopia_roads_features_df = pd.read_csv(ecopia_roads_features_path)
 
-    ecopia_buildings_features_path = base_path / f'ghana_{geom_label}_ecopia_buildings.csv'
-    ecopia_buildings_features_df = pd.read_csv(ecopia_buildings_features_path)
+#     ecopia_buildings_features_path = base_path / f'ghana_{geom_label}_ecopia_buildings.csv'
+#     ecopia_buildings_features_df = pd.read_csv(ecopia_buildings_features_path)
 
-    ecopia_features_df = pd.merge(ecopia_roads_features_df, ecopia_buildings_features_df, on=geom_id)
+#     ecopia_features_df = pd.merge(ecopia_roads_features_df, ecopia_buildings_features_df, on=geom_id)
 
-    ecopia_data_df = pd.merge(ecopia_features_df, final_data_df, on=geom_id)
+#     ecopia_data_df = pd.merge(ecopia_features_df, final_data_df, on=geom_id)
 
-    ecopia_features = [f'viirs_{ntl_year}_median', f'worldpop_pop_count_1km_mosaic_{ntl_year}_mean',  f'viirs_{ntl_year}_max', f'esa_landcover_{ntl_year}_categorical_urban', 'longitude', 'latitude', 'ecopia_roads_length', 'ecopia_buildings_ratio']
+#     ecopia_features = [f'viirs_{ntl_year}_median', f'worldpop_pop_count_1km_mosaic_{ntl_year}_mean',  f'viirs_{ntl_year}_max', f'esa_landcover_{ntl_year}_categorical_urban', 'longitude', 'latitude', 'ecopia_roads_length', 'ecopia_buildings_ratio']
 
-    ecopia_cv, ecopia_predictions = run_model_funcs(ecopia_data_df, ecopia_features, 'ecopia', n_splits=n_splits)
+#     ecopia_cv, ecopia_predictions = run_model_funcs(ecopia_data_df, ecopia_features, 'ecopia', n_splits=n_splits, tags=tags_dict)
 
-    print(f"Ecopia              & {ecopia_cv.n_features_in_}   & {round(ecopia_cv.best_score_, 3)} \\\\")
+#     print(f"Ecopia              & {ecopia_cv.n_features_in_}   & {round(ecopia_cv.best_score_, 3)} \\\\")
+
+
+
+
+
+
+
+
 
 
 # -----------------------------------------------------------------------------

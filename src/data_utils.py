@@ -2,11 +2,14 @@
 
 """Utility methods for Exploratory Data Analysis and Pre-processing"""
 
+from math import log, ceil
 import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
+import plotly.graph_objects as go
 import numpy as np
 from tqdm import tqdm
+import re
 
 import seaborn as sns
 from sklearn import preprocessing
@@ -16,6 +19,8 @@ from scipy.stats import percentileofscore
 from sklearn.metrics import r2_score
 from sklearn.metrics import mean_squared_error
 from sklearn.metrics import mean_absolute_error
+from sklearn_evaluation.plot import grid_search
+
 
 TM_pal_categorical_3 = ("#ef4631", "#10b9ce", "#ff9138")
 sns.set(
@@ -392,4 +397,190 @@ def subset_dataframe(df,feature_cols, remove_cols):
     updated_cols = [col for col in df.columns if col not in remove_cols ]  #update list of column names for dataframe
     new_features = [col for col in feature_cols if col not in remove_cols] #update column list of feature columns
     return df.copy()[updated_cols], new_features
+
+
+#from sklearn_evaluation.plot import grid_search
+def plot_bar_grid_search(cv_results, grid_param, output_name, figsize = (18, 8), show = False, output_file = None):
+
+    if 'mean_test_score' not in cv_results.keys():
+        cv_results['mean_test_score'] = cv_results.pop('mean_test_r2')                  #Set scoring metric to score of choice frrom scoring dict
+    if 'std_test_score' not in cv_results.keys():
+        cv_results['std_test_score'] = cv_results.pop('std_test_r2')
+    
+    plt.figure(figsize = figsize)
+    grid_search(cv_results, change = grid_param, kind = 'bar', sort = False)
+    plt.subplot().legend(loc = 'upper left', bbox_to_anchor = (0, -.1))
+    plt.subplot().set_ybound(lower = 0.6)
+    plt.title('Grid Search Bar Graph for ' + output_name)
+    print("Saving figure:")
+    if output_file:
+        plt.savefig(fname=output_file, bbox_inches="tight")
+    if show: 
+        plt.show()
+
+#import plotly.graphics_objects as go
+#import re
+#Also, add plotly to list of requirements
+def plot_parallel_coordinates(
+    cv_results, 
+    output_name = 'Unidentified Region', 
+    show = False, 
+    output_file = None, 
+    color_scale = None, 
+    show_colorbar = True, 
+    logistic_params=dict(),
+    visual_mode = "dark"): 
+
+    """Produces a parallel coordinates plot that displays the relationship between the various
+    hyperparameter configurations used during grid search and the corresponding test scores. 
+
+    Parameters
+    ----------
+    cv_results : expects a cv_results_ dictionary, an attribute of a fitted GridSearchCV object
+        The dictionary containing the data to analyze (the mean test scores of every
+        hyperparameter configuration executed during a grid search)
+    output_name : str (default is "Unidentified Region")
+        The country in question, used for titling the graph. Currently uses the
+        corresponding "output_name" from config.ini
+        (e.g., BJ_2017-18_DHS for benin)
+    show : bool (default is False)
+        Whether to display parallel coordinates plot on screen or not
+    output_file : str (default is None)
+        The desired pathway to output the plot. If set to None, no file is saved.
+    color_scale : str or list (default is None)
+        The desired color scale to use for indicating score. Options can be found in the 
+        documentation for colorscales for Plotly parcoords lines, currently located at
+        https://plotly.github.io/plotly.py-docs/generated/plotly.graph_objects.parcoords.html#plotly.graph_objects.parcoords.Line.colorscale   
+        If set to None, color_scale is automatically set according to the selected visual mode 
+    show_colorbar : bool (default is True)
+        Whether to display the separate colorbar that indicates how scores are colorcoded
+    logistic_params : dictionary whose keys are strings and whose values are integers 
+    (default is empty dictionary)
+        Dictionary whose keys are the shortened names of the quantitative hyperparameters 
+        whose axes to display on a logistic scale rather than a linear scale. Corresponding
+        values are the desired integer base to use for logistic scaling. If set to empty, 
+        all quantitative hyperparameters will be displayed on a linear scale.
+            -e.g., {"n_estimators": 10, "max_depth": 2} for approximate values of 
+            10, 100, and 1000 for n_estimators and approximate values of 3, 6, and 12 
+            for max_depth.
+    visual_mode : str (default is "dark")
+        The overall color theme of the plot. Currently two options: "dark" and "light".
+    """
+    color_dict = {'dark': 'picnic_r', 'light': 'RdBu'}
+    if color_scale is None:
+        color_scale = color_dict[visual_mode]
+
+    if 'mean_test_score' not in cv_results.keys():
+        cv_results['mean_test_score'] = cv_results.pop('mean_test_r2')                  #Set scoring metric to score of choice from scoring dict
+
+    df = pd.DataFrame(cv_results)
+    # print("Default: \n", df, type(df))
+
+    category_dict=dict()  #store dict of lists, where each key/value pair represents a categorical hyperparameter and its list of mappings between categorical and quantitative values
+    for column in df.columns:
+        if ((not re.search('mean_test_score|param_', column)) or (column != 'mean_test_score' and len(df[column].unique()) == 1)): # Remove columns from dataframe that don't contain parameters with variation or the score under consideration
+            df.drop(column, inplace = True, axis = 1)
+        else: #if the column is valid, transform the data into valid int types and shorten name of parameters
+            if column == 'mean_test_score':
+                df[column] = df.pop(column)
+            else:
+                shortened = column.rsplit("param_regressor__", 1)[1] #Remove long "param_regressor__" phrase from parameters
+                df[shortened] = df[column]
+                df.drop(column, inplace = True, axis = 1)
+                try:
+                    df[shortened] = pd.to_numeric(df[shortened]) 
+                except: #Convert categorical data to quantitative data if necessary, storing mappings in category_list
+                    category_dict[shortened] = df[shortened].unique().tolist()
+                    df[shortened] = df[shortened].apply(lambda x: category_dict[shortened].index(x))
+
+
+
+    # print("After filter: \n", df, type(df))
+    # # df.drop(labels = ["param_regressor__criterion", "param_regressor__bootstrap"], inplace=True, axis = 1)
+    # # df = df.filter(regex='mean_test_score|param_')
+    # # df.drop(["param_regressor__criterion", "param_regressor__bootstrap"], inplace=True, axis = 1)
+    # print(df.dtypes)
+
+    # print("Shortened df: \n", df, type(df))
+    # print(df.columns)
+    # print(df.dtypes)
+    # print(category_dict)
+
+
+    # for col in df.columns:
+    #     print(col)
+    #     print(df[col].values[3], "type: ", type(df[col].values[3]))
+    #     print(df[col])
+    
+    col_list = []
+
+    for col in df.columns:
+        if col in category_dict:
+            col_dict = dict(
+                label=col,
+                tickvals=list(range(len(category_dict[col]))),
+                ticktext=category_dict[col],
+                values = df[col]
+            )
+        else:
+            if col[:4] == "min_": #Invert columns for "min_" hyperparams so values with typically higher scores (lower values)
+                                                # are placed next to high scores more often, minimizing crossing lines in graph
+                dim_range = [df[col].max(), df[col].min()]
+            else:
+                dim_range = [df[col].min(), df[col].max()]
+            
+            if col in logistic_params:
+                logged_vals = df[col].apply(lambda x: log(x, logistic_params[col]))
+                tickvals = np.unique(np.array(list(range(ceil(max(logged_vals))+1)) + list(logged_vals)))
+                col_dict = dict(
+                    range = dim_range,
+                    label = col, 
+                    values = logged_vals,
+                    tickvals = tickvals,
+                    ticktext = list(round(pow(logistic_params[col], x)) for x in tickvals)
+                )
+            else:
+                col_dict = dict(
+                    range = dim_range,
+                    label = col,
+                    values=df[col]
+                )
+        col_list.append(col_dict)
+
+    parCoords = go.Parcoords(
+        dimensions=col_list,
+        line=dict(color=df['mean_test_score'], colorscale=color_scale)
+    )
+
+    fig = go.Figure(
+        data = parCoords
+    )
+ 
+    if visual_mode == "dark":  #Display Theming
+        fig.update_layout(              
+            paper_bgcolor='#000',
+            plot_bgcolor='#000',
+            title_text='Parallel Coordinates Plot for ' + output_name,
+            font_color='#DDD',
+            font_size=18
+        )
+    else:
+        fig.update_layout(              
+            paper_bgcolor='#FFF',
+            plot_bgcolor='#FFF',
+            title_text='Parallel Coordinates Plot for ' + output_name,
+            font_color='#000',
+            font_size=18
+        )
+
+    fig.update_traces(       
+        line_showscale=show_colorbar, #Show colorbar
+        selector=dict(type='parcoords')
+    )
+
+    if output_file:
+        fig.write_html(output_file + '.html')
+        fig.write_image(output_file + '.png')
+    if show: 
+        fig.show()
 

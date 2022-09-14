@@ -14,6 +14,7 @@ from joblib import dump, load
 from sklearn.decomposition import PCA
 from sklearn.pipeline import Pipeline
 import xgboost as xgb
+import mlflow
 
 from sklearn.model_selection import (
     GridSearchCV,
@@ -47,7 +48,6 @@ from sklearn.svm import SVR, SVC
 from sklearn.inspection import permutation_importance
 import seaborn as sns
 
-
 TM_pal_categorical_3 = ("#ef4631", "#10b9ce", "#ff9138")
 sns.set(
     style="white",
@@ -58,12 +58,12 @@ sns.set(
 SEED = 42
 np.random.seed(SEED)
 
-
 def evaluate_model(
     data,
     feature_cols,
     indicator_cols,
     clust_str,
+    model_name=None,
     wandb=None,
     model_type="ridge",
     scoring={"r2": "r2"},
@@ -79,7 +79,7 @@ def evaluate_model(
     polynomial=False,
     poly_degree=2,
     n_workers=-1,
-    verbose=0,
+    verbose=1,
     plot=True,
     output_file=None,
     show=True
@@ -124,6 +124,7 @@ def evaluate_model(
     pandas DataFrame
         Contains cluster number, actual, and predicted socioeconomic indicators
     """
+    print("Evaluating model for: ", output_file)
 
     # Set up parameter grid
     param_grid = get_param_grid(model_type)
@@ -146,7 +147,7 @@ def evaluate_model(
 
 
         # Nested cross validation
-        cv, nested_scores, y_true, y_pred = nested_cross_validation(
+        cv, nested_scores, y_true = nested_cross_validation(
             model,
             X,
             y,
@@ -164,6 +165,8 @@ def evaluate_model(
             n_workers=n_workers,
             verbose=verbose,
         )
+        # print("RESULTS 1B: ", cv.cv_results_)
+
 
         # Display scores
         print(
@@ -183,27 +186,42 @@ def evaluate_model(
             wandb.log({'{} R-squared'.format(formatted_indicator): r_squared})
 
         # Plot results
-        if plot:
-            plot_cross_val_results(
-                y_true,
-                y_pred,
-                formatted_indicator,
-                nested_scores,
-                wandb=wandb,
-                refit=refit,
-                output_file=output_file  + f"cross_val_{index}.png",
-                show=show
-            )
+        # if plot:
+        #     plot_cross_val_results(
+        #         y_true,
+        #         y_pred,
+        #         formatted_indicator,
+        #         nested_scores,
+        #         wandb=wandb,
+        #         refit=refit,
+        #         output_file=output_file  + f"cross_val_{index}.png",
+        #         show=show
+        #     )
 
         print("Fitting CV on full dataset")
         # Get best estimator
+        print("About to fit: ")
+        print(type(cv))
         cv.fit(X, y)
+
+        # Log each feature's importance as a MLflow metric
+        for z in range(len(X.columns)):
+            mlflow.log_metric(f"{X.columns[z]}_importance",
+                              cv.best_estimator_.named_steps["regressor"].feature_importances_[z])
+
+        if mlflow.active_run() is not None:
+            mlflow.sklearn.log_model(cv.best_estimator_,
+                                     "best model",
+                                     registered_model_name=model_name)
+            for k in cv.best_params_.keys():
+                mlflow.log_param(k, cv.best_score_)
+
         print(
             "Best estimator: {}".format(cv.best_estimator_)
         )
 
         # Save results
-        results[indicator + "_pred"] = y_pred
+        # results[indicator + "_pred"] = y_pred
         results[indicator + "_true"] = y_true
         results[clust_str] = clusters
 
@@ -215,14 +233,16 @@ def evaluate_model(
                     output_file=output_file + f"rf_feature_importance_{index}.png",
                     show=show
                 )
+                mlflow.log_artifact(output_file + f"rf_feature_importance_{index}.png")
             elif model_type == "xgboost":
                 xgb_feature_importance(
                     cv, X, y, size=figsize,
                     output_file=output_file + f"xgb_feature_importance_{index}.png",
                     show=show
                 )
+                mlflow.log_artifact(output_file + f"xgb_feature_importance_{index}.png")
 
-    return cv, pd.DataFrame(results)
+    return cv #, pd.DataFrame(results)
 
 
 def get_param_grid(model_type='ridge'):
@@ -266,19 +286,32 @@ def get_param_grid(model_type='ridge'):
             # "regressor__max_depth": [20],
             # "regressor__min_samples_split": [4,6],
             # "regressor__min_samples_leaf": [2,4],
-            # "regressor__bootstrap": [True]
-            "regressor__criterion": ["squared_error"],
-            "regressor__n_estimators": [1000],
-            "regressor__max_features": [0.33],
-            "regressor__max_depth": [20],
-            "regressor__min_samples_split": [2],
-            "regressor__min_samples_leaf": [4],
-            "regressor__bootstrap": [True]
-            # "regressor__n_estimators": [300],
+            # # "regressor__bootstrap": [True]      
+
+            # "regressor__criterion": ["squared_error"],
+            # "regressor__n_estimators": [10],
             # "regressor__max_features": ['sqrt'],
-            # "regressor__max_depth": [20],
+            # "regressor__max_depth": [10],
             # "regressor__min_samples_split": [4],
             # "regressor__min_samples_leaf": [4],
+            # "regressor__bootstrap": [True]
+
+
+            # "regressor__criterion": ["squared_error"],
+            # "regressor__n_estimators": [5],
+            # "regressor__max_features": [0.33, "sqrt"],
+            # "regressor__max_depth": [5, 10],
+            # "regressor__min_samples_split": [2],
+            # "regressor__min_samples_leaf": [5, 10, 20],
+            # "regressor__bootstrap": [True]
+
+            "regressor__criterion": ["squared_error"],
+            "regressor__n_estimators": [500, 1000],
+            "regressor__max_features": [0.33, "sqrt"],
+            "regressor__max_depth": [2, 10, 20],
+            "regressor__min_samples_split": [2, 5, 10],
+            "regressor__min_samples_leaf": [1, 4, 10],
+            "regressor__bootstrap": [True]
         }
     elif model_type == "xgboost":
         param_grid = {
@@ -470,19 +503,20 @@ def nested_cross_validation(
         verbose=verbose,
         return_train_score=True,
     )
+    # print("RESULTS 1A: ", cv.cv_results_)
 
     print("Running cross_val_predict")
     # Get cross validated predictions
-    y_pred = cross_val_predict(
-        cv,
-        X=X,
-        y=y,
-        cv=outer_cv,
-        n_jobs=n_workers,
-        verbose=verbose
-    )
+    # y_pred = cross_val_predict(
+    #     cv,
+    #     X=X,
+    #     y=y,
+    #     cv=outer_cv,
+    #     n_jobs=n_workers,
+    #     verbose=verbose
+    # )
 
-    return cv, nested_scores, y, y_pred
+    return cv, nested_scores, y
 
 
 def plot_cross_val_results(
@@ -535,8 +569,10 @@ def plot_cross_val_results(
         wandb.log({'{}'.format(indicator): wandb.Image(plt)})
     if output_file:
         plt.savefig(fname=output_file, bbox_inches="tight")
+    print("show graph?")
     if show:
-        plt.show(block=False)
+        print("show graph now!")
+        plt.show(block=False)   
 
 
 def rf_feature_importance(
@@ -662,4 +698,5 @@ def save_model(cv, df, features, indicator, model_path):
 
     # save model
     dump(best, model_path)
+
 
