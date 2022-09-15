@@ -289,29 +289,45 @@ def get_param_grid(model_type='ridge'):
             # # "regressor__bootstrap": [True]      
 
             # "regressor__criterion": ["squared_error"],
-            # "regressor__n_estimators": [10],
-            # "regressor__max_features": ['sqrt'],
-            # "regressor__max_depth": [10],
-            # "regressor__min_samples_split": [4],
-            # "regressor__min_samples_leaf": [4],
-            # "regressor__bootstrap": [True]
-
-
-            # "regressor__criterion": ["squared_error"],
-            # "regressor__n_estimators": [5],
-            # "regressor__max_features": [0.33, "sqrt"],
-            # "regressor__max_depth": [5, 10],
+            # "regressor__n_estimators": [500],
+            # "regressor__max_features": [0.33],
+            # "regressor__max_depth": [20],
             # "regressor__min_samples_split": [2],
-            # "regressor__min_samples_leaf": [5, 10, 20],
+            # "regressor__min_samples_leaf": [1],
             # "regressor__bootstrap": [True]
+
 
             "regressor__criterion": ["squared_error"],
-            "regressor__n_estimators": [500, 1000],
-            "regressor__max_features": [0.33, "sqrt"],
-            "regressor__max_depth": [2, 10, 20],
-            "regressor__min_samples_split": [2, 5, 10],
-            "regressor__min_samples_leaf": [1, 4, 10],
+            "regressor__n_estimators": [500],
+            "regressor__max_features": [0.33],
+            "regressor__max_depth": [20], 
+            "regressor__min_samples_split": [2],
+            "regressor__min_samples_leaf": [1],
             "regressor__bootstrap": [True]
+
+            # "regressor__criterion": ["squared_error"],
+            # "regressor__n_estimators": [1, 10],
+            # "regressor__max_features": [0.33],
+            # "regressor__max_depth": [2], 
+            # "regressor__min_samples_split": [10],
+            # "regressor__min_samples_leaf": [10],
+            # "regressor__bootstrap": [True]
+
+            # "regressor__criterion": ["squared_error"],
+            # "regressor__n_estimators": [300, 500, 1000],
+            # "regressor__max_features": [ "sqrt",0.33, 0.5, 1.0],
+            # "regressor__max_depth": [7, 10, 15, 20],
+            # "regressor__min_samples_split": [2, 3, 5],
+            # "regressor__min_samples_leaf": [1, 2, 4],
+            # # "regressor__bootstrap": [True]
+
+            # "regressor__criterion": ["squared_error"],
+            # "regressor__n_estimators": [300, 500],
+            # "regressor__max_features": ["sqrt", 0.33, 0.4, 0.5],
+            # "regressor__max_depth": [7, 10, 15, 20],
+            # "regressor__min_samples_split": [2, 3, 5, 10],
+            # "regressor__min_samples_leaf": [1, 2, 4],
+            # "regressor__bootstrap": [True]
         }
     elif model_type == "xgboost":
         param_grid = {
@@ -505,9 +521,7 @@ def nested_cross_validation(
         verbose=verbose,
         return_train_score=True,
     )
-    # print("RESULTS 1A: ", cv.cv_results_)
 
-    print("Running cross_val_predict")
     # Get cross validated predictions
     # y_pred = cross_val_predict(
     #     cv,
@@ -700,5 +714,3 @@ def save_model(cv, df, features, indicator, model_path):
 
     # save model
     dump(best, model_path)
-
-

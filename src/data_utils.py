@@ -19,7 +19,6 @@ from scipy.stats import percentileofscore
 from sklearn.metrics import r2_score
 from sklearn.metrics import mean_squared_error
 from sklearn.metrics import mean_absolute_error
-from sklearn_evaluation.plot import grid_search
 
 
 TM_pal_categorical_3 = ("#ef4631", "#10b9ce", "#ff9138")
@@ -398,26 +397,6 @@ def subset_dataframe(df,feature_cols, remove_cols):
     new_features = [col for col in feature_cols if col not in remove_cols] #update column list of feature columns
     return df.copy()[updated_cols], new_features
 
-
-#from sklearn_evaluation.plot import grid_search
-def plot_bar_grid_search(cv_results, grid_param, output_name, figsize = (18, 8), show = False, output_file = None):
-
-    if 'mean_test_score' not in cv_results.keys():
-        cv_results['mean_test_score'] = cv_results.pop('mean_test_r2')                  #Set scoring metric to score of choice frrom scoring dict
-    if 'std_test_score' not in cv_results.keys():
-        cv_results['std_test_score'] = cv_results.pop('std_test_r2')
-    
-    plt.figure(figsize = figsize)
-    grid_search(cv_results, change = grid_param, kind = 'bar', sort = False)
-    plt.subplot().legend(loc = 'upper left', bbox_to_anchor = (0, -.1))
-    plt.subplot().set_ybound(lower = 0.6)
-    plt.title('Grid Search Bar Graph for ' + output_name)
-    print("Saving figure:")
-    if output_file:
-        plt.savefig(fname=output_file, bbox_inches="tight")
-    if show: 
-        plt.show()
-
 #import plotly.graphics_objects as go
 #import re
 #Also, add plotly to list of requirements
@@ -528,7 +507,6 @@ def plot_parallel_coordinates(
                 dim_range = [df[col].max(), df[col].min()]
             else:
                 dim_range = [df[col].min(), df[col].max()]
-            
             if col in logistic_params:
                 logged_vals = df[col].apply(lambda x: log(x, logistic_params[col]))
                 tickvals = np.unique(np.array(list(range(ceil(max(logged_vals))+1)) + list(logged_vals)))
