@@ -490,6 +490,8 @@ def nested_cross_validation(
             n_jobs=n_workers,
             refit=refit,
         )
+    else:
+        raise ValueError("Unknown search type!")
 
     print("Running cross_validate")
     # Commence cross validation
