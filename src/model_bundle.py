@@ -11,20 +11,30 @@ from prefect_dask.task_runners import DaskTaskRunner
 import joblib
 from models import ProjectRunner
 
-
 @task
-def run_project(config: ConfigParser, project: str):
-    config.set(
-        "main", "project", project
-    )  # update config.ini to select the given country
+def run_model(model_func):
     with joblib.parallel_backend('dask'):
-        ProjectRunner(config).run_sub() # JUST RUNS SUB FOR RN
+        model_func()
 
 
 @flow(validate_parameters=False, task_runner=DaskTaskRunner())
 def run_all_projects(config: ConfigParser, project_list: list):
     for p in project_list:
-        run_project.submit(config, p)
+        config.set(
+            "main", "project", p
+        )  # update config.ini to select the given country
+        PR = ProjectRunner(config)
+        run_model.submit(PR.run_all_osm_ntl)
+        run_model.submit(PR.run_ntl)
+        run_model.submit(PR.run_all_osm)
+        run_model.submit(PR.run_all)
+        run_model.submit(PR.run_loc)
+        run_model.submit(PR.run_sub_osm_ntl)
+        run_model.submit(PR.run_sub_osm)
+        run_model.submit(PR.run_sub_osm_all_geo)
+        run_model.submit(PR.run_all_geo)
+        run_model.submit(PR.run_sub_geo)
+        run_model.submit(PR.run_sub)
 
 
 if __name__ == "__main__":
