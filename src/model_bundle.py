@@ -1,22 +1,34 @@
 """
 
 Automatically executes models.py for all projects/country groups whose output_name from config.ini is listed in an
-element of the list "projects". The same hyperparamater configuration from model_utils.py is used for all projects.
-
-Using os.system() because models.py is not enclosed within a function.
+element of the list "projects". The same hyperparameter configuration from model_utils.py is used for all projects.
 
 """
 
-projects = ["MULTI_SOUTH-ASIA_DHS", "BD_2017-18_DHS", "PK_2017-18_DHS", "MULTI_WEST-AFRICA_DHS", "LB_2019-20_DHS", "MR_2019-21_DHS", "SL_2019_DHS", "GN_2018_DHS", "ML_2018_DHS", "NG_2018_DHS", "BJ_2017-18_DHS", "TG_2013-14_DHS", "GH_2014_DHS", "KE_2014_DHS", "PH_2017_DHS", "ZM_2018_DHS", "TL_2016_DHS", "CM_2018_DHS"]
-
-import configparser
+from configparser import ConfigParser
+from prefect import flow, task
+from prefect_dask.task_runners import DaskTaskRunner
+import joblib
 from models import ProjectRunner
 
-with open('config.ini', 'r') as savedconfigfile:
 
-    config = configparser.ConfigParser()
-    config.read('config.ini')
+@task
+def run_project(config: ConfigParser, project: str):
+    config.set(
+        "main", "project", project
+    )  # update config.ini to select the given country
+    with joblib.parallel_backend('dask'):
+        ProjectRunner(config).run_sub() # JUST RUNS SUB FOR RN
 
-    for country in projects:
-        config.set('main', 'project', country)  #Update config.ini to select the given country
-        ProjectRunner(config).run_all_models()
+
+@flow(validate_parameters=False, task_runner=DaskTaskRunner())
+def run_all_projects(config: ConfigParser, project_list: list):
+    for p in project_list:
+        run_project.submit(config, p)
+
+
+if __name__ == "__main__":
+    config = ConfigParser()
+    config.read("config.ini")
+    project_list = [s.strip() for s in config["main"]["projects_to_run"].split(sep=",")]
+    run_all_projects(config, project_list)
