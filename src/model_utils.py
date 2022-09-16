@@ -242,7 +242,7 @@ def evaluate_model(
                 )
                 mlflow.log_artifact(output_file + f"xgb_feature_importance_{index}.png")
 
-    return cv, pd.DataFrame(results)
+    return cv #, pd.DataFrame(results)
 
 
 def get_param_grid(model_type='ridge'):
@@ -707,7 +707,7 @@ def rf_permutation_importance_dataframe(cv, X, y):
 def save_model(cv, df, features, indicator, model_path):
     # define X,y for all data
     X = df[features]
-    y = df[indicator].tolist()
+    y = df[indicator].values.tolist()
 
     # refit cv model with all data
     best = cv.best_estimator_.fit(X, y)

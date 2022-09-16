@@ -125,7 +125,7 @@ class ProjectRunner:
             mlflow.set_tags(self.tags)
             mlflow.set_tag("model_name", name)
 
-            cv, predictions = model_utils.evaluate_model(
+            cv = model_utils.evaluate_model(
                 data=self.data_df,
                 feature_cols=cols,
                 indicator_cols=self.indicators,
@@ -143,15 +143,6 @@ class ProjectRunner:
                     self.results_dir, f"{name}_model_cv{self.n_splits}_"
                 ),
                 show=self.show_plots,
-            )
-
-            data_utils.plot_bar_grid_search(
-                output_file=os.path.join(
-                    self.results_dir, f"{name}_model_grid_search_bar"
-                ),
-                output_name=self.output_name,
-                cv_results=cv.cv_results_,
-                grid_param="regressor__n_estimators",
             )
 
             plot_file_path = os.path.join(
@@ -215,7 +206,7 @@ class ProjectRunner:
         self.run_model("sub-geo", self.sub_geo_cols)
 
     def run_sub(self):
-        self.run_model("sub", self.self.sub_osm_cols + self.sub_geo_cols)
+        self.run_model("sub", self.sub_osm_cols + self.sub_geo_cols)
 
     def run_all_models(self):
         self.run_all_osm_ntl()
@@ -347,4 +338,4 @@ if __name__ == "__main__":
 
     config = ConfigParser()
     config.read("config.ini")
-    pr = ProjectRunner(config).run_all_models()
+    ProjectRunner(config).run_all_models()
