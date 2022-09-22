@@ -1,23 +1,50 @@
-"""
-
-Automatically executes models.py for all projects/country groups whose output_name from config.ini is listed in an
-element of the list "projects". The same hyperparameter configuration from model_utils.py is used for all projects.
-
-"""
-
 from configparser import ConfigParser
+from dask.distributed import Client, LocalCluster
+from dask_jobqueue import PBSCluster
 from prefect import flow, task
 from prefect_dask.task_runners import DaskTaskRunner
-import joblib
+import mlflow
 from models import ProjectRunner
+import joblib
+
+cluster_kwargs = {
+    "name": "ajh:ape",
+    "shebang": "#!/bin/tcsh",
+    "resource_spec": "nodes=1:c18a:ppn=12",
+    "walltime": "00:20:00",
+    "cores": 12,
+    "processes": 6,
+    "memory": "12GB",
+    "interface": "ib0",
+    "job_script_prologue": ["cd /sciclone/home20/jwhall/accessible-poverty-estimates/src"],
+    # "job_extra_directives": ["-j oe"],
+}
+
+adapt_kwargs = {
+    "minimum": 36,
+    "maximum": 36,
+}
+
+dask_task_runner_kwargs = {
+    "cluster_class": PBSCluster,
+    "cluster_kwargs": cluster_kwargs,
+    "adapt_kwargs": adapt_kwargs,
+}
+
+local_cluster_kwargs = {
+    "cluster_class": LocalCluster,
+    "cluster_kwargs": { "n_workers": 6, },
+    "adapt_kwargs": { "minimum": 4, "maximum": 12, },
+}
+
 
 @task
 def run_model(model_func):
-    with joblib.parallel_backend('dask'):
-        model_func()
+    mlflow.set_tracking_uri("sqlite:///mlflow.db")
+    model_func()
 
 
-@flow(validate_parameters=False, task_runner=DaskTaskRunner())
+@flow(validate_parameters=False, task_runner=DaskTaskRunner(**dask_task_runner_kwargs))
 def run_all_projects(config: ConfigParser, project_list: list):
     for p in project_list:
         config.set(
@@ -26,16 +53,15 @@ def run_all_projects(config: ConfigParser, project_list: list):
         PR = ProjectRunner(config)
         run_model.submit(PR.run_all_osm_ntl)
         run_model.submit(PR.run_ntl)
-        run_model.submit(PR.run_all_osm)
-        run_model.submit(PR.run_all)
-        run_model.submit(PR.run_loc)
-        run_model.submit(PR.run_sub_osm_ntl)
-        run_model.submit(PR.run_sub_osm)
-        run_model.submit(PR.run_sub_osm_all_geo)
-        run_model.submit(PR.run_all_geo)
-        run_model.submit(PR.run_sub_geo)
-        run_model.submit(PR.run_sub)
-
+        # run_model.submit(PR.run_all_osm)
+        # run_model.submit(PR.run_all)
+        # run_model.submit(PR.run_loc)
+        # run_model.submit(PR.run_sub_osm_ntl)
+        # run_model.submit(PR.run_sub_osm)
+        # run_model.submit(PR.run_sub_osm_all_geo)
+        # run_model.submit(PR.run_all_geo)
+        # run_model.submit(PR.run_sub_geo)
+        # run_model.submit(PR.run_sub)
 
 if __name__ == "__main__":
     config = ConfigParser()
