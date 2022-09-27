@@ -41,48 +41,52 @@ def run_model(model_func, config):
     getattr(PR, model_func)()
 
 
-@flow(validate_parameters=False, task_runner=DaskTaskRunner(**dask_task_runner_kwargs))
-def run_all_projects(config: ConfigParser, project_list: list):
-    # make sure the registry URI exists
-    os.makedirs(config["mlflow"]["registry_uri"], exist_ok=True)
-    client = MlflowClient(
-        tracking_uri=config["mlflow"]["tracking_uri"],
-        registry_uri=config["mlflow"]["registry_uri"],
-    )
-    # create an experiment with the name we chose, if it does not exist
-    if not list(
-        filter(
-            lambda e: e.name == config["mlflow"]["experiment_name"],
-            client.search_experiments(),
-        )
-    ):
-        client.create_experiment(
-            name=config["mlflow"]["experiment_name"],
-            artifact_location=config["mlflow"]["artifact_location"],
-        )
-
-    model_funcs = [
-        "run_all_osm_ntl",
-        "run_ntl",
-        "run_all_osm",
-        "run_all",
-        "run_loc",
-        "run_sub_osm_ntl",
-        "run_sub_osm",
-        "run_sub_osm_all_geo",
-        "run_all_geo",
-        "run_sub_geo",
-        "run_sub",
-    ]
-    # run each model for each project
-    for p in project_list:
-        config.set("main", "project", p)
-        for m in model_funcs:
-            run_model.submit(m, config)
-
-
 if __name__ == "__main__":
     config = ConfigParser(interpolation=ExtendedInterpolation())
     config.read("config.ini")
     project_list = [s.strip() for s in config["main"]["projects_to_run"].split(sep=",")]
+    if config.getboolean("main", "dask_enabled"):
+        task_runner = DaskTaskRunner(**dask_task_runner_kwargs)
+    else:
+        task_runner = None
+
+    @flow(validate_parameters=False, task_runner=task_runner)
+    def run_all_projects(config: ConfigParser, project_list: list):
+        # make sure the registry URI exists
+        os.makedirs(config["mlflow"]["registry_uri"], exist_ok=True)
+        client = MlflowClient(
+            tracking_uri=config["mlflow"]["tracking_uri"],
+            registry_uri=config["mlflow"]["registry_uri"],
+        )
+        # create an experiment with the name we chose, if it does not exist
+        if not list(
+            filter(
+                lambda e: e.name == config["mlflow"]["experiment_name"],
+                client.search_experiments(),
+            )
+        ):
+            client.create_experiment(
+                name=config["mlflow"]["experiment_name"],
+                artifact_location=config["mlflow"]["artifact_location"],
+            )
+
+        model_funcs = [
+            "run_all_osm_ntl",
+            "run_ntl",
+            "run_all_osm",
+            "run_all",
+            "run_loc",
+            "run_sub_osm_ntl",
+            "run_sub_osm",
+            "run_sub_osm_all_geo",
+            "run_all_geo",
+            "run_sub_geo",
+            "run_sub",
+        ]
+        # run each model for each project
+        for p in project_list:
+            config.set("main", "project", p)
+            for m in model_funcs:
+                run_model.submit(m, config)
+
     run_all_projects(config, project_list)
