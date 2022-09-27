@@ -32,6 +32,24 @@ dask_task_runner_kwargs = {
     "adapt_kwargs": adapt_kwargs,
 }
 
+model_funcs = [
+    "run_all_osm_ntl",
+    "run_ntl",
+    "run_all_osm",
+    "run_all",
+    "run_loc",
+    "run_sub_osm_ntl",
+    "run_sub_osm",
+    "run_sub_osm_all_geo",
+    "run_all_geo",
+    "run_sub_geo",
+    "run_sub",
+]
+
+
+def parse_list(comma_sep_list: str) -> list[str]:
+    return [s.strip() for s in comma_sep_list.split(sep=",")]
+
 
 @task
 def run_model(model_func, config):
@@ -44,7 +62,7 @@ def run_model(model_func, config):
 if __name__ == "__main__":
     config = ConfigParser(interpolation=ExtendedInterpolation())
     config.read("config.ini")
-    project_list = [s.strip() for s in config["main"]["projects_to_run"].split(sep=",")]
+
     if config.getboolean("main", "dask_enabled"):
         task_runner = DaskTaskRunner(**dask_task_runner_kwargs)
     else:
@@ -70,23 +88,15 @@ if __name__ == "__main__":
                 artifact_location=config["mlflow"]["artifact_location"],
             )
 
-        model_funcs = [
-            "run_all_osm_ntl",
-            "run_ntl",
-            "run_all_osm",
-            "run_all",
-            "run_loc",
-            "run_sub_osm_ntl",
-            "run_sub_osm",
-            "run_sub_osm_all_geo",
-            "run_all_geo",
-            "run_sub_geo",
-            "run_sub",
-        ]
         # run each model for each project
         for p in project_list:
             config.set("main", "project", p)
             for m in model_funcs:
                 run_model.submit(m, config)
+
+    project_list = parse_list(config["main"]["projects_to_run"])
+    for p in project_list:
+        if config.has_option(p, "sub_projects"):
+            project_list.extend(parse_list(config[p]["sub_projects"]))
 
     run_all_projects(config, project_list)
