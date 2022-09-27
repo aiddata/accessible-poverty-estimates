@@ -8,7 +8,7 @@ import os
 import sys
 import json
 from pathlib import Path
-from configparser import ConfigParser
+from configparser import ConfigParser, ExtendedInterpolation
 
 import mlflow
 import pandas as pd
@@ -83,7 +83,7 @@ class ProjectRunner:
         self.geom_id = json_data["primary_geom_id"]
 
         # set MLflow tracking location
-        mlflow.set_tracking_uri(config["main"]["mlflow_models_location"])
+        mlflow.set_tracking_uri(config["mlflow"]["tracking_uri"])
 
         sys.path.insert(0, os.path.join(self.project_dir, "src"))
 
@@ -120,9 +120,21 @@ class ProjectRunner:
             show=self.show_plots,
         )
 
-        with mlflow.start_run(run_name=f"{self.project} - {name}") as run:
-
-            mlflow.set_tags(self.tags)
+        # search for this experiment id
+        experiment_id = next(
+            filter(
+                lambda x: x.name == "accessible-poverty-estimates",
+                mlflow.search_experiments(),
+            ),
+            None,
+        ).experiment_id
+        # create this run
+        with mlflow.start_run(
+            experiment_id=experiment_id,
+            run_name=f"{self.project} - {name}",
+            tags=self.tags,
+        ) as run:
+            # add model name to this run's tags
             mlflow.set_tag("model_name", name)
 
             cv = model_utils.evaluate_model(
@@ -169,10 +181,7 @@ class ProjectRunner:
         self.run_model_funcs(name, cols)
         if run_ols:
             self.run_OLS(
-                self.data_df,
-                self.indicators,
-                cols,
-                name,
+                self.data_df, self.indicators, cols, name,
             )
 
     def run_all_osm_ntl(self):
@@ -321,12 +330,7 @@ class ProjectRunner:
             axis=1,
         )
         xxx_cols = [i for i in xxx_df.columns if i not in [geom_id] + self.indicators]
-        xxx_ols = run_OLS(
-            xxx_df,
-            "Wealth Index",
-            xxx_cols,
-            "adm2-final-noesa",
-        )
+        xxx_ols = run_OLS(xxx_df, "Wealth Index", xxx_cols, "adm2-final-noesa",)
 
 
 if __name__ == "__main__":
@@ -336,6 +340,6 @@ if __name__ == "__main__":
             "config.ini file not found. Make sure you run this from the root directory of the repo."
         )
 
-    config = ConfigParser()
+    config = ConfigParser(interpolation=ExtendedInterpolation())
     config.read("config.ini")
     ProjectRunner(config).run_all_models()
