@@ -19,7 +19,7 @@ This project requires downloaded data from [The DHS Program](https://dhsprogram.
 2. Create Conda environment
   - Create new environment from env file:
     ```
-    conda env create --file environment.yml
+    conda env create --file environment.yaml
     conda activate osm-rf
     ```
   - or from scratch (if you prefer):
@@ -31,11 +31,11 @@ This project requires downloaded data from [The DHS Program](https://dhsprogram.
   - to update your environment (if needed):
     ```
     conda activate osm-rf
-    conda env update --file environment.yml  --prune
+    conda env update --file environment.yaml  --prune
     ```
   - to export/save your environment (if needed):
     ```
-    conda env export > environment.yml
+    conda env export > environment.yaml
     ```
   - Add the `src` directory to your Conda environment Python path:
     `conda develop /path/to/project/directory/src` (Note: /path/to/project/directory should be the same as your `project_dir` variable in the config.ini)
