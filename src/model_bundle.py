@@ -70,7 +70,9 @@ if __name__ == "__main__":
     config.read("config.ini")
 
     if config.getboolean("main", "dask_enabled"):
-        if config.getboolean("main", "use_hpc"):
+        if config.getboolean("main", "use_dask_address"):
+            task_runner = DaskTaskRunner(address=config["main"]["dask_address"])
+        elif config.getboolean("main", "use_hpc"):
             task_runner = DaskTaskRunner(**dask_task_runner_kwargs)
         else:
             task_runner = DaskTaskRunner
