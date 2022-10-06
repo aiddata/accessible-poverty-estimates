@@ -2,7 +2,10 @@
 
 """Utility methods for evaluating Wealth Prediction Models"""
 
-from matplotlib import pyplot as plt
+import matplotlib as mpl
+mpl.use('Agg')
+import matplotlib.pyplot as plt
+
 import pandas as pd
 import numpy as np
 import random
@@ -48,6 +51,7 @@ from sklearn.svm import SVR, SVC
 from sklearn.inspection import permutation_importance
 import seaborn as sns
 
+
 TM_pal_categorical_3 = ("#ef4631", "#10b9ce", "#ff9138")
 sns.set(
     style="white",
@@ -82,7 +86,7 @@ def evaluate_model(
     verbose=1,
     plot=True,
     output_file=None,
-    show=True
+    show=False
 ):
     """ Automatically trains and evaluates the specified model on given dataset
     using an n-fold nested cross validation scheme. Supported models so far are:
@@ -286,7 +290,7 @@ def get_param_grid(model_type='ridge'):
             # "regressor__max_depth": [20],
             # "regressor__min_samples_split": [4,6],
             # "regressor__min_samples_leaf": [2,4],
-            # # "regressor__bootstrap": [True]      
+            # # "regressor__bootstrap": [True]
 
             # "regressor__criterion": ["squared_error"],
             # "regressor__n_estimators": [500],
@@ -298,9 +302,9 @@ def get_param_grid(model_type='ridge'):
 
 
             "regressor__criterion": ["squared_error"],
-            "regressor__n_estimators": [500],
+            "regressor__n_estimators": [500, 100],
             "regressor__max_features": [0.33],
-            "regressor__max_depth": [20], 
+            "regressor__max_depth": [20, 10],
             "regressor__min_samples_split": [2],
             "regressor__min_samples_leaf": [1],
             "regressor__bootstrap": [True]
@@ -308,7 +312,7 @@ def get_param_grid(model_type='ridge'):
             # "regressor__criterion": ["squared_error"],
             # "regressor__n_estimators": [1, 10],
             # "regressor__max_features": [0.33],
-            # "regressor__max_depth": [2], 
+            # "regressor__max_depth": [2],
             # "regressor__min_samples_split": [10],
             # "regressor__min_samples_leaf": [10],
             # "regressor__bootstrap": [True]
@@ -543,7 +547,7 @@ def plot_cross_val_results(
     wandb,
     refit='r2',
     output_file=None,
-    show=True
+    show=False
 ):
     """Plots cross validated estimates.
 
@@ -588,13 +592,13 @@ def plot_cross_val_results(
     print("show graph?")
     if show:
         print("show graph now!")
-        plt.show(block=False)   
+        plt.show(block=False)
 
 
 def rf_feature_importance(
     cv, X, y, n_features=20, size=(10, 15),
     output_file=None,
-    show=True
+    show=False
 ):
     """ Plots the feature importances for random forest regressor.
 

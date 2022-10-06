@@ -2,8 +2,11 @@
 
 """Utility methods for Exploratory Data Analysis and Pre-processing"""
 
-from math import log, ceil
+import matplotlib as mpl
+mpl.use('Agg')
 import matplotlib.pyplot as plt
+
+from math import log, ceil
 import seaborn as sns
 import pandas as pd
 import plotly.graph_objects as go
@@ -197,7 +200,7 @@ def plot_hist(
     y_label,
     bins=30,
     output_file=None,
-    show=True
+    show=False
 ):
     """Plots histogram for the given data
 
@@ -231,7 +234,7 @@ def plot_regplot(
     y_label='Average Nightlight Intensity',
     y_var='ntl_mean',
     output_file=None,
-    show=True
+    show=False
 ):
     """Produces the regression plot for the given data
 
@@ -290,7 +293,7 @@ def plot_corr(
     figsize=(5, 6),
     max_n=30,
     output_file=None,
-    show=True
+    show=False
 ):
     """Produces a barplot of the Spearman rank correlation and Pearson's correlation
     for a group of values in descending order
@@ -401,17 +404,17 @@ def subset_dataframe(df,feature_cols, remove_cols):
 #import re
 #Also, add plotly to list of requirements
 def plot_parallel_coordinates(
-    cv_results, 
-    output_name = 'Unidentified Region', 
-    show = False, 
-    output_file = None, 
-    color_scale = None, 
-    show_colorbar = True, 
+    cv_results,
+    output_name = 'Unidentified Region',
+    show = False,
+    output_file = None,
+    color_scale = None,
+    show_colorbar = True,
     logistic_params=dict(),
-    visual_mode = "dark"): 
+    visual_mode = "dark"):
 
     """Produces a parallel coordinates plot that displays the relationship between the various
-    hyperparameter configurations used during grid search and the corresponding test scores. 
+    hyperparameter configurations used during grid search and the corresponding test scores.
 
     Parameters
     ----------
@@ -427,20 +430,20 @@ def plot_parallel_coordinates(
     output_file : str (default is None)
         The desired pathway to output the plot. If set to None, no file is saved.
     color_scale : str or list (default is None)
-        The desired color scale to use for indicating score. Options can be found in the 
+        The desired color scale to use for indicating score. Options can be found in the
         documentation for colorscales for Plotly parcoords lines, currently located at
-        https://plotly.github.io/plotly.py-docs/generated/plotly.graph_objects.parcoords.html#plotly.graph_objects.parcoords.Line.colorscale   
-        If set to None, color_scale is automatically set according to the selected visual mode 
+        https://plotly.github.io/plotly.py-docs/generated/plotly.graph_objects.parcoords.html#plotly.graph_objects.parcoords.Line.colorscale
+        If set to None, color_scale is automatically set according to the selected visual mode
     show_colorbar : bool (default is True)
         Whether to display the separate colorbar that indicates how scores are colorcoded
-    logistic_params : dictionary whose keys are strings and whose values are integers 
+    logistic_params : dictionary whose keys are strings and whose values are integers
     (default is empty dictionary)
-        Dictionary whose keys are the shortened names of the quantitative hyperparameters 
+        Dictionary whose keys are the shortened names of the quantitative hyperparameters
         whose axes to display on a logistic scale rather than a linear scale. Corresponding
-        values are the desired integer base to use for logistic scaling. If set to empty, 
+        values are the desired integer base to use for logistic scaling. If set to empty,
         all quantitative hyperparameters will be displayed on a linear scale.
-            -e.g., {"n_estimators": 10, "max_depth": 2} for approximate values of 
-            10, 100, and 1000 for n_estimators and approximate values of 3, 6, and 12 
+            -e.g., {"n_estimators": 10, "max_depth": 2} for approximate values of
+            10, 100, and 1000 for n_estimators and approximate values of 3, 6, and 12
             for max_depth.
     visual_mode : str (default is "dark")
         The overall color theme of the plot. Currently two options: "dark" and "light".
@@ -467,7 +470,7 @@ def plot_parallel_coordinates(
                 df[shortened] = df[column]
                 df.drop(column, inplace = True, axis = 1)
                 try:
-                    df[shortened] = pd.to_numeric(df[shortened]) 
+                    df[shortened] = pd.to_numeric(df[shortened])
                 except: #Convert categorical data to quantitative data if necessary, storing mappings in category_list
                     category_dict[shortened] = df[shortened].unique().tolist()
                     df[shortened] = df[shortened].apply(lambda x: category_dict[shortened].index(x))
@@ -490,7 +493,7 @@ def plot_parallel_coordinates(
     #     print(col)
     #     print(df[col].values[3], "type: ", type(df[col].values[3]))
     #     print(df[col])
-    
+
     col_list = []
 
     for col in df.columns:
@@ -512,7 +515,7 @@ def plot_parallel_coordinates(
                 tickvals = np.unique(np.array(list(range(ceil(max(logged_vals))+1)) + list(logged_vals)))
                 col_dict = dict(
                     range = dim_range,
-                    label = col, 
+                    label = col,
                     values = logged_vals,
                     tickvals = tickvals,
                     ticktext = list(round(pow(logistic_params[col], x)) for x in tickvals)
@@ -533,9 +536,9 @@ def plot_parallel_coordinates(
     fig = go.Figure(
         data = parCoords
     )
- 
+
     if visual_mode == "dark":  #Display Theming
-        fig.update_layout(              
+        fig.update_layout(
             paper_bgcolor='#000',
             plot_bgcolor='#000',
             title_text='Parallel Coordinates Plot for ' + output_name,
@@ -543,7 +546,7 @@ def plot_parallel_coordinates(
             font_size=18
         )
     else:
-        fig.update_layout(              
+        fig.update_layout(
             paper_bgcolor='#FFF',
             plot_bgcolor='#FFF',
             title_text='Parallel Coordinates Plot for ' + output_name,
@@ -551,7 +554,7 @@ def plot_parallel_coordinates(
             font_size=18
         )
 
-    fig.update_traces(       
+    fig.update_traces(
         line_showscale=show_colorbar, #Show colorbar
         selector=dict(type='parcoords')
     )
@@ -559,6 +562,6 @@ def plot_parallel_coordinates(
     if output_file:
         fig.write_html(output_file + '.html')
         fig.write_image(output_file + '.png')
-    if show: 
+    if show:
         fig.show()
 
