@@ -64,7 +64,10 @@ if __name__ == "__main__":
     config.read("config.ini")
 
     if config.getboolean("main", "dask_enabled"):
-        task_runner = DaskTaskRunner(**dask_task_runner_kwargs)
+        if config.getboolean("main", "use_hpc"):
+            task_runner = DaskTaskRunner(**dask_task_runner_kwargs)
+        else:
+            task_runner = DaskTaskRunner
     else:
         task_runner = None
 
