@@ -100,7 +100,9 @@ if __name__ == "__main__":
                 run_model.submit(m, config)
 
         # delete rogue mlruns folder in src directory
-        (Path(config["main"]["project_dir"]) / "src" / "mlruns").rmdir()
+        rogue_dir = Path(config["main"]["project_dir"]) / "src" / "mlruns"
+        if os.path.isdir(rogue_dir):
+            rogue_dir.rmdir()
 
     project_list = parse_list(config["main"]["projects_to_run"])
     for p in project_list:
