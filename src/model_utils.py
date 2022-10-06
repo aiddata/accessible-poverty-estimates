@@ -48,6 +48,8 @@ from sklearn.svm import SVR, SVC
 from sklearn.inspection import permutation_importance
 import seaborn as sns
 
+plt.switch_backend("Agg")
+
 TM_pal_categorical_3 = ("#ef4631", "#10b9ce", "#ff9138")
 sns.set(
     style="white",
