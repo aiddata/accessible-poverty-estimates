@@ -1,10 +1,12 @@
 import os
+from pathlib import Path
 from configparser import ConfigParser, ExtendedInterpolation
 from dask_jobqueue import PBSCluster
 from prefect import flow, task
 from prefect_dask.task_runners import DaskTaskRunner
 from mlflow import MlflowClient
 from models import ProjectRunner
+import joblib
 
 cluster_kwargs = {
     "name": "ajh:ape",
@@ -56,8 +58,12 @@ def run_model(model_func, config):
     # initialize a ProjectRunner for this task run
     PR = ProjectRunner(config)
     # run the given model_func in our ProjectRunner
-    getattr(PR, model_func)()
-
+    if config.getboolean("main", "use_hpc"):
+        # use a threaded backend if on HPC
+        with joblib.parallel_backend("threading", n_jobs=4):
+            getattr(PR, model_func)()
+    else:
+        getattr(PR, model_func)()
 
 if __name__ == "__main__":
     config = ConfigParser(interpolation=ExtendedInterpolation())
@@ -96,6 +102,9 @@ if __name__ == "__main__":
             config.set("main", "project", p)
             for m in model_funcs:
                 run_model.submit(m, config)
+
+        # delete rogue mlruns folder in src directory
+        (Path(config["main"]["project_dir"]) / "src" / "mlruns").rmdir()
 
     project_list = parse_list(config["main"]["projects_to_run"])
     for p in project_list:
