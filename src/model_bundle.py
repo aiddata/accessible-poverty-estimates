@@ -6,7 +6,6 @@ from prefect import flow, task
 from prefect_dask.task_runners import DaskTaskRunner
 from mlflow import MlflowClient
 from models import ProjectRunner
-import joblib
 
 cluster_kwargs = {
     "name": "ajh:ape",
@@ -58,12 +57,7 @@ def run_model(model_func, config):
     # initialize a ProjectRunner for this task run
     PR = ProjectRunner(config)
     # run the given model_func in our ProjectRunner
-    if config.getboolean("main", "use_hpc"):
-        # use a threaded backend if on HPC
-        with joblib.parallel_backend("threading", n_jobs=4):
-            getattr(PR, model_func)()
-    else:
-        getattr(PR, model_func)()
+    getattr(PR, model_func)()
 
 if __name__ == "__main__":
     config = ConfigParser(interpolation=ExtendedInterpolation())
