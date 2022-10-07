@@ -6,7 +6,6 @@ from prefect import flow, task
 from prefect_dask.task_runners import DaskTaskRunner
 from mlflow import MlflowClient
 from models import ProjectRunner
-import joblib
 
 cluster_kwargs = {
     "name": "ajh:ape",
@@ -58,19 +57,16 @@ def run_model(model_func, config):
     # initialize a ProjectRunner for this task run
     PR = ProjectRunner(config)
     # run the given model_func in our ProjectRunner
-    if config.getboolean("main", "use_hpc"):
-        # use a threaded backend if on HPC
-        with joblib.parallel_backend("threading", n_jobs=4):
-            getattr(PR, model_func)()
-    else:
-        getattr(PR, model_func)()
+    getattr(PR, model_func)()
 
 if __name__ == "__main__":
     config = ConfigParser(interpolation=ExtendedInterpolation())
     config.read("config.ini")
 
     if config.getboolean("main", "dask_enabled"):
-        if config.getboolean("main", "use_hpc"):
+        if config.getboolean("main", "use_dask_address"):
+            task_runner = DaskTaskRunner(address=config["main"]["dask_address"])
+        elif config.getboolean("main", "use_hpc"):
             task_runner = DaskTaskRunner(**dask_task_runner_kwargs)
         else:
             task_runner = DaskTaskRunner
@@ -104,7 +100,9 @@ if __name__ == "__main__":
                 run_model.submit(m, config)
 
         # delete rogue mlruns folder in src directory
-        (Path(config["main"]["project_dir"]) / "src" / "mlruns").rmdir()
+        rogue_dir = Path(config["main"]["project_dir"]) / "src" / "mlruns"
+        if os.path.isdir(rogue_dir):
+            rogue_dir.rmdir()
 
     project_list = parse_list(config["main"]["projects_to_run"])
     for p in project_list:
