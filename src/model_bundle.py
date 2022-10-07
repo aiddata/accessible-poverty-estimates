@@ -1,6 +1,8 @@
 import os
+import json
 from pathlib import Path
 from configparser import ConfigParser, ExtendedInterpolation
+
 from dask_jobqueue import PBSCluster
 from prefect import flow, task
 from prefect_dask.task_runners import DaskTaskRunner
@@ -33,20 +35,6 @@ dask_task_runner_kwargs = {
     "adapt_kwargs": adapt_kwargs,
 }
 
-model_funcs = [
-    "run_all_osm_ntl",
-    "run_ntl",
-    "run_all_osm",
-    "run_all",
-    "run_loc",
-    "run_sub_osm_ntl",
-    "run_sub_osm",
-    "run_sub_osm_all_geo",
-    "run_all_geo",
-    "run_sub_geo",
-    "run_sub",
-]
-
 
 def parse_list(comma_sep_list: str) -> list[str]:
     return [s.strip() for s in comma_sep_list.split(sep=",")]
@@ -62,6 +50,8 @@ def run_model(model_func, config):
 if __name__ == "__main__":
     config = ConfigParser(interpolation=ExtendedInterpolation())
     config.read("config.ini")
+
+    model_funcs =  parse_list(config["main"]["model_funcs"])
 
     if config.getboolean("main", "dask_enabled"):
         if config.getboolean("main", "use_dask_address"):
