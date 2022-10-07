@@ -6,7 +6,9 @@ from configparser import ConfigParser, ExtendedInterpolation
 from dask_jobqueue import PBSCluster
 from prefect import flow, task
 from prefect_dask.task_runners import DaskTaskRunner
+from prefect.task_runners import SequentialTaskRunner, ConcurrentTaskRunner
 from mlflow import MlflowClient
+
 from models import ProjectRunner
 
 cluster_kwargs = {
@@ -42,6 +44,7 @@ def parse_list(comma_sep_list: str) -> list[str]:
 
 @task
 def run_model(model_func, config):
+    from models import ProjectRunner
     # initialize a ProjectRunner for this task run
     PR = ProjectRunner(config)
     # run the given model_func in our ProjectRunner
@@ -61,16 +64,19 @@ if __name__ == "__main__":
         else:
             task_runner = DaskTaskRunner
     else:
-        task_runner = None
+        task_runner = ConcurrentTaskRunner
+
 
     @flow(validate_parameters=False, task_runner=task_runner)
     def run_all_projects(config: ConfigParser, project_list: list):
         # make sure the registry URI exists
         os.makedirs(config["mlflow"]["registry_uri"], exist_ok=True)
+
         client = MlflowClient(
             tracking_uri=config["mlflow"]["tracking_uri"],
             registry_uri=config["mlflow"]["registry_uri"],
         )
+
         # create an experiment with the name we chose, if it does not exist
         if not list(
             filter(
@@ -94,7 +100,9 @@ if __name__ == "__main__":
         if os.path.isdir(rogue_dir):
             rogue_dir.rmdir()
 
+
     project_list = parse_list(config["main"]["projects_to_run"])
+
     for p in project_list:
         if config.has_option(p, "sub_projects"):
             project_list.extend(parse_list(config[p]["sub_projects"]))
