@@ -711,7 +711,7 @@ def rf_permutation_importance_dataframe(cv, X, y):
 def save_model(cv, df, features, indicator, model_path):
     # define X,y for all data
     X = df[features]
-    y = df[indicator].values.tolist()
+    y = df[indicator].values.ravel()
 
     # refit cv model with all data
     best = cv.best_estimator_.fit(X, y)
