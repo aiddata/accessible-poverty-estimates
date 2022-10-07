@@ -11,3 +11,6 @@ data/kc_surveys/
 test_*/
 .prefect_key
 dask-worker-space
+
+data/outputs/
+mlruns/
