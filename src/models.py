@@ -137,6 +137,8 @@ class ProjectRunner:
             # add model name to this run's tags
             mlflow.set_tag("model_name", name)
 
+            mlflow.sklearn.autolog(max_tuning_runs=None)
+
             cv = model_utils.evaluate_model(
                 data=self.data_df,
                 feature_cols=cols,

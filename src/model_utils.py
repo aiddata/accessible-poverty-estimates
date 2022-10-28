@@ -181,6 +181,9 @@ def evaluate_model(
                 score,
                 ": %.4f" % nested_scores[score].mean(),
             )
+            # mlflow.log_param(score, nested_scores[score].mean())
+            # mlflow.log_param(f'{score}_list', nested_scores[score])
+
             print(nested_scores[score])
             if score == 'test_r2':
                 r_squared = nested_scores[score].mean()
@@ -213,12 +216,13 @@ def evaluate_model(
             mlflow.log_metric(f"{X.columns[z]}_importance",
                               cv.best_estimator_.named_steps["regressor"].feature_importances_[z])
 
-        if mlflow.active_run() is not None:
-            mlflow.sklearn.log_model(cv.best_estimator_,
-                                     "best model",
-                                     registered_model_name=model_name)
-            for k in cv.best_params_.keys():
-                mlflow.log_param(k, cv.best_score_)
+        # if mlflow.active_run() is not None:
+        #     mlflow.sklearn.log_model(cv.best_estimator_,
+        #                              "best model",
+        #                              registered_model_name=model_name)
+        #     for k in cv.best_params_.keys():
+        #         mlflow.log_param(k, cv.best_params_[k])
+
 
         print(
             "Best estimator: {}".format(cv.best_estimator_)

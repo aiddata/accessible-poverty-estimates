@@ -3,6 +3,7 @@ import json
 from pathlib import Path
 from configparser import ConfigParser, ExtendedInterpolation
 
+import dask
 from dask_jobqueue import PBSCluster
 from prefect import flow, task
 from prefect_dask.task_runners import DaskTaskRunner
@@ -10,6 +11,8 @@ from prefect.task_runners import SequentialTaskRunner, ConcurrentTaskRunner
 from mlflow import MlflowClient
 
 from models import ProjectRunner
+
+dask.config.set({'distributed.worker.daemon': False})
 
 cluster_kwargs = {
     "name": "ajh:ape",
