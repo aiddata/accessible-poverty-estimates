@@ -7,7 +7,6 @@ Run models based on OSM features and additional geospatial data
 import os
 import sys
 import json
-from pathlib import Path
 from configparser import ConfigParser, ExtendedInterpolation
 
 import mlflow

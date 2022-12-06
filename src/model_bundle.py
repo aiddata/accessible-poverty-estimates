@@ -1,44 +1,14 @@
 import os
-import json
 from pathlib import Path
 from configparser import ConfigParser, ExtendedInterpolation
 
-import dask
-from dask_jobqueue import PBSCluster
 from prefect import flow, task
-from prefect_dask.task_runners import DaskTaskRunner
 from prefect.task_runners import SequentialTaskRunner, ConcurrentTaskRunner
 from mlflow import MlflowClient
 
 from models import ProjectRunner
 
-dask.config.set({'distributed.worker.daemon': False})
 
-cluster_kwargs = {
-    "name": "ajh:ape",
-    "shebang": "#!/bin/tcsh",
-    "resource_spec": "nodes=1:c18a:ppn=12",
-    "walltime": "00:20:00",
-    "cores": 12,
-    "processes": 12,
-    "memory": "30GB",
-    "interface": "ib0",
-    "job_script_prologue": [
-        "cd /sciclone/home20/jwhall/accessible-poverty-estimates/src"
-    ],
-    # "job_extra_directives": ["-j oe"],
-}
-
-adapt_kwargs = {
-    "minimum": 12,
-    "maximum": 12,
-}
-
-dask_task_runner_kwargs = {
-    "cluster_class": PBSCluster,
-    "cluster_kwargs": cluster_kwargs,
-    "adapt_kwargs": adapt_kwargs,
-}
 
 
 def parse_list(comma_sep_list: str) -> list[str]:
@@ -59,15 +29,7 @@ if __name__ == "__main__":
 
     model_funcs =  parse_list(config["main"]["model_funcs"])
 
-    if config.getboolean("main", "dask_enabled"):
-        if config.getboolean("main", "use_dask_address"):
-            task_runner = DaskTaskRunner(address=config["main"]["dask_address"])
-        elif config.getboolean("main", "use_hpc"):
-            task_runner = DaskTaskRunner(**dask_task_runner_kwargs)
-        else:
-            task_runner = DaskTaskRunner
-    else:
-        task_runner = ConcurrentTaskRunner
+    task_runner = SequentialTaskRunner
 
 
     @flow(validate_parameters=False, task_runner=task_runner)
