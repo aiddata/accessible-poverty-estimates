@@ -184,7 +184,7 @@ class ProjectRunner:
         )
 
     def run_model(self, name, cols, run_ols=True):
-        self.run_model_funcs(name, cols)
+        self.run_model_funcs(name, cols, run_ols=run_ols)
 
 
     def run_all_osm_ntl(self):
