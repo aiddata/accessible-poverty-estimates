@@ -119,22 +119,23 @@ class ProjectRunner:
             show=self.show_plots,
         )
 
-        # search for this experiment id
-        # experiment_id = next(
-        #     filter(
-        #         lambda x: x.name == "accessible-poverty-estimates",
-        #         mlflow.search_experiments(),
-        #     ),
-        #     None,
-        # ).experiment_id
+        search for this experiment id
+        experiment_id = next(
+            filter(
+                lambda x: x.name == "accessible-poverty-estimates",
+                mlflow.search_experiments(),
+            ),
+            None,
+        ).experiment_id
         # create this run
         with mlflow.start_run(
-            # experiment_id=experiment_id,
-            # run_name=f"{self.project} - {name}",
+            experiment_id=experiment_id,
+            run_name=f"{self.project} - {name}",
             tags=self.tags,
         ) as run:
             # add model name to this run's tags
             mlflow.set_tag("model_name", name)
+            mlflow.set_tag("project_name", self.project)
 
             mlflow.sklearn.autolog(max_tuning_runs=None)
 
