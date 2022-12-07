@@ -87,15 +87,38 @@ class ProjectRunner:
         sys.path.insert(0, os.path.join(self.project_dir, "src"))
 
     def run_OLS(self, data, y_var, x_vars, name):
-        est = sm.OLS(endog=data[y_var], exog=sm.add_constant(data[x_vars])).fit()
-        stargazer = Stargazer([est])
-        with open(os.path.join(self.results_dir, f"{name}_ols.html"), "w") as f:
-            f.write(stargazer.render_html())
-        with open(os.path.join(self.results_dir, f"{name}_ols.tex"), "w") as f:
-            f.write(stargazer.render_latex())
-        return est
 
-    def run_model_funcs(self, name, cols, run_ols=False):
+        # search for this experiment id
+        experiment_id = next(
+            filter(
+                lambda x: x.name == "accessible-poverty-estimates",
+                mlflow.search_experiments(),
+            ),
+            None,
+        ).experiment_id
+        # create this run
+        with mlflow.start_run(
+            experiment_id=experiment_id,
+            run_name=f"{self.project} - {name} - OLS",
+            tags=self.tags,
+        ) as run:
+            # add model name to this run's tags
+            mlflow.set_tag("model_name", name)
+            mlflow.set_tag("project_name", self.project)
+
+            # https://www.mlflow.org/docs/latest/python_api/mlflow.statsmodels.html
+            mlflow.statsmodels.autolog(log_models=True)
+
+
+            est = sm.OLS(endog=data[y_var], exog=sm.add_constant(data[x_vars])).fit()
+            stargazer = Stargazer([est])
+            with open(os.path.join(self.results_dir, f"{name}_ols.html"), "w") as f:
+                f.write(stargazer.render_html())
+            with open(os.path.join(self.results_dir, f"{name}_ols.tex"), "w") as f:
+                f.write(stargazer.render_latex())
+            return est
+
+    def run_RF(self, name, cols):
 
         data_utils.plot_corr(
             data=self.data_df,
@@ -130,7 +153,7 @@ class ProjectRunner:
         # create this run
         with mlflow.start_run(
             experiment_id=experiment_id,
-            run_name=f"{self.project} - {name}",
+            run_name=f"{self.project} - {name} - RF",
             tags=self.tags,
         ) as run:
             # add model name to this run's tags
@@ -170,13 +193,6 @@ class ProjectRunner:
 
             mlflow.log_artifact(plot_file_path + ".html")
 
-            if run_ols:
-                # https://www.mlflow.org/docs/latest/python_api/mlflow.statsmodels.html
-                mlflow.statsmodels.autolog(log_models=True)
-
-                self.run_OLS(
-                    self.data_df, self.indicators, cols, name,
-                )
 
         model_utils.save_model(
             cv,
@@ -187,8 +203,9 @@ class ProjectRunner:
         )
 
     def run_model(self, name, cols, run_ols=True):
-        self.run_model_funcs(name, cols, run_ols=run_ols)
-
+        self.run_RF(name, cols)
+        if run_ols:
+            self.run_OLS(self.data_df, self.indicators, cols, name)
 
     def run_all_osm_ntl(self):
         self.run_model("all-osm-ntl", self.all_osm_cols + self.ntl_cols)
