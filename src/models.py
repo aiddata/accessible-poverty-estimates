@@ -105,6 +105,7 @@ class ProjectRunner:
             # add model name to this run's tags
             mlflow.set_tag("model_name", name)
             mlflow.set_tag("project_name", self.project)
+            mlflow.set_tag("model_type", "OLS")
 
             # https://www.mlflow.org/docs/latest/python_api/mlflow.statsmodels.html
             mlflow.statsmodels.autolog(log_models=True)
@@ -159,6 +160,7 @@ class ProjectRunner:
             # add model name to this run's tags
             mlflow.set_tag("model_name", name)
             mlflow.set_tag("project_name", self.project)
+            mlflow.set_tag("model_type", "RF")
 
             mlflow.sklearn.autolog(max_tuning_runs=None)
 
