@@ -12,5 +12,5 @@ test_*/
 .prefect_key
 dask-worker-space
 
-data/outputs/
+data/outputs/*
 mlruns/
