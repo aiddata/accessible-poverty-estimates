@@ -95,7 +95,7 @@ class ProjectRunner:
             f.write(stargazer.render_latex())
         return est
 
-    def run_model_funcs(self, name, cols):
+    def run_model_funcs(self, name, cols, run_ols=False):
 
         data_utils.plot_corr(
             data=self.data_df,
@@ -170,6 +170,11 @@ class ProjectRunner:
 
             mlflow.log_artifact(plot_file_path + ".html")
 
+            if run_ols:
+                self.run_OLS(
+                    self.data_df, self.indicators, cols, name,
+                )
+
         model_utils.save_model(
             cv,
             self.data_df,
@@ -179,12 +184,8 @@ class ProjectRunner:
         )
 
     def run_model(self, name, cols, run_ols=True):
-
         self.run_model_funcs(name, cols)
-        if run_ols:
-            self.run_OLS(
-                self.data_df, self.indicators, cols, name,
-            )
+
 
     def run_all_osm_ntl(self):
         self.run_model("all-osm-ntl", self.all_osm_cols + self.ntl_cols)
