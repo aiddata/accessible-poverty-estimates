@@ -171,6 +171,9 @@ class ProjectRunner:
             mlflow.log_artifact(plot_file_path + ".html")
 
             if run_ols:
+                # https://www.mlflow.org/docs/latest/python_api/mlflow.statsmodels.html
+                mlflow.statsmodels.autolog(log_models=True)
+
                 self.run_OLS(
                     self.data_df, self.indicators, cols, name,
                 )
