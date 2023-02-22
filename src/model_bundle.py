@@ -1,3 +1,4 @@
+import sys 
 import os
 from pathlib import Path
 from configparser import ConfigParser, ExtendedInterpolation
@@ -23,10 +24,22 @@ def run_model(model_func, config):
     # run the given model_func in our ProjectRunner
     getattr(PR, model_func)()
 
+
 if __name__ == "__main__":
+
+    if len(sys.argv) > 1:
+        config_file = sys.argv[1]
+    else:
+        config_file = "config.ini"
+
+    if config_file not in os.listdir():
+        raise FileNotFoundError(
+            f"{config_file} file not found. Make sure you run this from the root directory of the repo and file exists."
+        )
+
     config = ConfigParser(interpolation=ExtendedInterpolation())
     config.read("config.ini")
-
+    
     model_funcs =  parse_list(config["main"]["model_funcs"])
 
     task_runner = SequentialTaskRunner
