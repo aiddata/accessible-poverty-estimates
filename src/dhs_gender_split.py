@@ -29,7 +29,7 @@ dhs_hh_file_name = config[project]['dhs_hh_file_name']
 
 data_dir = project_dir / 'data'
 
-dry_run = False
+dry_run = True
 
 # ---------------------------------------------------------
 
@@ -44,7 +44,7 @@ dhs_pr_raw_df = pd.read_stata(dhs_pr_path, convert_categoricals=False)
 dhs_pr_df = dhs_pr_raw_df[['hv001', 'hv002', 'hv102', 'hv104', 'hv105']].copy()
 dhs_pr_df['id'] = dhs_pr_df['hv001'].astype(str) +'_'+ dhs_pr_df['hv002'].astype(str)
 dhs_pr_df = dhs_pr_df.loc[dhs_pr_df['hv102'] == 1].copy()
-dhs_pr_df = dhs_pr_df.loc[(dhs_pr_df['hv105'] > 15) & (dhs_pr_df['hv105'] < 65)].copy()
+dhs_pr_df = dhs_pr_df.loc[(dhs_pr_df['hv105'] > 15) & (dhs_pr_df['hv105'] < 100)].copy()
 dhs_pr_df = dhs_pr_df.loc[dhs_pr_df['hv104'] == 1].copy()
 dhs_pr_male_df = dhs_pr_df.groupby('id').agg({'hv104': lambda x: 1}).reset_index()
 dhs_pr_male_df.rename({'hv104': 'anymale'}, axis=1, inplace=True)
@@ -245,17 +245,30 @@ GCD4.export()
 
 
 # use subset of postiively male/female identified assets only
-#   - drop overlap?
+#   - retain overlap
 
-mfassets_male_df = dhs_df.loc[dhs_df.apply(lambda x: has_male_assets(x), axis=1)].copy()
-mfassets_female_df = dhs_df.loc[dhs_df.apply(lambda x: has_female_assets(x), axis=1)].copy()
+mf1assets_male_df = dhs_df.loc[dhs_df.apply(lambda x: has_male_assets(x), axis=1)].copy()
+mf1assets_female_df = dhs_df.loc[dhs_df.apply(lambda x: has_female_assets(x), axis=1)].copy()
 
-GCD5 = GenderClassData('mfassets', dhs_path.parent, dhs_path.stem, dry_run=dry_run)
-GCD5.set_male(mfassets_male_df)
-GCD5.set_female(mfassets_female_df)
+GCD5 = GenderClassData('mf1assets', dhs_path.parent, dhs_path.stem, dry_run=dry_run)
+GCD5.set_male(mf1assets_male_df)
+GCD5.set_female(mf1assets_female_df)
 GCD5.cluster()
 GCD5.describe()
 GCD5.export()
+
+# use subset of postiively male/female identified assets only
+#   - drop overlap
+
+mf2assets_male_df = dhs_df.loc[dhs_df.apply(lambda x: has_male_assets(x), axis=1) & ~dhs_df.apply(lambda x: has_female_assets(x), axis=1)].copy()
+mf2assets_female_df = dhs_df.loc[dhs_df.apply(lambda x: has_female_assets(x), axis=1) & ~dhs_df.apply(lambda x: has_male_assets(x), axis=1)].copy()
+
+GCD6 = GenderClassData('mf2assets', dhs_path.parent, dhs_path.stem, dry_run=dry_run)
+GCD6.set_male(mf2assets_male_df)
+GCD6.set_female(mf2assets_female_df)
+GCD6.cluster()
+GCD6.describe()
+GCD6.export()
 
 
 # ---------------------------------------------------------
@@ -268,3 +281,4 @@ GCD2.describe()
 GCD3.describe()
 GCD4.describe()
 GCD5.describe()
+GCD6.describe()
