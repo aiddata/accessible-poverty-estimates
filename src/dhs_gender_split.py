@@ -29,7 +29,7 @@ dhs_hh_file_name = config[project]['dhs_hh_file_name']
 
 data_dir = project_dir / 'data'
 
-dry_run = True
+dry_run = False
 
 # ---------------------------------------------------------
 
@@ -39,7 +39,7 @@ dhs_raw_df = pd.read_stata(dhs_path, convert_categoricals=False)
 
 # add in data about adult male in households
 # TODO: this uses a hardcoded local path to DHS PR file and will not work for other surveys
-dhs_pr_path = '/home/userx/Desktop/GH_2014_DHS/GHPR72DT/GHPR72FL.DTA'
+dhs_pr_path = project_dir / 'equitable-ai/GH_2014_DHS/GHPR72DT/GHPR72FL.DTA'
 dhs_pr_raw_df = pd.read_stata(dhs_pr_path, convert_categoricals=False)
 dhs_pr_df = dhs_pr_raw_df[['hv001', 'hv002', 'hv102', 'hv104', 'hv105']].copy()
 dhs_pr_df['id'] = dhs_pr_df['hv001'].astype(str) +'_'+ dhs_pr_df['hv002'].astype(str)
