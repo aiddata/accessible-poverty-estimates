@@ -8,7 +8,8 @@ base = Path("/home/userx/Desktop/accessible-poverty-estimates")
 
 src_dir = base / "data/outputs" / "GH_2014_DHS"
 
-src_df = pd.read_csv(src_dir / "dhs_data.csv")
+src_df = pd.read_csv(src_dir / "final_data.csv")
+src_df.drop(columns=["Wealth Index"], inplace=True)
 
 dst_list = ["GH_2014_DHS_hoh_male", "GH_2014_DHS_hoh_female", "GH_2014_DHS_anym_male", "GH_2014_DHS_anym_female", "GH_2014_DHS_massets_male", "GH_2014_DHS_massets_female", "GH_2014_DHS_fassets_male", "GH_2014_DHS_fassets_female", "GH_2014_DHS_mf1assets_male", "GH_2014_DHS_mf1assets_female", "GH_2014_DHS_mf2assets_male", "GH_2014_DHS_mf2assets_female"]
 
@@ -27,7 +28,11 @@ for dst_name in dst_list:
 
     gender_cluster_df = pd.read_csv(gender_cluster_path)
 
-    new_df = src_df.merge(gender_cluster_df, left_on="Cluster number", right_on="cluster_id", how="right")
+    gender_cluster_df["DHSID"] =  gender_cluster_df.cluster_id.apply(lambda x: f'GH201400000{str(x).zfill(3)}')
+    gender_cluster_df.rename({"wealth_index": "Wealth Index"}, axis=1, inplace=True)
+    gender_cluster_df.drop(columns=["cluster_id"], inplace=True)
 
-    output_path = dst_dir / "dhs_data.csv"
+    new_df = src_df.merge(gender_cluster_df, on="DHSID", how="inner")
+
+    output_path = dst_dir / "final_data.csv"
     new_df.to_csv(output_path, index=False)
