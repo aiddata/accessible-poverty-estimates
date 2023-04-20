@@ -38,7 +38,7 @@ if __name__ == "__main__":
         )
 
     config = ConfigParser(interpolation=ExtendedInterpolation())
-    config.read("config.ini")
+    config.read(config_file)
     
     model_funcs =  parse_list(config["main"]["model_funcs"])
 
