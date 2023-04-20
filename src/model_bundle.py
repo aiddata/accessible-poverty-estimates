@@ -1,4 +1,4 @@
-import sys 
+import sys
 import os
 from pathlib import Path
 from configparser import ConfigParser, ExtendedInterpolation
@@ -39,7 +39,7 @@ if __name__ == "__main__":
 
     config = ConfigParser(interpolation=ExtendedInterpolation())
     config.read(config_file)
-    
+
     model_funcs =  parse_list(config["main"]["model_funcs"])
 
     task_runner = SequentialTaskRunner
@@ -81,8 +81,9 @@ if __name__ == "__main__":
 
     project_list = parse_list(config["main"]["projects_to_run"])
 
-    for p in project_list:
-        if config.has_option(p, "sub_projects"):
-            project_list.extend(parse_list(config[p]["sub_projects"]))
+    if config.getboolean("main", "run_sub_projects"):
+        for p in project_list:
+            if config.has_option(p, "sub_projects"):
+                project_list.extend(parse_list(config[p]["sub_projects"]))
 
     run_all_projects(config, project_list)
