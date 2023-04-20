@@ -20,7 +20,7 @@ if config_file not in os.listdir():
     )
 
 config = ConfigParser(interpolation=ExtendedInterpolation())
-config.read("config.ini")
+config.read(config_file)
 
 project = config["main"]["project"]
 project_dir = Path(config["main"]["project_dir"])
