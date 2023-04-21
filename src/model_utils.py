@@ -304,9 +304,17 @@ def get_param_grid(model_type='ridge'):
             # "regressor__criterion": ["squared_error"],
             # "regressor__n_estimators": [500, 1000],
             # "regressor__max_features": [0.33],
-            # "regressor__max_depth": [10, 20],
-            # "regressor__min_samples_split": [2, 8],
-            # "regressor__min_samples_leaf": [1, 4],
+            # "regressor__max_depth": [10, 25],
+            # "regressor__min_samples_split": [2, 4],
+            # "regressor__min_samples_leaf": [1, 2],
+            # "regressor__bootstrap": [True]
+
+            # "regressor__criterion": ["squared_error"],
+            # "regressor__n_estimators": [500],
+            # "regressor__max_features": [0.33],
+            # "regressor__max_depth": [10],
+            # "regressor__min_samples_split": [2],
+            # "regressor__min_samples_leaf": [1],
             # "regressor__bootstrap": [True]
         }
     elif model_type == "xgboost":
