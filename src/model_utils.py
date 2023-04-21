@@ -294,11 +294,11 @@ def get_param_grid(model_type='ridge'):
             # "regressor__bootstrap": [True, False],
 
             "regressor__criterion": ["squared_error"],
-            "regressor__n_estimators": [100, 2000],
+            "regressor__n_estimators": [100, 500, 1000, 2000],
             "regressor__max_features": [0.33, "sqrt"],
-            "regressor__max_depth": [5, 10, 30],
+            "regressor__max_depth": [5, 10, 25],
             "regressor__min_samples_split": [2, 8, 16],
-            "regressor__min_samples_leaf": [1, 8, 16],
+            "regressor__min_samples_leaf": [1, 4, 8],
             "regressor__bootstrap": [True]
 
             # "regressor__criterion": ["squared_error"],
