@@ -183,14 +183,15 @@ def evaluate_model(
             )
             # mlflow.log_param(score, nested_scores[score].mean())
             # mlflow.log_param(f'{score}_list', nested_scores[score])
+            mlflow.log_metric(f"mean_{score}", nested_scores[score].mean())
 
             print(nested_scores[score])
             if score == 'test_r2':
                 r_squared = nested_scores[score].mean()
 
-        formatted_indicator = ' '.join([x for x in indicator.split() if '(' not in x]).title()
-        if wandb is not None:
-            wandb.log({'{} R-squared'.format(formatted_indicator): r_squared})
+        # formatted_indicator = ' '.join([x for x in indicator.split() if '(' not in x]).title()
+        # if wandb is not None:
+        #     wandb.log({'{} R-squared'.format(formatted_indicator): r_squared})
 
         # Plot results
         # if plot:
@@ -212,9 +213,11 @@ def evaluate_model(
         cv.fit(X, y)
 
         # Log each feature's importance as a MLflow metric
-        for z in range(len(X.columns)):
-            mlflow.log_metric(f"{X.columns[z]}_importance",
-                              cv.best_estimator_.named_steps["regressor"].feature_importances_[z])
+        # for z in range(len(X.columns)):
+        #     mlflow.log_metric(f"{X.columns[z]}_importance",
+        #                       cv.best_estimator_.named_steps["regressor"].feature_importances_[z])
+
+
 
         # if mlflow.active_run() is not None:
         #     mlflow.sklearn.log_model(cv.best_estimator_,
@@ -289,52 +292,21 @@ def get_param_grid(model_type='ridge'):
             # "regressor__min_samples_split": stats.randint(2, 10),
             # "regressor__min_samples_leaf": stats.randint(1, 10),
             # "regressor__bootstrap": [True, False],
-            # "regressor__n_estimators": [256,300],
-            # "regressor__max_features": ["sqrt"],
-            # "regressor__max_depth": [20],
-            # "regressor__min_samples_split": [4,6],
-            # "regressor__min_samples_leaf": [2,4],
-            # # "regressor__bootstrap": [True]
-
-            # "regressor__criterion": ["squared_error"],
-            # "regressor__n_estimators": [500],
-            # "regressor__max_features": [0.33],
-            # "regressor__max_depth": [20],
-            # "regressor__min_samples_split": [2],
-            # "regressor__min_samples_leaf": [1],
-            # "regressor__bootstrap": [True]
-
 
             "regressor__criterion": ["squared_error"],
-            "regressor__n_estimators": [500, 100],
-            "regressor__max_features": [0.33],
-            "regressor__max_depth": [20, 10],
-            "regressor__min_samples_split": [2],
-            "regressor__min_samples_leaf": [1],
+            "regressor__n_estimators": [100, 2000],
+            "regressor__max_features": [0.33, "sqrt"],
+            "regressor__max_depth": [5, 10, 30],
+            "regressor__min_samples_split": [2, 8, 16],
+            "regressor__min_samples_leaf": [1, 8, 16],
             "regressor__bootstrap": [True]
 
             # "regressor__criterion": ["squared_error"],
-            # "regressor__n_estimators": [1, 10],
+            # "regressor__n_estimators": [500, 1000],
             # "regressor__max_features": [0.33],
-            # "regressor__max_depth": [2],
-            # "regressor__min_samples_split": [10],
-            # "regressor__min_samples_leaf": [10],
-            # "regressor__bootstrap": [True]
-
-            # "regressor__criterion": ["squared_error"],
-            # "regressor__n_estimators": [300, 500, 1000],
-            # "regressor__max_features": [ "sqrt",0.33, 0.5, 1.0],
-            # "regressor__max_depth": [7, 10, 15, 20],
-            # "regressor__min_samples_split": [2, 3, 5],
-            # "regressor__min_samples_leaf": [1, 2, 4],
-            # # "regressor__bootstrap": [True]
-
-            # "regressor__criterion": ["squared_error"],
-            # "regressor__n_estimators": [300, 500],
-            # "regressor__max_features": ["sqrt", 0.33, 0.4, 0.5],
-            # "regressor__max_depth": [7, 10, 15, 20],
-            # "regressor__min_samples_split": [2, 3, 5, 10],
-            # "regressor__min_samples_leaf": [1, 2, 4],
+            # "regressor__max_depth": [10, 20],
+            # "regressor__min_samples_split": [2, 8],
+            # "regressor__min_samples_leaf": [1, 4],
             # "regressor__bootstrap": [True]
         }
     elif model_type == "xgboost":
