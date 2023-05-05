@@ -1,3 +1,5 @@
+# this file should no longer be necessary as functionallity was integrated into dhs_gender_split.py on 2023-05-05
+
 from pathlib import Path
 import shutil
 
@@ -11,7 +13,7 @@ src_dir = base / "data/outputs" / "GH_2014_DHS"
 src_df = pd.read_csv(src_dir / "final_data.csv")
 src_df.drop(columns=["Wealth Index"], inplace=True)
 
-src_df.loc[src_df.DHSID == "GH201400000122"]
+# src_df.loc[src_df.DHSID == "GH201400000122"]
 
 dst_list = ["GH_2014_DHS_hoh_male", "GH_2014_DHS_hoh_female", "GH_2014_DHS_anym_male", "GH_2014_DHS_anym_female", "GH_2014_DHS_massets_male", "GH_2014_DHS_massets_female", "GH_2014_DHS_fassets_male", "GH_2014_DHS_fassets_female", "GH_2014_DHS_mf1assets_male", "GH_2014_DHS_mf1assets_female", "GH_2014_DHS_mf2assets_male", "GH_2014_DHS_mf2assets_female"]
 

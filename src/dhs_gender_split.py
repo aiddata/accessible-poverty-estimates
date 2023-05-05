@@ -6,6 +6,7 @@ import os
 import glob
 from pathlib import Path
 from configparser import ConfigParser, ExtendedInterpolation
+import shutil
 
 import pandas as pd
 
@@ -22,14 +23,15 @@ if config_file not in os.listdir():
 config = ConfigParser(interpolation=ExtendedInterpolation())
 config.read(config_file)
 
-project = config["main"]["project"]
 project_dir = Path(config["main"]["project_dir"])
-
-dhs_hh_file_name = config[project]['dhs_hh_file_name']
-
 data_dir = project_dir / 'data'
 
-dry_run = False
+
+dhs_name = "GH_2014_DHS"
+dhs_hh_file_name = "GHHR72FL"
+
+
+dry_run = True
 
 # ---------------------------------------------------------
 
@@ -55,27 +57,37 @@ dhs_df['anymale'] = dhs_df['anymale'].fillna(0)
 
 
 full_dhs_path = dhs_path.parent / f"{dhs_path.stem}_all_hh.csv"
-dhs_df.to_csv(full_dhs_path, index=False)
+if not dry_run:
+    dhs_df.to_csv(full_dhs_path, index=False)
 
 full_cluster_df = dhs_df.groupby('hv001').agg({'hv271': 'mean'}).reset_index()
 full_cluster_df.columns = ['cluster_id', 'wealth_index']
 full_cluster_path = dhs_path.parent / f"{dhs_path.stem}_all_cluster.csv"
-full_cluster_df.to_csv(full_cluster_path, index=False)
+if not dry_run:
+    full_cluster_df.to_csv(full_cluster_path, index=False)
 
 
 
 class GenderClassData():
 
-    def __init__(self, id, parent, stem, dry_run=False):
+    def __init__(self, id, dhs_path, dhs_name, dry_run=False):
         self.id = id
-        self.parent = str(parent)
-        self.stem = str(stem)
+        self.dhs_path = dhs_path
+        self.parent = str(dhs_path.parent)
+        self.stem = str(dhs_path.stem)
         self.template = self.parent + '/' + self.stem + '_{id}_{gender}_{level}.{ext}'
         self.male_df = pd.DataFrame()
         self.female_df = pd.DataFrame()
         self.male_cluster = pd.DataFrame()
         self.female_cluster = pd.DataFrame()
         self.dry_run = dry_run
+
+        self.dhs_name = dhs_name
+        self.src_dir = dhs_path.parent.parent.parent / "outputs" / dhs_name
+        self.src_df = pd.read_csv(self.src_dir / "final_data.csv")
+        self.src_df.drop(columns=["Wealth Index"], inplace=True)
+
+        self.base_dst_dir = dhs_path.parent.parent.parent / "outputs"
 
     def all_exist(self):
         return len(self.male_df) > 0 and len(self.female_df) > 0 and len(self.male_cluster) > 0 and len(self.female_cluster) > 0
@@ -122,23 +134,58 @@ class GenderClassData():
 
         if self.dry_run:
             print('Dry run, not exporting')
-            return
 
-        male_stata_path = self.template.format(id=self.id, gender='male', level='hh', ext='DTA')
-        male_csv_path = self.template.format(id=self.id, gender='male', level='hh', ext='csv')
-        self.male_df.to_stata(male_stata_path, write_index=False)
-        self.male_df.to_csv(male_csv_path, index=False)
+        self._export("male")
+        self._export("female")
+        self._integrate("male")
+        self._integrate("female")
 
-        female_stata_path = self.template.format(id=self.id, gender='female', level='hh', ext='DTA')
-        female_csv_path = self.template.format(id=self.id, gender='female', level='hh', ext='csv')
-        self.female_df.to_stata(female_stata_path, write_index=False)
-        self.female_df.to_csv(female_csv_path, index=False)
 
-        male_cluster_path = self.template.format(id=self.id, gender='male', level='cluster', ext='csv')
-        self.male_cluster.to_csv(male_cluster_path, index=False)
+    def _export(self, gender):
+        if gender == "male":
+            df = self.male_df
+            cluster = self.male_cluster
+        else:
+            df = self.female_df
+            cluster = self.female_cluster
 
-        female_cluster_path = self.template.format(id=self.id, gender='female', level='cluster', ext='csv')
-        self.female_cluster.to_csv(female_cluster_path, index=False)
+        stata_path = self.template.format(id=self.id, gender=gender, level='hh', ext='DTA')
+        csv_path = self.template.format(id=self.id, gender=gender, level='hh', ext='csv')
+        if not self.dry_run:
+            df.to_stata(stata_path, write_index=False)
+            df.to_csv(csv_path, index=False)
+
+        cluster_path = self.template.format(id=self.id, gender=gender, level='cluster', ext='csv')
+        if not self.dry_run:
+            cluster.to_csv(cluster_path, index=False)
+
+
+    def _integrate(self, gender):
+        dst_name = f"{self.dhs_name}_{self.id}_{gender}"
+        dst_dir = self.base_dst_dir/ dst_name
+        if not self.dry_run and not dst_dir.exists():
+            shutil.copytree(self.src_dir, dst_dir)
+
+        classification_name = dst_name.split("_")[-2]
+        classification_gender = dst_name.split("_")[-1]
+        gender_cluster_path = self.dhs_path.parent / f"GHHR72FL_{classification_name}_{classification_gender}_cluster.csv"
+
+        try:
+            gender_cluster_df = pd.read_csv(gender_cluster_path)
+        except FileNotFoundError:
+            if self.dry_run:
+                print("You are doing a dry run. The resulting files may not exist to integrate if export has not been run before.")
+            raise
+
+        gender_cluster_df["DHSID"] =  gender_cluster_df.cluster_id.apply(lambda x: f'GH201400000{str(x).zfill(3)}')
+        gender_cluster_df.rename({"wealth_index": "Wealth Index"}, axis=1, inplace=True)
+        gender_cluster_df.drop(columns=["cluster_id"], inplace=True)
+
+        new_df = self.src_df.merge(gender_cluster_df, on="DHSID", how="inner")
+
+        output_path = dst_dir / "final_data.csv"
+        if not self.dry_run:
+            new_df.to_csv(output_path, index=False)
 
 
 # ---------------------------------------------------------
@@ -154,12 +201,44 @@ hoh_male_df = dhs_df.loc[dhs_df['hv219'] == 1].copy()
 hoh_female_df = dhs_df.loc[dhs_df['hv219'] == 2].copy()
 # hoh_weighted_df = dhs_df.loc[dhs_df['hv219'] == ???]
 
-GCD1 = GenderClassData('hoh', dhs_path.parent, dhs_path.stem, dry_run=dry_run)
+GCD1 = GenderClassData('hoh', dhs_path, dhs_name, dry_run=dry_run)
 GCD1.set_male(hoh_male_df)
 GCD1.set_female(hoh_female_df)
 GCD1.cluster()
 GCD1.describe()
 GCD1.export()
+
+
+# split by head of household with each cluster adjusted so that
+# male and female counts per cluster are equal
+#   - adjustment is done per cluster and involves randomly dropping
+#     households from the gender with more households in that cluster
+
+hoheq_cluster_min_counts = {}
+hoheq_male_cluster_df_list = []
+hoheq_female_cluster_df_list = []
+for cid in dhs_df.hv001.unique():
+    cdf = dhs_df.loc[dhs_df.hv001 == cid].copy()
+    male_cluster_df = cdf.loc[cdf['hv219'] == 1]
+    female_cluster_df = cdf.loc[cdf['hv219'] == 2]
+    cluster_male_count = len(male_cluster_df)
+    cluster_female_count = len(female_cluster_df)
+    min_sample_size = min(cluster_male_count, cluster_female_count)
+    hoheq_cluster_min_counts[cid] = min_sample_size
+    eq_male_cluster_df = male_cluster_df.sample(min_sample_size)
+    eq_female_cluster_df = female_cluster_df.sample(min_sample_size)
+    hoheq_male_cluster_df_list.append(eq_male_cluster_df)
+    hoheq_female_cluster_df_list.append(eq_female_cluster_df)
+
+hoheq_male_df = pd.concat(hoheq_male_cluster_df_list)
+hoheq_female_df = pd.concat(hoheq_female_cluster_df_list)
+
+GCD1eq = GenderClassData('hoheq', dhs_path, dhs_name, dry_run=dry_run)
+GCD1eq.set_male(hoheq_male_df)
+GCD1eq.set_female(hoheq_female_df)
+GCD1eq.cluster()
+GCD1eq.describe()
+GCD1eq.export()
 
 
 # ---------------------------------------------------------
@@ -174,7 +253,7 @@ print(dhs_df['anymale'].value_counts())
 anym_male_df = dhs_df.loc[dhs_df['anymale'] > 0].copy()
 anym_female_df = dhs_df.loc[dhs_df['anymale'] == 0].copy()
 
-GCD2 = GenderClassData('anym', dhs_path.parent, dhs_path.stem, dry_run=dry_run)
+GCD2 = GenderClassData('anym', dhs_path, dhs_name, dry_run=dry_run)
 GCD2.set_male(anym_male_df)
 GCD2.set_female(anym_female_df)
 GCD2.cluster()
@@ -223,7 +302,7 @@ def has_female_assets(x):
 massets_male_df = dhs_df.loc[dhs_df.apply(lambda x: has_male_assets(x), axis=1)].copy()
 massets_female_df = dhs_df.loc[~dhs_df.apply(lambda x: has_male_assets(x), axis=1)].copy()
 
-GCD3 = GenderClassData('massets', dhs_path.parent, dhs_path.stem, dry_run=dry_run)
+GCD3 = GenderClassData('massets', dhs_path, dhs_name, dry_run=dry_run)
 GCD3.set_male(massets_male_df)
 GCD3.set_female(massets_female_df)
 GCD3.cluster()
@@ -236,7 +315,7 @@ GCD3.export()
 fassets_male_df = dhs_df.loc[~dhs_df.apply(lambda x: has_female_assets(x), axis=1)].copy()
 fassets_female_df = dhs_df.loc[dhs_df.apply(lambda x: has_female_assets(x), axis=1)].copy()
 
-GCD4 = GenderClassData('fassets', dhs_path.parent, dhs_path.stem, dry_run=dry_run)
+GCD4 = GenderClassData('fassets', dhs_path, dhs_name, dry_run=dry_run)
 GCD4.set_male(fassets_male_df)
 GCD4.set_female(fassets_female_df)
 GCD4.cluster()
@@ -250,7 +329,7 @@ GCD4.export()
 mf1assets_male_df = dhs_df.loc[dhs_df.apply(lambda x: has_male_assets(x), axis=1)].copy()
 mf1assets_female_df = dhs_df.loc[dhs_df.apply(lambda x: has_female_assets(x), axis=1)].copy()
 
-GCD5 = GenderClassData('mf1assets', dhs_path.parent, dhs_path.stem, dry_run=dry_run)
+GCD5 = GenderClassData('mf1assets', dhs_path, dhs_name, dry_run=dry_run)
 GCD5.set_male(mf1assets_male_df)
 GCD5.set_female(mf1assets_female_df)
 GCD5.cluster()
@@ -263,7 +342,7 @@ GCD5.export()
 mf2assets_male_df = dhs_df.loc[dhs_df.apply(lambda x: has_male_assets(x), axis=1) & ~dhs_df.apply(lambda x: has_female_assets(x), axis=1)].copy()
 mf2assets_female_df = dhs_df.loc[dhs_df.apply(lambda x: has_female_assets(x), axis=1) & ~dhs_df.apply(lambda x: has_male_assets(x), axis=1)].copy()
 
-GCD6 = GenderClassData('mf2assets', dhs_path.parent, dhs_path.stem, dry_run=dry_run)
+GCD6 = GenderClassData('mf2assets', dhs_path, dhs_name, dry_run=dry_run)
 GCD6.set_male(mf2assets_male_df)
 GCD6.set_female(mf2assets_female_df)
 GCD6.cluster()
@@ -277,6 +356,7 @@ GCD6.export()
 
 
 GCD1.describe()
+GCD1eq.describe()
 GCD2.describe()
 GCD3.describe()
 GCD4.describe()
