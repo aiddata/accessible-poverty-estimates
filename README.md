@@ -123,6 +123,10 @@ This section describes options that should be set in `config.ini`
 
 7. Run `models.py` to train models and produce figures.
 
+
+May need to use `prefect config set PREFECT_API_ENABLE_HTTP2=false`
+
+
 ## Using MLflow to track models
 
 [MLflow](https://mlflow.org/) is a platform that helps keep track of machine learning models and their performance.
