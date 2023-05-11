@@ -213,9 +213,9 @@ def evaluate_model(
         cv.fit(X, y)
 
         # Log each feature's importance as a MLflow metric
-        # for z in range(len(X.columns)):
-        #     mlflow.log_metric(f"{X.columns[z]}_importance",
-        #                       cv.best_estimator_.named_steps["regressor"].feature_importances_[z])
+        for z in range(len(X.columns)):
+            mlflow.log_metric(f"{X.columns[z]}_importance",
+                              cv.best_estimator_.named_steps["regressor"].feature_importances_[z])
 
 
 
@@ -293,13 +293,13 @@ def get_param_grid(model_type='ridge'):
             # "regressor__min_samples_leaf": stats.randint(1, 10),
             # "regressor__bootstrap": [True, False],
 
-            "regressor__criterion": ["squared_error"],
-            "regressor__n_estimators": [100, 500, 1000, 2000],
-            "regressor__max_features": [0.33, "sqrt"],
-            "regressor__max_depth": [5, 10, 25],
-            "regressor__min_samples_split": [2, 8, 16],
-            "regressor__min_samples_leaf": [1, 4, 8],
-            "regressor__bootstrap": [True]
+            # "regressor__criterion": ["squared_error"],
+            # "regressor__n_estimators": [100, 500, 1000, 2000],
+            # "regressor__max_features": [0.33, "sqrt"],
+            # "regressor__max_depth": [5, 10, 25],
+            # "regressor__min_samples_split": [2, 8, 16],
+            # "regressor__min_samples_leaf": [1, 4, 8],
+            # "regressor__bootstrap": [True]
 
             # "regressor__criterion": ["squared_error"],
             # "regressor__n_estimators": [500, 1000],
@@ -309,13 +309,13 @@ def get_param_grid(model_type='ridge'):
             # "regressor__min_samples_leaf": [1, 2],
             # "regressor__bootstrap": [True]
 
-            # "regressor__criterion": ["squared_error"],
-            # "regressor__n_estimators": [500],
-            # "regressor__max_features": [0.33],
-            # "regressor__max_depth": [10],
-            # "regressor__min_samples_split": [2],
-            # "regressor__min_samples_leaf": [1],
-            # "regressor__bootstrap": [True]
+            "regressor__criterion": ["squared_error"],
+            "regressor__n_estimators": [500],
+            "regressor__max_features": [0.33],
+            "regressor__max_depth": [10],
+            "regressor__min_samples_split": [2],
+            "regressor__min_samples_leaf": [1],
+            "regressor__bootstrap": [True]
         }
     elif model_type == "xgboost":
         param_grid = {
