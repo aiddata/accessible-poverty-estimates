@@ -11,8 +11,6 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
 
-base_path = '/home/userx/Desktop/eqai_analysis2'
-os.makedirs(base_path, exist_ok=True)
 
 
 if len(sys.argv) > 1:
@@ -27,6 +25,11 @@ if config_file not in os.listdir():
 
 config = ConfigParser(interpolation=ExtendedInterpolation())
 config.read(config_file)
+
+project_dir = config["main"]["project_dir"]
+base_path = project_dir + "/equitable-ai/figures"
+os.makedirs(base_path, exist_ok=True)
+
 
 client = MlflowClient(
     tracking_uri=config["mlflow"]["tracking_uri"],
@@ -104,7 +107,7 @@ for run in runs:
             parent_dict_list.append(run_dict)
 
 
-versions = ["1.2.0", "1.3.0", "1.4.2", "1.5.0"]
+versions = ["1.2.0", "1.3.0", "1.4.2", "1.5.0", "1.6.1"]
 
 parent_df = pd.DataFrame(parent_dict_list)
 parent_df = parent_df.loc[parent_df.version.isin(versions)].copy()
@@ -137,18 +140,17 @@ xlabels_replace_dict = {
     "anym": "Has Any Males",
     "anym_male": "Has Any Males (M)",
     "anym_female": "Has Any Males (F)",
-    "massets_female": "Has Male Assets (F)",
     "massets_male": "Has Male Assets (M)",
-    "fassets_female": "Has Female Assets (F)",
+    "massets_female": "Has Male Assets (F)",
     "fassets_male": "Has Female Assets (M)",
+    "fassets_female": "Has Female Assets (F)",
     "fassets": "Has Female Assets",
     "hoh_male": "Male HoH",
     "hoh_female": "Female HoH",
-    "mf1assets_male": "M vs. F Assets\n(w/ overlaps)",
-    "mf1assets_female": "M vs. F Assets\n(F, w/ overlaps)",
-    "mf2assets_male": "M vs. F Assets\n(F, no overlaps)",
-    "mf2assets_female": "M vs. F Assets\n(F, no overlaps)",
-
+    "mf1assets_male": "MvF Assets\n(M, w/ overlaps)",
+    "mf1assets_female": "MvF Assets\n(F, w/ overlaps)",
+    "mf2assets_male": "MvF Assets\n(M, no overlaps)",
+    "mf2assets_female": "MvF Assets\n(F, no overlaps)",
 }
 
 """
@@ -165,7 +167,7 @@ xlabels_replace_dict = {
 """
 
 
-def gen_plots(dfb, cols: dict, visual_name, tag, extra_axis=True, run_grouped=True):
+def gen_plots(dfb, cols: dict, title, tag, extra_axis=True, run_grouped=True):
 
     dfb_groups = {}
     for i in cols.keys():
@@ -183,10 +185,10 @@ def gen_plots(dfb, cols: dict, visual_name, tag, extra_axis=True, run_grouped=Tr
         plot_min_val = tmp_min_val if tmp_min_val < plot_min_val else plot_min_val
         fig7, ax7 = plt.subplots(1, dpi=300, figsize=(11, 7.5))
         ax7.set_title(cols[k])
-        plt.title('Hyperparameter Results for {}: \n by {}'.format(visual_name, cols[k]), wrap=True)
+        plt.title('{}: \n by {}'.format(title, cols[k]), wrap=True)
         plt.ylabel('Accuracy')
         plt.xlabel(cols[k])
-        if plot_min_val < 0.5:
+        if plot_min_val < 0.6:
             ax7.set_ylim(0.3, 0.9)
         else:
             ax7.set_ylim(0.6, 0.9)
@@ -223,12 +225,12 @@ def gen_plots(dfb, cols: dict, visual_name, tag, extra_axis=True, run_grouped=Tr
             data_vals_grouped.extend(data_vals)
             data_grouped.extend(data)
         fig7, ax7 = plt.subplots(1, figsize=(18, 10))
-        plt.title('Hyperparameter Results for {}'.format(visual_name), wrap=True)
+        plt.title(title, wrap=True)
         plt.ylabel('Accuracy')
         ax7.boxplot(data_grouped, positions=xlocations, medianprops={'color':'black'})
         fmt_data_vals_grouped = [xlabels_replace_dict[val] if val in xlabels_replace_dict.keys() else val for val in data_vals_grouped]
         ax7.set_xticklabels(fmt_data_vals_grouped, rotation=30, ha="right")
-        if plot_min_val < 0.5:
+        if plot_min_val < 0.6:
             ax7.set_ylim(0.3, 0.9)
         else:
             ax7.set_ylim(0.6, 0.9)
@@ -247,8 +249,8 @@ def gen_plots(dfb, cols: dict, visual_name, tag, extra_axis=True, run_grouped=Tr
         k = "grouped"
         plot_path = os.path.join(base_path, "{0}_boxplot_{1}.png".format(tag, k))
         plt.savefig(plot_path)
-        pdf_plot_path = os.path.join(base_path, "{0}_boxplot_{1}.pdf".format(tag, k))
-        plt.savefig(pdf_plot_path)
+        # pdf_plot_path = os.path.join(base_path, "{0}_boxplot_{1}.pdf".format(tag, k))
+        # plt.savefig(pdf_plot_path)
         plt.close()
 
 
@@ -262,20 +264,63 @@ hp_cols = {
     "classification": "Classification",
 }
 
-gen_plots(child_df.loc[child_df.version == "1.2.0"], hp_cols, "Male vs. Female Head of Household", "hp1", extra_axis=True, run_grouped=True)
-gen_plots(child_df.loc[(child_df.version == "1.2.0") & (child_df.gender == "male")], hp_cols, "Male Head of Household", "hp1m", extra_axis=True, run_grouped=True)
-gen_plots(child_df.loc[(child_df.version == "1.2.0") & (child_df.gender == "female")], hp_cols, "Female Head of Household", "hp1f", extra_axis=True, run_grouped=True)
+gen_plots(
+    child_df.loc[child_df.version == "1.2.0"],
+    {i:j for i,j in hp_cols.items() if i not in ["classification"]},
+    "Model Perfomance (r2) - Male vs. Female Head of Household",
+    "hp1", extra_axis=True, run_grouped=True)
+gen_plots(
+    child_df.loc[(child_df.version == "1.2.0") & (child_df.gender == "male")],
+    {i:j for i,j in hp_cols.items() if i not in ["gender", "classification"]},
+    "Model Perfomance (r2) - Male Head of Household",
+    "hp1m", extra_axis=True, run_grouped=True)
+gen_plots(
+    child_df.loc[(child_df.version == "1.2.0") & (child_df.gender == "female")],
+    {i:j for i,j in hp_cols.items() if i not in ["gender", "classification"]},
+    "Model Perfomance (r2) - Female Head of Household",
+    "hp1f", extra_axis=True, run_grouped=True)
 
-gen_plots(child_df.loc[child_df.version == "1.3.0"], hp_cols, "Presence of Males or Females in Household", "hp2", extra_axis=True, run_grouped=True)
 
-gen_plots(parent_df.loc[parent_df.version == "1.3.0"], {"gender": "Gender", "classification": "Classification", "gender_classification": "Gender Classification", "model_name": "Model Name"}, "Presence of Males or Females in Household", "alt", extra_axis=True, run_grouped=True)
+gen_plots(
+    child_df.loc[child_df.version == "1.3.0"],
+    hp_cols,
+    "Model Perfomance (r2) - Presence of Males or Females in Household",
+    "hp2", extra_axis=True, run_grouped=True)
+gen_plots(
+    parent_df.loc[parent_df.version == "1.3.0"],
+    {"gender": "Gender", "classification": "Classification", "gender_classification": "Gender Classification", "model_name": "Model Name"},
+    "Presence of Males or Females in Household",
+    "alt", extra_axis=True, run_grouped=True)
 
-gen_plots(parent_df.loc[parent_df.version == "1.4.2"], {"gender": "Gender", "classification": "Classification", "model_name": "Model Name"}, "All Classification Strategies", "final1", extra_axis=True, run_grouped=True)
-gen_plots(parent_df.loc[parent_df.version == "1.4.2"], {"gender_classification": "Gender Classification"}, "All Classification Strategies", "final2", extra_axis=True, run_grouped=True)
 
-gen_plots(parent_df.loc[parent_df.version == "1.5.0"], {"gender_classification": "Gender Classification"}, "Balanced Household Counts", "eq", extra_axis=True, run_grouped=True)
+gen_plots(
+    parent_df.loc[parent_df.version == "1.4.2"],
+    {"gender": "Gender", "classification": "Classification", "model_name": "Model Name"},
+    "All Classification Strategies",
+    "final1", extra_axis=True, run_grouped=True)
+gen_plots(
+    parent_df.loc[parent_df.version == "1.4.2"],
+    {"gender_classification": "Gender Classification"},
+    "All Classification Strategies",
+    "final2", extra_axis=True, run_grouped=True)
 
 
+gen_plots(
+    parent_df.loc[parent_df.version == "1.5.0"],
+    {"gender_classification": "Gender Classification"},
+    "Balanced Household Counts",
+    "eq", extra_axis=True, run_grouped=True)
+
+
+all_df_set = parent_df.loc[parent_df.version == "1.6.1"].copy()
+gender_df_set = parent_df.loc[(parent_df.version == "1.5.0") & (parent_df.classification == "hoheq")].copy()
+gender_df_set.classification = gender_df_set.classification + "_" + gender_df_set.gender
+df_set = pd.concat([all_df_set, gender_df_set])
+gen_plots(
+    df_set,
+    {"classification": "Classification"},
+    "Reduced Household Counts",
+    "small", extra_axis=True, run_grouped=True)
 
 
 
