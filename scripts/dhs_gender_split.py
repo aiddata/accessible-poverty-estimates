@@ -8,6 +8,7 @@ from pathlib import Path
 from configparser import ConfigParser, ExtendedInterpolation
 import shutil
 
+import numpy as np
 import pandas as pd
 
 if len(sys.argv) > 1:
@@ -111,12 +112,14 @@ class GenderClassData():
         cluster_df.columns = ['cluster_id', 'wealth_index']
         return cluster_df
 
-    def cluster(self):
-        self.male_cluster = self.agg_to_cluster(self.male_df)
-        self.female_cluster = self.agg_to_cluster(self.female_df)
+    def cluster(self, genders=["male", "female"]):
+        if "male" in genders:
+            self.male_cluster = self.agg_to_cluster(self.male_df)
+        if "female" in genders:
+            self.female_cluster = self.agg_to_cluster(self.female_df)
 
-    def describe(self):
-        if not self.all_exist():
+    def describe(self, verify_exists=True):
+        if verify_exists and not self.all_exist():
             raise Exception('Male and Female dataframes for household and cluster not set')
 
         description = f"""
@@ -128,17 +131,16 @@ class GenderClassData():
         """
         print(description)
 
-    def export(self):
-        if not self.all_exist():
+    def export(self, genders=["male", "female"], verify_exists=True):
+        if verify_exists and not self.all_exist():
             raise Exception('Male and Female dataframes not set')
 
         if self.dry_run:
             print('Dry run, not exporting')
 
-        self._export("male")
-        self._export("female")
-        self._integrate("male")
-        self._integrate("female")
+        for g in genders:
+            self._export(g)
+            self._integrate(g)
 
 
     def _export(self, gender):
@@ -190,6 +192,41 @@ class GenderClassData():
 
 # ---------------------------------------------------------
 
+small_cluster_df_list = []
+
+for cid in dhs_df.hv001.unique():
+    cdf = dhs_df.loc[dhs_df.hv001 == cid].copy()
+    small_cluster_df = dhs_df.sample(9)
+    small_cluster_df_list.append(small_cluster_df)
+
+small_df = pd.concat(small_cluster_df_list)
+
+
+GCD0small = GenderClassData('small', dhs_path, dhs_name, dry_run=dry_run)
+GCD0small.set_female(small_df)
+GCD0small.cluster(genders=["female"])
+GCD0small.describe(verify_exists=False)
+GCD0small.export(genders=["all"], verify_exists=False)
+
+
+medium_cluster_df_list = []
+
+for cid in dhs_df.hv001.unique():
+    cdf = dhs_df.loc[dhs_df.hv001 == cid].copy()
+    medium_cluster_df = dhs_df.sample(19)
+    medium_cluster_df_list.append(medium_cluster_df)
+
+medium_df = pd.concat(medium_cluster_df_list)
+
+
+GCD0medium = GenderClassData('medium', dhs_path, dhs_name, dry_run=dry_run)
+GCD0medium.set_female(medium_df)
+GCD0medium.cluster(genders=["female"])
+GCD0medium.describe(verify_exists=False)
+GCD0medium.export(genders=["all"], verify_exists=False)
+
+# ---------------------------------------------------------
+
 # split by head of household
 #   - classify household according to gender of head of household
 #   - identifier: hoh (short for: Head Of Household)
@@ -214,7 +251,7 @@ GCD1.export()
 #   - adjustment is done per cluster and involves randomly dropping
 #     households from the gender with more households in that cluster
 
-hoheq_cluster_min_counts = {}
+hoheq_cluster_counts = {}
 hoheq_male_cluster_df_list = []
 hoheq_female_cluster_df_list = []
 for cid in dhs_df.hv001.unique():
@@ -224,11 +261,22 @@ for cid in dhs_df.hv001.unique():
     cluster_male_count = len(male_cluster_df)
     cluster_female_count = len(female_cluster_df)
     min_sample_size = min(cluster_male_count, cluster_female_count)
-    hoheq_cluster_min_counts[cid] = min_sample_size
+    max_sample_size = max(cluster_male_count, cluster_female_count)
+    hoheq_cluster_counts[cid] = {
+        "min": min_sample_size,
+        "max": max_sample_size,
+        "total": min_sample_size + max_sample_size
+    }
     eq_male_cluster_df = male_cluster_df.sample(min_sample_size)
     eq_female_cluster_df = female_cluster_df.sample(min_sample_size)
     hoheq_male_cluster_df_list.append(eq_male_cluster_df)
     hoheq_female_cluster_df_list.append(eq_female_cluster_df)
+
+print(f"""
+Median count of cluster households for minority gender: {np.median([i['min'] for i in hoheq_cluster_counts.values()])}
+Median count of cluster households for majority gender: {np.median([i['max'] for i in hoheq_cluster_counts.values()])}
+Median total count of cluster households: {np.median([i['total'] for i in hoheq_cluster_counts.values()])}
+""")
 
 hoheq_male_df = pd.concat(hoheq_male_cluster_df_list)
 hoheq_female_df = pd.concat(hoheq_female_cluster_df_list)
