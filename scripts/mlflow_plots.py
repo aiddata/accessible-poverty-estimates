@@ -112,6 +112,8 @@ versions = ["1.2.0", "1.3.0", "1.4.2", "1.5.0", "1.6.1"]
 parent_df = pd.DataFrame(parent_dict_list)
 parent_df = parent_df.loc[parent_df.version.isin(versions)].copy()
 
+parent_df["model_and_gender"] = parent_df.model_name + "_" + parent_df.gender
+
 child_df = pd.DataFrame(child_dict_list)
 child_df = child_df.merge(parent_df[["run_id", "version", "gender", "classification"]], left_on="parent", right_on="run_id", how="left", suffixes=('', '_y'))
 child_df.drop(columns=["run_id_y"], inplace=True)
@@ -130,28 +132,33 @@ child_df.to_csv(child_path, index=False)
 ols_path = base_path + '/ols.csv'
 ols_df.to_csv(ols_path, index=False)
 
-
-xlabels_replace_dict = {
+from collections import OrderedDict
+xlabels_replace_dict = OrderedDict({
     "all": "All",
     " all": "All",
-    "hoh": "Head of Household",
     "male": "Male",
     "female": "Female",
+    "hoh": "Head of Household Gender",
+    "hoh_male": "Male HoH",
+    "hoh_female": "Female HoH",
+    "hoheq_male": "Balanced\n Male HoH",
+    "hoheq_female": "Balanced\nFemale HoH",
     "anym": "Has Any Males",
     "anym_male": "Has Any Males (M)",
     "anym_female": "Has Any Males (F)",
+    "massets": "Has Male Assets",
     "massets_male": "Has Male Assets (M)",
     "massets_female": "Has Male Assets (F)",
     "fassets_male": "Has Female Assets (M)",
     "fassets_female": "Has Female Assets (F)",
     "fassets": "Has Female Assets",
-    "hoh_male": "Male HoH",
-    "hoh_female": "Female HoH",
+    "mf1assets": "MvF Assets\n(w/ overlaps)",
     "mf1assets_male": "MvF Assets\n(M, w/ overlaps)",
     "mf1assets_female": "MvF Assets\n(F, w/ overlaps)",
+    "mf2assets": "MvF Assets\n(no overlaps)",
     "mf2assets_male": "MvF Assets\n(M, no overlaps)",
     "mf2assets_female": "MvF Assets\n(F, no overlaps)",
-}
+})
 
 """
 "all-geo": "",
@@ -167,7 +174,7 @@ xlabels_replace_dict = {
 """
 
 
-def gen_plots(dfb, cols: dict, title, tag, extra_axis=True, run_grouped=True):
+def gen_plots(dfb, cols: dict, title, tag, sort_by=None, extra_axis=True, run_grouped=True, min_yval=None):
 
     dfb_groups = {}
     for i in cols.keys():
@@ -179,16 +186,21 @@ def gen_plots(dfb, cols: dict, title, tag, extra_axis=True, run_grouped=True):
     plot_min_val = 0.5
     # create individual plots
     for k in dfb_groups.keys():
-        data_vals = dfb_groups[k][k].tolist()
+        tmp_df = dfb_groups[k].copy()
+        if sort_by:
+            tmp_df = tmp_df.sort_values(by=sort_by, ascending=True)
+        data_vals = tmp_df[k].tolist()
         data = [dfb.loc[dfb[k] == i, "r2"] for i in data_vals]
         tmp_min_val = min([min(i) for i in data])
         plot_min_val = tmp_min_val if tmp_min_val < plot_min_val else plot_min_val
         fig7, ax7 = plt.subplots(1, dpi=300, figsize=(11, 7.5))
         ax7.set_title(cols[k])
         plt.title('{}: \n by {}'.format(title, cols[k]), wrap=True)
-        plt.ylabel('Accuracy')
+        plt.ylabel('r-squared')
         plt.xlabel(cols[k])
-        if plot_min_val < 0.6:
+        if min_yval:
+            ax7.set_ylim(min_yval, 0.9)
+        elif plot_min_val < 0.6:
             ax7.set_ylim(0.3, 0.9)
         else:
             ax7.set_ylim(0.6, 0.9)
@@ -225,12 +237,14 @@ def gen_plots(dfb, cols: dict, title, tag, extra_axis=True, run_grouped=True):
             data_vals_grouped.extend(data_vals)
             data_grouped.extend(data)
         fig7, ax7 = plt.subplots(1, figsize=(18, 10))
-        plt.title(title, wrap=True)
-        plt.ylabel('Accuracy')
+        # plt.title(title, wrap=True)
+        plt.ylabel('r-squared')
         ax7.boxplot(data_grouped, positions=xlocations, medianprops={'color':'black'})
         fmt_data_vals_grouped = [xlabels_replace_dict[val] if val in xlabels_replace_dict.keys() else val for val in data_vals_grouped]
         ax7.set_xticklabels(fmt_data_vals_grouped, rotation=30, ha="right")
-        if plot_min_val < 0.6:
+        if min_yval:
+            ax7.set_ylim(min_yval, 0.9)
+        elif plot_min_val < 0.6:
             ax7.set_ylim(0.3, 0.9)
         else:
             ax7.set_ylim(0.6, 0.9)
@@ -267,62 +281,158 @@ hp_cols = {
 gen_plots(
     child_df.loc[child_df.version == "1.2.0"],
     {i:j for i,j in hp_cols.items() if i not in ["classification"]},
-    "Model Perfomance (r2) - Male vs. Female Head of Household",
-    "hp1", extra_axis=True, run_grouped=True)
+    "Perfomance Across All Male HoH and Female HoH Models",
+    "hp1", extra_axis=True, run_grouped=True, min_yval=0.6)
 gen_plots(
     child_df.loc[(child_df.version == "1.2.0") & (child_df.gender == "male")],
     {i:j for i,j in hp_cols.items() if i not in ["gender", "classification"]},
-    "Model Perfomance (r2) - Male Head of Household",
-    "hp1m", extra_axis=True, run_grouped=True)
+    "Perfomance Across All Male HoH Models",
+    "hp1m", extra_axis=True, run_grouped=True, min_yval=0.6)
 gen_plots(
     child_df.loc[(child_df.version == "1.2.0") & (child_df.gender == "female")],
     {i:j for i,j in hp_cols.items() if i not in ["gender", "classification"]},
-    "Model Perfomance (r2) - Female Head of Household",
-    "hp1f", extra_axis=True, run_grouped=True)
+    "Perfomance Across All Female HoH Models",
+    "hp1f", extra_axis=True, run_grouped=True, min_yval=0.6)
 
 
 gen_plots(
     child_df.loc[child_df.version == "1.3.0"],
     hp_cols,
     "Model Perfomance (r2) - Presence of Males or Females in Household",
-    "hp2", extra_axis=True, run_grouped=True)
+    "hp2", extra_axis=True, run_grouped=True, min_yval=0.6)
 gen_plots(
     parent_df.loc[parent_df.version == "1.3.0"],
     {"gender": "Gender", "classification": "Classification", "gender_classification": "Gender Classification", "model_name": "Model Name"},
     "Presence of Males or Females in Household",
-    "alt", extra_axis=True, run_grouped=True)
+    "hp2alt", extra_axis=True, run_grouped=True, min_yval=0.6)
 
 
 gen_plots(
     parent_df.loc[parent_df.version == "1.4.2"],
     {"gender": "Gender", "classification": "Classification", "model_name": "Model Name"},
     "All Classification Strategies",
-    "final1", extra_axis=True, run_grouped=True)
+    "final1", sort_by='r2_mean', extra_axis=True, run_grouped=True)
+
 gen_plots(
     parent_df.loc[parent_df.version == "1.4.2"],
     {"gender_classification": "Gender Classification"},
     "All Classification Strategies",
     "final2", extra_axis=True, run_grouped=True)
 
+gen_plots(
+    parent_df.loc[parent_df.version == "1.4.2"],
+    {"gender": "Gender", "classification": "Classification", "model_and_gender": "Model and Gender"},
+    "All Classification Strategies",
+    "final3", extra_axis=True, run_grouped=True)
+
+
+model_gender_df = parent_df.loc[parent_df.version == "1.4.2"].copy()
+
+# ------------------------------
+
+model_gender_agg = model_gender_df.groupby("model_and_gender", as_index=False).agg({"r2": ["min", "mean", "max", "std"]})
+model_gender_agg["model"] = model_gender_agg.model_and_gender.apply(lambda x: x.split("_")[0])
+model_gender_agg["gender"] = model_gender_agg.model_and_gender.apply(lambda x: x.split("_")[1].strip())
+model_gender_data_dict = {}
+for ix, row in model_gender_agg.iterrows():
+    model = row["model"][0]
+    tmp = {
+        "model": model,
+        row["gender"][0]: round(row["r2"]["mean"], 3),
+    }
+    if model not in model_gender_data_dict:
+        model_gender_data_dict[model] = {}
+    model_gender_data_dict[model].update(tmp)
+
+new_model_gender_df = pd.DataFrame(model_gender_data_dict.values())
+new_model_gender_df = new_model_gender_df[["model", "all", "male", "female"]]
+new_model_gender_df.sort_values('all', inplace=True, ascending=True)
+new_model_gender_df.plot.bar(x="model", figsize=(10, 9))
+plt.ylabel('r-squared')
+plt.ylim(0.4, 0.9)
+plt.xlabel('Model')
+plt.xticks(rotation=30)
+plot_path = os.path.join(base_path, "model_gender_bar.png")
+plt.savefig(plot_path)
+plt.close()
+
+# ------------------------------
+
+male_r2 = parent_df.loc[(parent_df.version == "1.4.2") & (parent_df.gender == "male"), "r2"]
+female_r2 = parent_df.loc[(parent_df.version == "1.4.2") & (parent_df.gender == "female"), "r2"]
+
+bins = 20
+
+plt.hist([male_r2, female_r2], bins, label=['male', 'female'], color=['#E35D6A', '#F8D458'], alpha=0.85, density=True)
+
+plt.legend(loc='upper left')
+
+plt.title('Distribution of Model R-squared by Gender')
+plt.ylabel('Count')
+plt.xlabel('Model R-squared')
+plot_path = os.path.join(base_path, "gender_scatter.png")
+plt.savefig(plot_path)
+plt.close()
+
+# ------------------------------
+
 
 gen_plots(
     parent_df.loc[parent_df.version == "1.5.0"],
     {"gender_classification": "Gender Classification"},
     "Balanced Household Counts",
-    "eq", extra_axis=True, run_grouped=True)
+    "eq", extra_axis=True, run_grouped=True, min_yval=0.5)
 
 
 all_df_set = parent_df.loc[parent_df.version == "1.6.1"].copy()
-gender_df_set = parent_df.loc[(parent_df.version == "1.5.0") & (parent_df.classification == "hoheq")].copy()
-gender_df_set.classification = gender_df_set.classification + "_" + gender_df_set.gender
-df_set = pd.concat([all_df_set, gender_df_set])
+# gender_df_set = parent_df.loc[(parent_df.version == "1.5.0") & (parent_df.classification == "hoheq")].copy()
+# gender_df_set.classification = gender_df_set.classification + "_" + gender_df_set.gender
+# df_set = pd.concat([all_df_set, gender_df_set])
+df_set = pd.concat([all_df_set])
 gen_plots(
     df_set,
     {"classification": "Classification"},
     "Reduced Household Counts",
     "small", extra_axis=True, run_grouped=True)
 
+# ======================================================================================================================
 
+
+
+
+# ======================================================================================================================
+
+
+def plot_feat_importance(df, cols, visual_name, tag):
+
+    all_data_items = [[i, df[i].to_numpy()] for i in cols]
+
+    data_items = [i for i in all_data_items if max(i[1]) > 0.02]
+    data_items = [[i[0], i[1][~np.isnan(i[1])]] for i in data_items]
+    data_items.sort(key = lambda x: np.median(x[1]))
+    data_items = data_items[-10:]
+
+    data_vals = [i[1] for i in data_items]
+    data_vals = [
+        [ i for i in j if not pd.isnull(i)] for j in data_vals
+    ]
+
+    data_labels = [i[0].replace('_importance', '') for i in data_items]
+    data_labels = [i.replace('_mean', '') if i.endswith('_mean') else i for i in data_labels]
+    data_labels = [i.replace('_na', '') if i.endswith('_na') else i for i in data_labels]
+
+    fig7, ax7 = plt.subplots(1, figsize=(20, 15))
+    plt.title(visual_name)
+    plt.ylabel('Importance')
+
+    ax7.boxplot(data_vals, medianprops={'color':'black'})
+    ax7.set_xticklabels(data_labels, rotation=25, ha="right")
+    ax7.set_ylim(0.0, 0.25)
+
+    plot_path = os.path.join(base_path, "feat_imp_boxplot_{}.png".format(tag))
+    plt.savefig(plot_path)
+    # pdf_plot_path = os.path.join(base_path, "feat_imp_boxplot_{}.pdf".format(tag))
+    # plt.savefig(pdf_plot_path)
 
 
 
@@ -341,38 +451,65 @@ new_importance_df = pd.DataFrame(new_importance_df_dict)
 importance_cols = [i for i in new_importance_df.columns if i.endswith("importance")]
 
 
-
-def plot_feat_importance(df, cols, visual_name, tag):
-
-    all_data_items = [[i, df[i].to_numpy()] for i in cols]
-
-    data_items = [i for i in all_data_items if max(i[1]) > 0.02]
-    data_items = [[i[0], i[1][~np.isnan(i[1])]] for i in data_items]
-    data_items.sort(key = lambda x: np.median(x[1]))
-
-    data_vals = [i[1] for i in data_items]
-    data_vals = [
-        [ i for i in j if not pd.isnull(i)] for j in data_vals
-    ]
-
-    data_labels = [i[0].replace('_importance', '') for i in data_items]
-    data_labels = [i.replace('_mean', '') if i.endswith('_mean') else i for i in data_labels]
-    data_labels = [i.replace('_na', '') if i.endswith('_na') else i for i in data_labels]
-
-    fig7, ax7 = plt.subplots(1, figsize=(30, 15))
-    plt.title(visual_name)
-    plt.ylabel('Importance')
-
-    ax7.boxplot(data_vals, medianprops={'color':'black'})
-    ax7.set_xticklabels(data_labels, rotation=25, ha="right")
-    ax7.set_ylim(0.0, 0.7)
-
-    plot_path = os.path.join(base_path, "feat_imp_boxplot_{}.png".format(tag))
-    plt.savefig(plot_path)
-    # pdf_plot_path = os.path.join(base_path, "feat_imp_boxplot_{}.pdf".format(tag))
-    # plt.savefig(pdf_plot_path)
-
-
 plot_feat_importance(new_importance_df, importance_cols, "Results for All Feature Importance Comparison", "all")
 plot_feat_importance(new_importance_df.loc[new_importance_df.gender == "female"], importance_cols, "Results for Female Feature Importance Comparison", "female")
 plot_feat_importance(new_importance_df.loc[new_importance_df.gender == "male"], importance_cols, "Results for Male Feature Importance Comparison", "male")
+
+
+g1 = ['mf2assets_female', 'mf2assets_male', 'mf1assets_female', 'mf1assets_male', 'fassets_female', 'fassets_male', 'massets_female', 'massets_male', 'anym_female', 'anym_male', 'hoh_female', 'hoh_male', 'all']
+m1 = ['sub', 'sub-geo', 'all-geo', 'sub-osm-all-geo', 'sub-osm', 'sub-osm-ntl', 'loc', 'all', 'all-osm', 'ntl', 'all-osm-ntl']
+
+g2 = ['hoh_female', 'hoh_male', 'anym_female', 'anym_male',]
+m2 = ['sub', 'sub-geo']
+alt_importance_df = new_importance_df.loc[(new_importance_df.model_name.isin(m2)) & (new_importance_df.gender_classification.isin(g2))].copy()
+
+
+plot_feat_importance(alt_importance_df, importance_cols, "Results for All Feature Importance Comparison", "all_alt")
+plot_feat_importance(alt_importance_df.loc[alt_importance_df.gender == "female"], importance_cols, "Results for Female Feature Importance Comparison", "female_alt")
+plot_feat_importance(alt_importance_df.loc[alt_importance_df.gender == "male"], importance_cols, "Results for Male Feature Importance Comparison", "male_alt")
+
+# ------------------------------
+
+
+# def clean_importance_data(df, cols):
+#     all_data_items = [[i, df[i].to_numpy()] for i in cols]
+
+#     data_items = [i for i in all_data_items if max(i[1]) > 0.02]
+#     data_items = [[i[0], i[1][~np.isnan(i[1])]] for i in data_items]
+#     data_items.sort(key = lambda x: np.median(x[1]))
+#     data_items = data_items[-10:]
+
+#     data_vals = [i[1] for i in data_items]
+#     data_vals = [
+#         [ i for i in j if not pd.isnull(i)] for j in data_vals
+#     ]
+
+#     data_labels = [i[0].replace('_importance', '') for i in data_items]
+#     data_labels = [i.replace('_mean', '') if i.endswith('_mean') else i for i in data_labels]
+#     data_labels = [i.replace('_na', '') if i.endswith('_na') else i for i in data_labels]
+
+#     return list(zip(data_labels, data_vals))
+
+male_importance_df = alt_importance_df.loc[alt_importance_df.gender == "male"].copy()
+female_importance_df = alt_importance_df.loc[alt_importance_df.gender == "female"].copy()
+
+# male_importance_data = clean_importance_data(male_importance_df, importance_cols)
+
+importance_comparison_dict = {}
+for c in importance_cols:
+    male_median = round(male_importance_df[c].dropna().median(), 3)
+    female_median = round(female_importance_df[c].dropna().median(), 3)
+    importance_comparison_dict[c] = {
+        "male": male_median,
+        "female": female_median,
+        "max": max([male_median, female_median]),
+        "min": min([male_median, female_median]),
+        "diff": round(abs(male_median - female_median), 3)
+    }
+
+top_importance_comparison_dict = {k: v for k, v in importance_comparison_dict.items() if v["min"] > 0.04}
+sorted_top_importance_comparison_dict = sorted(top_importance_comparison_dict.items(), key=lambda x: x[1]["diff"], reverse=True)
+
+for k, v in sorted_top_importance_comparison_dict:
+    print(k, v)
+# ======================================================================================================================
