@@ -6,6 +6,7 @@ Builds on work published by [Thinking Machines Data Science](https://github.com/
 
 This project requires downloaded data from [The DHS Program](https://dhsprogram.com/). This data is freely available, but you [must register](https://www.dhsprogram.com/data/Registration-Rationale.cfm) for an account. Please see [downloading data](#downloading-data) below for more information.
 
+
 ## Instructions
 
 ### Setting up your environment
@@ -76,6 +77,11 @@ This project requires downloaded data from [The DHS Program](https://dhsprogram.
     - If you are considering using older snapshots of the OSM database to align with DHS round years, historical coverage of OSM may be limited and impede model performance. For most developing countries, the amount of true historical coverage lacking in older snapshots is likely to be far greater than the amount of actual building/road/etc development since the last DHS round. Neither is ideal, but we expect using more recent OSM data will be more realistic overall. Please consider your particular use case and use your judgement to determine what is best for your application.
     - Year/month availability of older OSM data may not always be consistent across countries. For the most part, each year since 2020 will have at least one archived version (e.g., 20200101, 20210101)
 
+3. Access geospatial variable data from GeoQuery [**skip for replication only**]
+    - All data provided by GeoQuery is from publicly available sources. Data is freely and publicly accessible directly via GeoQuery for a broad range of administrative and other boundaries. Data for other boundaries can be requested from GeoQuery and a custom extract will be run for free. See https://www.aiddata.org/geoquery/custom-requests for details.
+      - The geospatial data associated with the DHS clusters used in this repository were produced using a custom extract from GeoQuery, and the resulting data is included in the repository for replication.
+
+
 ### Setting configuration options
 
 This section describes options that should be set in `config.ini`
@@ -102,6 +108,21 @@ This section describes options that should be set in `config.ini`
   - `ntl_year` - Base year to use for nighttime lights (and potentially other geospatial variables)
   - `geospatial_variable_years` - List of years to include for time series geospatial variables (limited to what is available in data downloaded from GeoQuery)
 
+### (Optional) Preparing gender specific subsets
+
+In this section we will cover some specifc steps that can be used to split DHS household data based on gender using various criteria for male or female household classification. If replicating gender specific models, we provide a pregenerated `eqai_config.ini` file that can be used without fully replicating the steps detailed below. Modifying this file slightly will likely be necessary for you to run on your own system (e.g., defining the path to your project directory).
+
+Note: The approaches for separating the DHS data by gender, and subsequently specifying how to modify the config file to use gender specific data, can be adapted for various other applications which involve subsetting an input data source. We will not cover these, but the existing gender specific examples should illustrate how this is possible.
+
+Using the `config.ini`, as setup in the previous section, run `python scripts/dhs_gender_split.py`. This will create gender specific subsets of the DHS dataset specified in `config.ini` based on the gender of the head of household, presence of males in household, and various conditions of asset ownership. See `dhs_gender_split.py` for specifics, or AidData's report on their project as part of USAID's Equitable AI Challenge (forthcoming).
+
+Modify the `eqai_config.ini` to use the same basic settings as the `config.ini` for your project directory, spatialite_lib_path and other environment specific settings you may have modified in the previous section.
+
+In the following sections you will proceed to use the `eqai_config.ini` in place of the `config.ini`.
+
+Note: The default `eqai_config.ini` has multiple lines commented out for the projects_to_run, model_funcs, and version fields set to specifically replicate existing work. Commented and uncommented lines are each preceded by a "Run #" that should be used across all of the three settings if you modify. To fully replicate AidData's existing work, first run using all settings for Run 1, the proceed through Run 5. The outputs based on these settings are required to run the `scripts/mlflow_plots.py` code in order to replicate figures. No additional modification of `scripts/mlflow_plots.py` should be necessary to run and replicate outputs.
+
+
 ### Processing data and training models
 
 1. Run `get_dhs_adm_units.py` to identify ADM 1 and 2 units of DHS clusters
@@ -124,7 +145,7 @@ This section describes options that should be set in `config.ini`
 7. Run `models.py` to train models and produce figures.
 
 
-May need to use `prefect config set PREFECT_API_ENABLE_HTTP2=false`
+Note: You may need to run the following in your environment's terminal to deal with an issue using Prefect: `prefect config set PREFECT_API_ENABLE_HTTP2=false`
 
 
 ## Using MLflow to track models
