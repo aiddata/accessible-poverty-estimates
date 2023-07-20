@@ -18,4 +18,3 @@ data/osm/*
 data/outputs/*/dhs*
 data/outputs/*/final_data.csv
 data/outputs/*/results/*.html
-data/outputs/*/models
