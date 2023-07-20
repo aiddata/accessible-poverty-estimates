@@ -89,27 +89,59 @@ This project requires downloaded data from [The DHS Program](https://dhsprogram.
 
 This section describes options that should be set in `config.ini`
 
-**Important:** If you are just replicating examples from this repo, you only need to modify the `project_dir`, `project`, and `spatialite_lib_path` in the [main] section of the config file.
+**Important:** You must update the `project_dir` and `spatialite_lib_path` in the [main] section of the config file to reflect your computer's paths.
 
 - `project_dir` - path to the root of this repository on your computer
-- `project` - specifies which subsection to use for project specific configurations (e.g., to replicate work using the Philippines 2017 DHS, use "PH_2017_DHS")
 - `spatialite_lib_path` - path to where the SpatiaLite library was installed. Typically will not need to be modified if you're running an Ubuntu-based distribution of Linux.
   - The command `whereis mod_spatialite.so` can help you find it.
     It is likely in /usr/local/lib/
-- `indicators` - list of DHS indicators to use for modeling. Currently only supports the DHS "Wealth Index"
-- Project specific configurations (e.g., within the [PH_2017_DHS] section):
-  - `country_name` - name of country based on the OSM download file (e.g., "philippines" for "philippines-210101-free.shp.zip")
-  - `osm_date` - timestamp from the OSM download (e.g. "210101" for "philippines-210101-free.shp.zip")
-  - `output_name` - name unique to your config section which will be used to determine where output files are saved.
-  - `dhs_hh_file_name` - filename of the DHS household recode data. You can determine this via the DHS download manager or using your downloaded files. (e.g. "PHHR71DT" for the 2017 Philippines DHS)
-  - `dhs_geo_file_name` - filename of the DHS geographic data. You can determine this via the DHS download manager or using your downloaded files. (e.g. "PHGE71FL" for the 2017 Philippines DHS)
-  - `country_utm_epsg_code` - EPSG code specific to the country of interest. Typically based on the UTM code for the country (e.g., "32651" to specify UTM 51N for the Philippines). See [example search](https://epsg.io/?q=Philippines+UTM)
+
+- `prefect_cloud_enabled` - Set to False if not using Prefect cloud
+- `prefect_project_name` - Set Prefect project name if using Prefect cloud
+- `dask_enabled` - Set to True if using a Dask cluster
+- `use_hpc` - Set to True if running on W&M's HPC
+- `use_dask_address` - Set to True if using a remote Dask cluster
+- `dask_address` - Address of remote Dask cluster
+- `projects_to_run` - Specify a comma separate list of projects to run (project configurations and naming discussed below). For example, to replicate work using the Ghana 2014 DHS, use "GH_2014_DHS".
+- `run_sub_projects` - Set to True if projects consisting of multiple sub projects should recursively traverse and run models for each sub project included.
+- `model_funcs` - Type of models to run based on the input features provided. We suggest leaving this as the default and running all model types. See code for details on which features are included for each model.
+- `indicator` - list of DHS indicators to use for modeling. Currently only supports the DHS "Wealth Index"
+
+
+- Project specific configurations (e.g., within the [GH_2014_DHS] section):
+  - `output_name` - name unique to your config section which will be used to determine where output files are saved (e.g., GH_2014_DHS)
+  - `country_name` - name of country based on the OSM download file (e.g., "ghana" for "ghana-210101-free.shp.zip")
+  - `osm_date` - timestamp from the OSM download (e.g. "210101" for "ghana-210101-free.shp.zip")
+  - `dhs_hh_file_name` - filename of the DHS household recode data. You can determine this via the DHS download manager or using your downloaded files. (e.g. "GHHR72FL" for the 2014 Ghana DHS)
+  - `dhs_geo_file_name` - filename of the DHS geographic data. You can determine this via the DHS download manager or using your downloaded files. (e.g. "GHGE71FL" for the 2014 Ghana DHS)
+  - `country_utm_epsg_code` - EPSG code specific to the country of interest. Typically based on the UTM code for the country (e.g., "32630" to specify UTM 30N for the Ghana). See [example search](https://epsg.io/?q=Ghana+UTM)
     - If your area of interest spans multiple UTM zones you can select the best fit or determine another suitable EPSG code (main purpose of code is to support reprojection of WGS84 data for accurate calculation of the area/length of features in meters).
   - `geom_id` - "DHSID" for use with all DHS data. Could be modified for use with alternative data sources.
   - `geom_label` - "dhs-buffers" based on file name generation currently hard coded. Could be modified for use with alternative data sources.
   - `geoquery_data_file_name` - base file name of CSV file containing geospatial variables from GeoQuery. Could be modified to use alternative data sources (this would also require adjusting variables in `models.py`)
   - `ntl_year` - Base year to use for nighttime lights (and potentially other geospatial variables)
   - `geospatial_variable_years` - List of years to include for time series geospatial variables (limited to what is available in data downloaded from GeoQuery)
+
+MLFlow config settings:
+
+In the [mlflow] section (these should not need to be modified):
+- `tracking_uri` - Path to MLFlow databased. Default: sqlite:///${main:project_dir}/mlflow.db
+- `registry_uri` - Path to where MLFlow artificacts are recorded. Default: {main:project_dir}/model_registry
+- `artifact_location` - Path to where MLFlow artificacts are recorded. Default: ${main:project_dir}/mlruns
+- `experiment_name` - Top level experiment name under which all MLFlow records will be placed. Default: accessible-poverty-estimates
+
+In the [mlflow_tags] section:
+- `run_group` - label to be recorded with all runs using the current config setting. Useful for tracking specific groups of models being run (e.g., country A vs country B)
+- `version` - version number to be recorded with all runs using the current config setting. Useful for refinement when tracking iterations of similar models.
+
+
+### Additional setup
+
+We utilize [Prefect](https://www.prefect.io/) for workflow orchestration and monitoring jobs for data processing and model training. Prefect can be used without any additional steps, simply leveraging the Python package installed as part of the environment setup. If you wish to leverage more advanced features of Prefect, such as their cloud based monitoring tools, or more refined control over a local/remote Dask cluster to speed up processing, you can learn more about Prefect at [prefect.io](https://www.prefect.io/)
+
+
+Note: You may need to run the following in your environment's terminal to deal with an issue using Prefect: `prefect config set PREFECT_API_ENABLE_HTTP2=false`
+
 
 ### (Optional) Preparing gender specific subsets
 
@@ -126,7 +158,7 @@ In the following sections you will proceed to use the `eqai_config.ini` in place
 Note: The default `eqai_config.ini` has multiple lines commented out for the projects_to_run, model_funcs, and version fields set to specifically replicate existing work. Commented and uncommented lines are each preceded by a "Run #" that should be used across all of the three settings if you modify. To fully replicate AidData's existing work, first run using all settings for Run 1, the proceed through Run 5. The outputs based on these settings are required to run the `scripts/mlflow_plots.py` code in order to replicate figures. No additional modification of `scripts/mlflow_plots.py` should be necessary to run and replicate outputs.
 
 
-### Processing data and training models
+### Preparing Data
 
 1. Run `get_dhs_adm_units.py` to identify ADM 1 and 2 units of DHS clusters
 
@@ -145,10 +177,11 @@ Note: The default `eqai_config.ini` has multiple lines commented out for the pro
 
 6. Run `model_prep.py` to merge all data required for modeling.
 
-7. Run `models.py` to train models and produce figures.
 
 
-Note: You may need to run the following in your environment's terminal to deal with an issue using Prefect: `prefect config set PREFECT_API_ENABLE_HTTP2=false`
+### Training Models
+
+1. Run `model_bundle.py` to train models and produce figures.
 
 
 ## Using MLflow to track models
