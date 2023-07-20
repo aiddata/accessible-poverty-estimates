@@ -135,7 +135,23 @@ In the [mlflow_tags] section:
 - `version` - version number to be recorded with all runs using the current config setting. Useful for refinement when tracking iterations of similar models.
 
 
-### Additional setup
+### Using MLflow to track models
+
+[MLflow](https://mlflow.org/) is a platform that helps keep track of machine learning models and their performance. Training models by following the instructions belows will use MLflow to log models to `mlflow.db`, a SQLite database in the top level of this repository.
+
+To access the MLflow dashboard, run the following command:
+```
+mlflow ui --backend-store-uri=sqlite:///mlflow.db
+```
+then, navigate to http://localhost:5000 in your web browser.
+
+In the list of runs on the dashboard homepage, click on one to view a parallel coordinates plot and graph of feature importances.
+
+You can also use the mlflow.db provided with the repo to explore the results of AidData's Equitable AI project without running any models yourself. The database contains the results of all models produced across a range of hyperparameters, input features, and other conditions. This mlflow.db can be used along with `scripts/mlflow_plots.py` to replicate figures and analysis from AidData's work in the Equitable AI Challenge.
+
+
+
+### Additional setup: Prefect
 
 We utilize [Prefect](https://www.prefect.io/) for workflow orchestration and monitoring jobs for data processing and model training. Prefect can be used without any additional steps, simply leveraging the Python package installed as part of the environment setup. If you wish to leverage more advanced features of Prefect, such as their cloud based monitoring tools, or more refined control over a local/remote Dask cluster to speed up processing, you can learn more about Prefect at [prefect.io](https://www.prefect.io/)
 
@@ -184,22 +200,6 @@ Note: The default `eqai_config.ini` has multiple lines commented out for the pro
 1. Run `model_bundle.py` to train models and produce figures.
 
 
-## Using MLflow to track models
-
-[MLflow](https://mlflow.org/) is a platform that helps keep track of machine learning models and their performance.
-Running `models.py` by following the instructions above will use MLflow to log models to `mlflow.db`, a SQLite database in the top level of this repository.
-
-To access the MLflow dashboard, run the following command:
-```
-mlflow ui --backend-store-uri=sqlite:///mlflow.db
-```
-then, navigate to http://localhost:5000 in your web browser.
-
-In the list of runs on the dashboard homepage, click on one to view a parallel coordinates plot and graph of feature importances.
-
-### For replication of gender analyis:
-
-A mlflow.db is provided with the repo which contains the results of all models produced across a range of hyperparameters, input features, and other conditions. This mlflow.db can be used along with `scripts/mlflow_plots.py` to replicate figures and analysis from AidData's work in the Equitable AI Challenge.
 
 
 ## License
