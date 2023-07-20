@@ -1,5 +1,12 @@
 .vscode
 __pycache__/
+test_*/
+.prefect_key
+dask-worker-space
+
+mlruns/
+equitable-ai/
+
 data/boundaries
 data/dhs/*
 !data/dhs/README.md
@@ -9,10 +16,4 @@ data/outputs/*/dhs*
 data/outputs/*/final_data.csv
 data/ecopia_data/
 data/kc_surveys/
-test_*/
-.prefect_key
-dask-worker-space
-
 data/outputs/*
-mlruns/
-equitable-ai/
