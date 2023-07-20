@@ -1,6 +1,7 @@
 Using random forests regressions (RFRs) and features derived from a range of geospatial datasets (nighttime lights, landcover, OpenStreetMap features, and more) to produce estimates of development indicators such as household wealth/poverty.
 
-Builds on work published by [Thinking Machines Data Science](https://github.com/thinkingmachines/ph-poverty-mapping).
+This repository also supports [AidData's work funded by USAID's Equitable AI Challenge](https://www.aiddata.org/blog/aiddata-wins-award-from-usaids-equitable-ai-challenge-for-project-on-gender-bias-in-ai-created-poverty-measures) to evaluate gender influence in machine learning based poverty estimation approaches. AidData's work explored the 2014 Ghana DHS round by comparing models trained on households male or female households. Code and steps specific to replicating or extending work from the project are included and detailed in this readme. In addition, core outputs are provided to enable replication and review of the final results of the analysis. Outputs include the MLFlow database containing all model results, joblib files containing trained models, and a range of figures and other supporting products that are included or referenced in the final report. To learn more about this work, visit AidData's page on this project (forthcoming).
+
 
 ## Before You Start
 
@@ -161,6 +162,15 @@ then, navigate to http://localhost:5000 in your web browser.
 
 In the list of runs on the dashboard homepage, click on one to view a parallel coordinates plot and graph of feature importances.
 
+### For replication of gender analyis:
+
+A mlflow.db is provided with the repo which contains the results of all models produced across a range of hyperparameters, input features, and other conditions. This mlflow.db can be used along with `scripts/mlflow_plots.py` to replicate figures and analysis from AidData's work in the Equitable AI Challenge.
+
+
 ## License
 
 This work is released under the MIT License. Please see [LICENSE.md](LICENSE.md) for more information.
+
+
+## Acknowledgements:
+Underlying random forest based approach for producing poverty estimates builds on work published by [Thinking Machines Data Science](https://github.com/thinkingmachines/ph-poverty-mapping).
