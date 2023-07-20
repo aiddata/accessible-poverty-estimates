@@ -172,5 +172,5 @@ A mlflow.db is provided with the repo which contains the results of all models p
 This work is released under the MIT License. Please see [LICENSE.md](LICENSE.md) for more information.
 
 
-## Acknowledgements:
+## Acknowledgements
 Underlying random forest based approach for producing poverty estimates builds on work published by [Thinking Machines Data Science](https://github.com/thinkingmachines/ph-poverty-mapping).
