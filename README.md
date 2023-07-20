@@ -1,4 +1,4 @@
-Using random forests regressions (RFRs) and features derived from OpenStreetMap (OSM) and other geospatial data to produce estimates of development indicators such as poverty.
+Using random forests regressions (RFRs) and features derived from a range of geospatial datasets (nighttime lights, landcover, OpenStreetMap features, and more) to produce estimates of development indicators such as household wealth/poverty.
 
 Builds on work published by [Thinking Machines Data Science](https://github.com/thinkingmachines/ph-poverty-mapping).
 
@@ -21,17 +21,17 @@ This project requires downloaded data from [The DHS Program](https://dhsprogram.
   - Create new environment from env file:
     ```
     conda env create --file environment.yaml
-    conda activate osm-rf
+    conda activate ape-env
     ```
   - or from scratch (if you prefer):
     ```
-    conda create -n osm-rf python=3.9 -c conda-forge
-    conda activate osm-rf
+    conda create -n ape-env python=3.9 -c conda-forge
+    conda activate ape-env
     conda install -c conda-forge --file requirements.txt
     ```
   - to update your environment (if needed):
     ```
-    conda activate osm-rf
+    conda activate ape-env
     conda env update --file environment.yaml  --prune
     ```
   - to export/save your environment (if needed):
