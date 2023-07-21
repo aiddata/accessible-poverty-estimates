@@ -370,7 +370,7 @@ plt.legend(loc='upper left')
 plt.title('Distribution of Model R-squared by Gender')
 plt.ylabel('Count')
 plt.xlabel('Model R-squared')
-plot_path = os.path.join(base_path, "gender_scatter.png")
+plot_path = os.path.join(base_path, "gender_hist.png")
 plt.savefig(plot_path)
 plt.close()
 
@@ -500,16 +500,51 @@ for c in importance_cols:
     male_median = round(male_importance_df[c].dropna().median(), 3)
     female_median = round(female_importance_df[c].dropna().median(), 3)
     importance_comparison_dict[c] = {
+        "feature": c,
         "male": male_median,
         "female": female_median,
         "max": max([male_median, female_median]),
         "min": min([male_median, female_median]),
-        "diff": round(abs(male_median - female_median), 3)
+        "diff": round(male_median - female_median, 3)
     }
+
+feature_name_dict = {
+    'esa_landcover_categorical_urban_importance': 'Urban Landcover',
+    'latitude_importance': 'Latitude',
+    'udel_precip_v501_sum_sum_importance': 'Rainfall',
+    'modis_lst_mod11c3_006_day_annual_mean_mean_importance': 'Temperature',
+    'viirs_median_importance': 'Median NTL',
+    'viirs_max_importance': 'Max NTL',
+    'worldpop_pop_count_1km_mosaic_mean_importance': 'Population',
+    'accessibility_to_cities_2015_v1_0_mean_importance': 'Time to City',
+    'esa_landcover_categorical_cropland_importance': 'Cropland Landcover',
+    'all_buildings_ratio_importance': 'Building Coverage',
+    'ltdr_avhrr_ndvi_v5_yearly_mean_importance': 'Vegetation',
+}
 
 top_importance_comparison_dict = {k: v for k, v in importance_comparison_dict.items() if v["min"] > 0.04}
 sorted_top_importance_comparison_dict = sorted(top_importance_comparison_dict.items(), key=lambda x: x[1]["diff"], reverse=True)
 
 for k, v in sorted_top_importance_comparison_dict:
-    print(k, v)
+    print(v)
+
+top_imp_df = pd.DataFrame([i[1] for i in sorted_top_importance_comparison_dict])
+
+top_imp_df["feature"] = top_imp_df.feature.apply(lambda x: feature_name_dict[x] if x in feature_name_dict else x)
+
+ax_9 = top_imp_df.plot.scatter(x="feature", y="male", label="male", color="#E35D6A", figsize=(15,8))
+top_imp_df.plot.scatter(x="feature", y="female", label="female", ax=ax_9, color="#F8D458")
+
+
+plt.title('Top Feature Importance Differences')
+plt.ylabel('Importance')
+plt.xlabel('Feature')
+plt.xticks(rotation=30)
+plt.legend()
+
+plot_path = os.path.join(base_path, "gender_top_importance.png")
+plt.savefig(plot_path)
+plt.close()
+
+
 # ======================================================================================================================
