@@ -72,9 +72,9 @@ This project requires downloaded data from [The DHS Program](https://dhsprogram.
             - 2) Use the desired date of archived OSM data
     - **Alternative**: To manually download data for an individual country:
         - Navigate to country page on [Geofabrik](https://download.geofabrik.de)
-            - e.g., https://download.geofabrik.de/asia/philippines.html
+            - e.g., https://download.geofabrik.de/asia/ghana.html
         - Click the "raw directory index" link
-        - Download the OSM data (shp.zip file) with your desired timestamp (e.g., "philippines-210101-free.shp.zip")
+        - Download the OSM data (shp.zip file) with your desired timestamp (e.g., "ghana-210101-free.shp.zip")
         - Unzip the download in the `data/osm` directory of this repo
         - If using the default `osm_features.py` script in a later step, use `gen_spatialite.py` to convert OSM buildings/roads shapefiles to SpatiaLite databases
     - If you are considering using older snapshots of the OSM database to align with DHS round years, historical coverage of OSM may be limited and impede model performance. For most developing countries, the amount of true historical coverage lacking in older snapshots is likely to be far greater than the amount of actual building/road/etc development since the last DHS round. Neither is ideal, but we expect using more recent OSM data will be more realistic overall. Please consider your particular use case and use your judgement to determine what is best for your application.
