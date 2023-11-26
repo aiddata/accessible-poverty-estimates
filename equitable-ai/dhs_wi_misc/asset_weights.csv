@@ -1,0 +1,111 @@
+asset,weight
+Electricity,-0.05510791915874265
+Wall clock,-0.05077646818398263
+Radio,-0.031884432568708744
+Black/white television,0.0012063962168262163
+Color television,-0.06241993450763445
+Mobile telephone,-0.01875983996002016
+Telephone (non-mobile),-0.005032630859278389
+Refrigerator,-0.059987840714349275
+Freezer,-0.023312494799400247
+Electric generator/inverter,-0.007051847385509107
+Washing machine,-0.007731346197745416
+Computer/tablet computer,-0.04574319457691279
+Photo camera,-0.01769801924265641
+Video deck/DVD/VCD,-0.05118555302018885
+Sewing machine,0.0019088842611634754
+Bed,-0.02255156058799144
+Table,-0.0010348849132100768
+Cabinet/cupboard,-0.04432790047804497
+Access to internet in any device,-0.043366007034616114
+Watch,-0.040955844062021504
+Bicycle,0.030168333627821776
+Motorcycle/scooter,0.0020549459195712007
+Animal-drawn cart,0.002568855721203092
+Car/truck,-0.021059400685900967
+Boat with a motor,8.852298576458836e-05
+Bank account,-0.06088078034419776
+Owns land suitable for agriculture,0.05452367836032203
+Number of members per sleeping room,0.9668946159252558
+Source of drinking water: piped into dwelling,-0.01113932901625677
+Source of drinking water: piped into yard/plot,-0.007692315789058201
+Source of drinking water: public tap/standpipe,0.0167619739255026
+Source of drinking water: tube well or borehole,0.0443403985102379
+Source of drinking water: dug well protected,0.004492946292726738
+Source of drinking water: dug well unprotected,0.005185741211698181
+Source of drinking water: spring protected,-7.848375238787145e-05
+Source of drinking water: spring unprotected,0.0018823194683696813
+Source of drinking water: rainwater,-0.0008774561993287756
+Source of drinking water: tanker truck,-0.0005408845449942833
+Source of drinking water: river/dam/lake/ponds/stream/canal/channel,0.015636201662581596
+Source of drinking water: bottled water,-0.0035350872129219584
+Source of drinking water: sachet water,-0.06442009421416288
+Source of drinking water: other or cart with small tank,-1.5930342005966745e-05
+Type of toilet facility: flush to piped sewer system,-0.01980380144632955
+Type of toilet facility: flush to septic tank,-0.03443379291482291
+Type of toilet facility: flush to pit latrine,-0.0018917296707737662
+Type of toilet facility: flush to somewhere else,-0.000745991900225355
+Type of toilet facility: flush to don't know where,-0.0003446557895242264
+Type of toilet facility: ventilated improved pit latrine,-0.010344278739656503
+Type of toilet facility: pit latrine with slab,0.020070165542129776
+Type of toilet facility: pit latrine without slab/open pit,0.01007438924731689
+Type of toilet facility: bucket toilet,-0.00046252703240054076
+Type of toilet facility: hanging toilet/hanging latrine,0.0007194376045961661
+Type of toilet facility: no facility/bush/field,0.037195555066679445
+Type of toilet facility: flush to piped sewer system shared,-0.00775820353554045
+Type of toilet facility: flush to septic tank shared,-0.017252879093752903
+Type of toilet facility: flush to pit latrine shared,-0.0009900599873429972
+Type of toilet facility: flush to somewhere else shared,-0.00039846690015569785
+Type of toilet facility: flush to don't know where shared,-0.0002527787120265457
+Type of toilet facility: ventilated improved pit latrine shared,-0.006687194812706774
+Type of toilet facility: pit latrine with slab shared,0.018948970017517188
+Type of toilet facility: pit latrine without slab/open pit shared,0.008311142692999929
+Type of toilet facility: bucket toilet shared,-0.00032563415651981083
+Type of toilet facility: hanging toilet/hanging latrine shared,0.000699067221666324
+Type of cooking fuel: electricity,-0.0037506584932060997
+Type of cooking fuel: LPG,-0.06934924804046862
+Type of cooking fuel: natural gas,-0.0002589367424260346
+Type of cooking fuel: kerosene,-0.000259120425305934
+Type of cooking fuel: coal/lignite,-9.231588567123305e-05
+Type of cooking fuel: charcoal,0.0030645165095036122
+Type of cooking fuel: wood,0.09148636626456944
+Type of cooking fuel: straw/shrubs/grass,0.0011784687297315916
+Type of cooking fuel: agricultural crop,0.00030102359810979133
+Type of cooking fuel: no food cooked in house,-0.022320095514836522
+Main floor material: earth/sand,0.015406815929966518
+Main floor material: dung,0.002080366792214409
+Main floor material: wood planks,-0.0004061017239573696
+Main floor material: parquet/polished wood,-0.0005175095828304757
+Main floor material: ceramic/marble/porcelain tiles/terrazo,-0.024133986873212082
+Main floor material: cement,0.035742943092114475
+Main floor material: woolen carpets/synthetic carpet,-0.01947343274910721
+Main floor material: linoleum/rubber carpet,-0.008535027526446123
+Main floor material: other,-5.523601394183539e-05
+Main roof material: no roof,-4.765969480548156e-05
+Main roof material: thatch/palm leaf,0.013533547996816633
+Main roof material: rustic mat,0.0007902333376049025
+Main roof material: palm/bamboo,0.0029439302279161157
+Main roof material: wood planks,0.00015063274245168197
+Main roof material: metal,0.002411809671099266
+Main roof material: wood,-0.00011370614090840768
+Main roof material: calamine/cement fiber,-0.00037689854495321024
+Main roof material: ceramic tiles,0.0004069619346734677
+Main roof material: cement,-0.003420533124078537
+Main roof material: roofing shingles,0.001763220468759689
+Main roof material: asbestos/slate roofing sheets,-0.017772431782016138
+Main roof material: other,-0.0001612716922918827
+Main wall material: no walls,0.001062298147561068
+Main wall material: cane/palm/trunks,0.0012115618125131448
+Main wall material: dirt,0.015174931563466915
+Main wall material: bamboo with mud,0.012313048162217077
+Main wall material: stone with mud,0.014262308256808387
+Main wall material: uncovered adobe,0.0039056098324653475
+Main wall material: plywood,-0.001332455591666749
+Main wall material: reused wood,-0.00010300284059437542
+Main wall material: cement,-0.04420190396922123
+Main wall material: stone with lime/cement,0.0005230245738511368
+Main wall material: bricks,0.006955076126162875
+Main wall material: cement blocks,-0.012393973183067978
+Main wall material: covered adobe,0.002110457280509175
+Main wall material: wood planks/shingles,-0.00014391167136578023
+Main wall material: other,0.0007223217903637856

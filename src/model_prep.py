@@ -9,6 +9,7 @@ Run models based on OSM features and additional geospatial data
 
 """
 
+import sys
 import os
 import configparser
 import json
@@ -22,11 +23,18 @@ from prefect.executors import DaskExecutor, LocalExecutor, LocalDaskExecutor
 from utils import run_flow
 
 
-if 'config.ini' not in os.listdir():
-    raise FileNotFoundError("config.ini file not found. Make sure you run this from the root directory of the repo.")
+if len(sys.argv) > 1:
+    config_file = sys.argv[1]
+else:
+    config_file = "config.ini"
 
-config = configparser.ConfigParser()
-config.read('config.ini')
+if config_file not in os.listdir():
+    raise FileNotFoundError(
+        f"{config_file} file not found. Make sure you run this from the root directory of the repo and file exists."
+    )
+
+config = configparser.ConfigParser(interpolation=configparser.ExtendedInterpolation())
+config.read(config_file)
 
 project = config["main"]["project"]
 project_dir = config["main"]["project_dir"]

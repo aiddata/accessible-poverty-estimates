@@ -19,9 +19,8 @@ from sklearn import preprocessing
 from scipy.stats import spearmanr
 from scipy.stats import pearsonr
 from scipy.stats import percentileofscore
-from sklearn.metrics import r2_score
-from sklearn.metrics import mean_squared_error
-from sklearn.metrics import mean_absolute_error
+from sklearn.metrics import r2_score, mean_squared_error, mean_absolute_error, mean_absolute_percentage_error
+
 
 
 TM_pal_categorical_3 = ("#ef4631", "#10b9ce", "#ff9138")
@@ -97,6 +96,25 @@ def rmse(estimator, X, y_true):
     y_pred = estimator.predict(X)
     return np.sqrt(mean_squared_error(y_true, y_pred))
 
+def mape(estimator, X, y_true):
+    """Calculates mean absolute percentage error
+
+    Parameters
+    ----------
+    estimator
+        The model or regressor to be evaluated
+    X : pandas dataframe or a 2-D matrix
+        The feature matrix
+    y : list of pandas series
+        The target vector
+
+    Returns
+    ----------
+    float
+        Mean absolute percentage error
+    """
+    y_pred = estimator.predict(X)
+    return mean_absolute_percentage_error(y_true, y_pred)
 
 def r2(estimator, X, y_true):
     """Calculates r-squared score using python's r2_score function

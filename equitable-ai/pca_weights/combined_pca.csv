@@ -1,0 +1,110 @@
+name,pca_weight,rank,pca_weight_male,rank_male,pca_weight_female,rank_female
+Color television,0.2484,1,0.2471,1,0.2522,1
+Type of cooking fuel: wood,0.2359,2,0.2385,2,0.2252,3
+Refrigerator,0.2315,3,0.2279,3,0.2369,2
+Electricity,0.2185,4,0.2235,4,0.2009,7
+Video deck/DVD/VCD,0.2132,5,0.2144,5,0.2148,5
+Type of cooking fuel: LPG,0.2079,6,0.2036,6,0.2149,4
+Bank account,0.2027,7,0.2014,7,0.2094,6
+Cabinet/cupboard,0.19,8,0.1866,8,0.1955,10
+Wall clock,0.1897,9,0.1856,9,0.1989,8
+Source of drinking water: sachet water,0.1743,10,0.1719,12,0.1782,11
+Watch,0.1742,11,0.1638,14,0.1972,9
+Computer/tablet computer,0.1721,12,0.1734,11,0.1662,13
+Type of toilet facility: no facility/bush/field,0.17,13,0.1769,10,0.1468,18
+Main wall material: cement,0.1608,14,0.1677,13,0.1405,21
+Access to internet in any device,0.1591,15,0.1586,16,0.1575,14
+Bed,0.1551,16,0.1527,17,0.1571,15
+land,0.1544,17,0.1603,15,0.1397,22
+Mobile telephone,0.1522,18,0.1436,19,0.1772,12
+Source of drinking water: tube well or borehole,0.1466,19,0.1496,18,0.134,23
+Type of toilet facility: flush to septic tank,0.1426,20,0.1397,21,0.1487,16
+Freezer,0.1387,21,0.1361,22,0.1422,20
+Car/truck,0.1371,22,0.1424,20,0.121,25
+Main floor material: ceramic/marble/porcelain tiles/terrazo,0.1296,23,0.123,23,0.1448,19
+Photo camera,0.1219,24,0.1225,24,0.1166,26
+Type of toilet facility: flush to piped sewer system,0.1159,25,0.1117,28,0.1244,24
+Table,0.1155,26,0.114,26,0.116,27
+Main roof material: thatch/palm leaf,0.1142,27,0.1197,25,0.0926,34
+Radio,0.1108,28,0.0995,30,0.1477,17
+Main wall material: dirt,0.1099,29,0.1133,27,0.0956,33
+Main floor material: earth/sand,0.1014,30,0.1013,29,0.097,32
+Main wall material: stone with mud,0.0993,31,0.0987,31,0.0974,31
+Source of drinking water: river/dam/lake/ponds/stream/canal/channel,0.0957,32,0.0974,32,0.0877,36
+Type of toilet facility: flush to septic tank shared,0.0948,33,0.0929,34,0.1,30
+Washing machine,0.092,34,0.0866,37,0.1046,29
+Main floor material: woolen carpets/synthetic carpet,0.0908,35,0.0913,35,0.0879,35
+Main floor material: cement,0.0859,36,0.0777,38,0.1079,28
+Source of drinking water: piped into dwelling,0.0849,37,0.0875,36,0.0749,38
+Type of cooking fuel: charcoal,0.0716,38,0.0765,39,0.0606,48
+Bicycle,0.0714,39,0.094,33,0.0009,108
+Main wall material: bamboo with mud,0.0697,40,0.0685,41,0.0695,40
+Type of toilet facility: flush to piped sewer system shared,0.0679,41,0.0641,46,0.0766,37
+Telephone (non-mobile),0.0673,42,0.0646,45,0.0724,39
+Source of drinking water: piped into yard/plot,0.0663,43,0.0675,43,0.0635,45
+Electric generator/inverter,0.0625,44,0.0606,48,0.0691,41
+Main roof material: asbestos/slate roofing sheets,0.0608,45,0.0662,44,0.0453,55
+Main floor material: dung,0.0586,46,0.0609,47,0.0489,54
+Main floor material: linoleum/rubber carpet,0.0572,47,0.0554,51,0.0621,47
+Type of toilet facility: pit latrine with slab,0.0571,48,0.053,52,0.0649,44
+Sewing machine,0.0563,49,0.0521,53,0.0655,43
+Type of toilet facility: ventilated improved pit latrine,0.0559,50,0.0716,40,0.0167,76
+Main wall material: cement blocks,0.0517,51,0.0602,49,0.0324,60
+Type of toilet facility: ventilated improved pit latrine shared,0.0512,52,0.0679,42,0.01,83
+Main wall material: uncovered adobe,0.051,53,0.0558,50,0.0314,61
+Type of toilet facility: pit latrine with slab shared,0.0502,54,0.0441,60,0.0629,46
+memsleep,0.0502,55,0.043,61,0.068,42
+Source of drinking water: dug well unprotected,0.0495,56,0.0488,54,0.0493,53
+Main wall material: bricks,0.0491,57,0.0476,55,0.0519,50
+Type of toilet facility: pit latrine without slab/open pit,0.0475,58,0.0452,56,0.0521,49
+Main roof material: cement,0.0454,59,0.0448,57,0.0449,56
+Source of drinking water: bottled water,0.0443,60,0.0412,62,0.0508,51
+Type of cooking fuel: electricity,0.0404,61,0.0441,59,0.0215,71
+Type of toilet facility: flush to pit latrine,0.0399,62,0.0447,58,0.0286,64
+Type of toilet facility: pit latrine without slab/open pit shared,0.0363,63,0.0304,69,0.05,52
+Main wall material: covered adobe,0.0359,64,0.0396,63,0.0223,70
+Type of toilet facility: flush to pit latrine shared,0.0344,65,0.0393,64,0.023,69
+Main roof material: palm/bamboo,0.0336,66,0.0339,66,0.0302,62
+Type of cooking fuel: straw/shrubs/grass,0.0335,67,0.0328,67,0.0331,59
+Main wall material: other,0.0292,68,0.0317,68,0.0207,74
+house,0.0278,69,0.0381,65,0.0039,97
+Main roof material: ceramic tiles,0.0254,70,0.025,71,0.0249,67
+Animal-drawn cart,0.0225,71,0.0255,70,0.0106,81
+Type of toilet facility: flush to somewhere else,0.022,72,0.0198,73,0.0275,66
+Main roof material: rustic mat,0.0206,73,0.0175,76,0.0275,65
+Source of drinking water: spring unprotected,0.0204,74,0.0202,72,0.021,73
+Type of cooking fuel: agricultural crop,0.0199,75,0.0177,75,0.024,68
+Main wall material: cane/palm/trunks,0.0197,76,0.0143,80,0.0302,63
+Type of toilet facility: flush to somewhere else shared,0.0168,77,0.0149,79,0.0212,72
+Main roof material: calamine/cement fiber,0.0157,78,0.0188,74,0.0053,93
+Type of toilet facility: flush to don't know where,0.014,79,0.0149,78,0.0123,79
+Main wall material: stone with lime/cement,0.0132,80,0.0115,85,0.0176,75
+Type of toilet facility: flush to don't know where shared,0.0124,81,0.0138,82,0.0095,84
+Type of cooking fuel: no food cooked in house,0.0117,82,0.0153,77,0.0032,101
+Main wall material: plywood,0.0092,83,0.0142,81,0.004,96
+Source of drinking water: tanker truck,0.0091,84,0.0113,86,0.0017,105
+Type of toilet facility: bucket toilet shared,0.009,85,0.0131,83,0.0008,109
+Type of cooking fuel: kerosene,0.0088,86,0.0077,89,0.0111,80
+Type of toilet facility: bucket toilet,0.0087,87,0.0131,84,0.0013,107
+Source of drinking water: dug well protected,0.0085,88,0.0051,93,0.0153,77
+Motorcycle/scooter,0.0077,89,0.0032,98,0.0341,58
+Main roof material: roofing shingles,0.0073,90,0.0085,88,0.0044,94
+Type of toilet facility: hanging toilet/hanging latrine,0.0068,91,0.0064,91,0.0079,87
+Source of drinking water: rainwater,0.0068,92,0.0027,100,0.014,78
+Type of cooking fuel: natural gas,0.0057,93,0.0036,97,0.0102,82
+Type of toilet facility: hanging toilet/hanging latrine shared,0.0049,95,0.0045,94,0.0062,90
+Main roof material: wood,0.0049,96,0.0042,95,0.0058,92
+Source of drinking water: public tap/standpipe,0.0048,97,0.0091,87,0.0378,57
+Main roof material: no roof,0.004,98,0.0027,101,0.0071,89
+Main floor material: wood planks,0.0037,99,0.0067,90,0.0037,100
+Main roof material: wood planks,0.003,100,0.0006,109,0.0094,85
+Source of drinking water: other or cart with small tank,0.0021,101,0.0015,105,0.0038,99
+Main wall material: no walls,0.0019,102,0.0003,110,0.0079,88
+Type of cooking fuel: coal/lignite,0.0018,103,0.0019,102,0.0019,104
+Main roof material: metal,0.0015,104,0.0016,104,0.0093,86
+Source of drinking water: spring protected,0.0015,105,0.0037,96,0.0038,98
+Boat with a motor,0.0015,106,0.0031,99,0.0059,91
+Main wall material: reused wood,0.0013,107,0.0,111,0.0042,95
+Main wall material: wood planks/shingles,0.0005,109,0.0017,103,0.002,103
+Black/white television,0.0005,110,0.0008,108,0.0015,106
+Main floor material: parquet/polished wood,0.0003,111,0.0012,107,0.0027,102
