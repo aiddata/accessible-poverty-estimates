@@ -14,7 +14,7 @@ import pandas as pd
 if len(sys.argv) > 1:
     config_file = sys.argv[1]
 else:
-    config_file = "config.ini"
+    config_file = "eqai_config.ini"
 
 if config_file not in os.listdir():
     raise FileNotFoundError(
@@ -32,7 +32,7 @@ dhs_name = "GH_2014_DHS"
 dhs_hh_file_name = "GHHR72FL"
 
 
-dry_run = True
+dry_run = False
 
 # ---------------------------------------------------------
 
@@ -77,9 +77,11 @@ class GenderClassData():
         self.parent = str(dhs_path.parent)
         self.stem = str(dhs_path.stem)
         self.template = self.parent + '/' + self.stem + '_{id}_{gender}_{level}.{ext}'
+        self.all_df = pd.DataFrame()
+        self.all_cluster = pd.DataFrame()
         self.male_df = pd.DataFrame()
-        self.female_df = pd.DataFrame()
         self.male_cluster = pd.DataFrame()
+        self.female_df = pd.DataFrame()
         self.female_cluster = pd.DataFrame()
         self.dry_run = dry_run
 
@@ -99,6 +101,9 @@ class GenderClassData():
     def set_female(self, df):
         self.female_df = df
 
+    def set_all(self, df):
+        self.all_df = df
+
     def agg_to_cluster(self, df):
         # agg data to clusters
         # provide stats on gendered subsets by household and cluster level?
@@ -117,6 +122,8 @@ class GenderClassData():
             self.male_cluster = self.agg_to_cluster(self.male_df)
         if "female" in genders:
             self.female_cluster = self.agg_to_cluster(self.female_df)
+        if "all" in genders:
+            self.all_cluster = self.agg_to_cluster(self.all_df)
 
     def describe(self, verify_exists=True):
         if verify_exists and not self.all_exist():
@@ -127,6 +134,7 @@ class GenderClassData():
 
         {len(self.male_df)} male households aggregated to {len(self.male_cluster)} clusters
         {len(self.female_df)} female households aggregated to {len(self.female_cluster)} clusters
+        {len(self.all_df)} all households aggregated to {len(self.all_cluster)} clusters
 
         """
         print(description)
@@ -147,9 +155,14 @@ class GenderClassData():
         if gender == "male":
             df = self.male_df
             cluster = self.male_cluster
-        else:
+        elif gender == "female":
             df = self.female_df
             cluster = self.female_cluster
+        elif gender == "all":
+            df = self.all_df
+            cluster = self.all_cluster
+        else:
+            raise ValueError(f"Invalid gender value provided:{gender}")
 
         stata_path = self.template.format(id=self.id, gender=gender, level='hh', ext='DTA')
         csv_path = self.template.format(id=self.id, gender=gender, level='hh', ext='csv')
@@ -192,6 +205,14 @@ class GenderClassData():
 
 # ---------------------------------------------------------
 
+run_num_str = 5
+
+suffix_str = f"-alt-{str(run_num_str).zfill(2)}"
+
+# suffix_str = ""
+
+# ---------------------------------------------------------
+
 small_cluster_df_list = []
 
 for cid in dhs_df.hv001.unique():
@@ -202,9 +223,9 @@ for cid in dhs_df.hv001.unique():
 small_df = pd.concat(small_cluster_df_list)
 
 
-GCD0small = GenderClassData('small', dhs_path, dhs_name, dry_run=dry_run)
-GCD0small.set_female(small_df)
-GCD0small.cluster(genders=["female"])
+GCD0small = GenderClassData(f'small{suffix_str}', dhs_path, dhs_name, dry_run=dry_run)
+GCD0small.set_all(small_df)
+GCD0small.cluster(genders=["all"])
 GCD0small.describe(verify_exists=False)
 GCD0small.export(genders=["all"], verify_exists=False)
 
@@ -219,31 +240,13 @@ for cid in dhs_df.hv001.unique():
 medium_df = pd.concat(medium_cluster_df_list)
 
 
-GCD0medium = GenderClassData('medium', dhs_path, dhs_name, dry_run=dry_run)
-GCD0medium.set_female(medium_df)
-GCD0medium.cluster(genders=["female"])
+GCD0medium = GenderClassData(f'medium{suffix_str}', dhs_path, dhs_name, dry_run=dry_run)
+GCD0medium.set_all(medium_df)
+GCD0medium.cluster(genders=["all"])
 GCD0medium.describe(verify_exists=False)
 GCD0medium.export(genders=["all"], verify_exists=False)
 
 # ---------------------------------------------------------
-
-# split by head of household
-#   - classify household according to gender of head of household
-#   - identifier: hoh (short for: Head Of Household)
-#   - question hv219 - Head of household sex (1 male, 2 female)
-
-print(dhs_df['hv219'].value_counts())
-
-hoh_male_df = dhs_df.loc[dhs_df['hv219'] == 1].copy()
-hoh_female_df = dhs_df.loc[dhs_df['hv219'] == 2].copy()
-# hoh_weighted_df = dhs_df.loc[dhs_df['hv219'] == ???]
-
-GCD1 = GenderClassData('hoh', dhs_path, dhs_name, dry_run=dry_run)
-GCD1.set_male(hoh_male_df)
-GCD1.set_female(hoh_female_df)
-GCD1.cluster()
-GCD1.describe()
-GCD1.export()
 
 
 # split by head of household with each cluster adjusted so that
@@ -281,13 +284,36 @@ Median total count of cluster households: {np.median([i['total'] for i in hoheq_
 hoheq_male_df = pd.concat(hoheq_male_cluster_df_list)
 hoheq_female_df = pd.concat(hoheq_female_cluster_df_list)
 
-GCD1eq = GenderClassData('hoheq', dhs_path, dhs_name, dry_run=dry_run)
+GCD1eq = GenderClassData(f'hoheq{suffix_str}', dhs_path, dhs_name, dry_run=dry_run)
 GCD1eq.set_male(hoheq_male_df)
 GCD1eq.set_female(hoheq_female_df)
 GCD1eq.cluster()
 GCD1eq.describe()
 GCD1eq.export()
 
+# ---------------------------------------------------------
+
+exit()
+
+# ---------------------------------------------------------
+
+# split by head of household
+#   - classify household according to gender of head of household
+#   - identifier: hoh (short for: Head Of Household)
+#   - question hv219 - Head of household sex (1 male, 2 female)
+
+print(dhs_df['hv219'].value_counts())
+
+hoh_male_df = dhs_df.loc[dhs_df['hv219'] == 1].copy()
+hoh_female_df = dhs_df.loc[dhs_df['hv219'] == 2].copy()
+# hoh_weighted_df = dhs_df.loc[dhs_df['hv219'] == ???]
+
+GCD1 = GenderClassData('hoh', dhs_path, dhs_name, dry_run=dry_run)
+GCD1.set_male(hoh_male_df)
+GCD1.set_female(hoh_female_df)
+GCD1.cluster()
+GCD1.describe()
+GCD1.export()
 
 # ---------------------------------------------------------
 
