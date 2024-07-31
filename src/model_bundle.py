@@ -30,7 +30,7 @@ if __name__ == "__main__":
     if len(sys.argv) > 1:
         config_file = sys.argv[1]
     else:
-        config_file = "config.ini"
+        config_file = "eqai_config.ini"
 
     if config_file not in os.listdir():
         raise FileNotFoundError(

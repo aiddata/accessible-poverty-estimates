@@ -371,7 +371,7 @@ if __name__ == "__main__":
         )
 
     config = ConfigParser(interpolation=ExtendedInterpolation())
-    config.read("config.ini")
+    config.read(config_file)
 
     # ProjectRunner(config).run_all_models()
     ProjectRunner(config).run_sub()

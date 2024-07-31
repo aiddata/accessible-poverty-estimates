@@ -245,6 +245,15 @@ def evaluate_model(
                     show=show
                 )
                 mlflow.log_artifact(output_file + f"rf_feature_importance_{index}.png")
+
+                rf_permutation_importance(
+                    cv, X, y, size=figsize,
+                    output_file=output_file + f"rf_permutation_importance_{index}.png",
+                    show=show
+                )
+                mlflow.log_artifact(output_file + f"rf_permutation_importance_{index}.png")
+
+
             elif model_type == "xgboost":
                 xgb_feature_importance(
                     cv, X, y, size=figsize,
@@ -627,6 +636,48 @@ def rf_feature_importance(
         plt.show(block=False)
 
 
+def rf_permutation_importance(
+    cv, X, y, n_features=20, size=(10, 15),
+    output_file=None,
+    show=False
+):
+    """ Plots the feature importances for random forest regressor.
+
+    Parameters
+    ----------
+    cv :
+    X : pandas DataFrame, numpy array, or 2D list
+        Contains the feature matrix for training
+    y : pandas Series or list
+        Contains the target vector to predict
+    n_features : int
+        Number of features to plot
+    size : tuple
+        Size of the figure
+    """
+    model = cv.best_estimator_.named_steps["regressor"]
+    results = permutation_importance(model, X, y, n_repeats=10)
+    raw_scores = results.importances
+    median_score = np.median(raw_scores, axis=1)
+    df = pd.DataFrame(index=X.columns, data=median_score, columns=["Permutation Importance"])
+
+    plt.figure()
+
+    df.sort_values(
+        by="Permutation Importance", ascending=False
+    ).iloc[
+        :n_features
+    ].plot(
+        kind="barh", figsize=size
+    )
+    plt.grid()
+    plt.gca().invert_yaxis()
+    if output_file:
+        plt.savefig(fname=output_file, bbox_inches="tight")
+    if show:
+        plt.show(block=False)
+
+
 def xgb_feature_importance(
     cv, X, y, n_features=30, size=(10, 15)
 ):
@@ -686,7 +737,7 @@ def rf_permutation_importance_dataframe(cv, X, y):
     y : pandas Series or list
         Contains the target vector to predict
     """
-    results = permutation_importance(cv.best_estiator_names_steps, X, y)
+    results = permutation_importance(cv.best_estimator_.named_steps, X, y)
     raw_scores = results.importances
     df = pd.DataFrame(index=X.columns, data=raw_scores, columns='Raw Permutation Importance')
     return df
