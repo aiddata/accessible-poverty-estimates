@@ -1,3 +1,6 @@
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.15263394.svg)](https://doi.org/10.5281/zenodo.15263394)
+
+
 # Accessible Poverty Estimates
 
 We utilize random forests regressions (RFRs) and features derived from a range of geospatial datasets (nighttime lights, landcover, OpenStreetMap features, and more) to produce estimates of development indicators such as household wealth/poverty. The core random forest code builds on work published by [Thinking Machines Data Science](https://github.com/thinkingmachines/ph-poverty-mapping), and has been extended to streamline model development across use cases. While our examples focus on the use of Demographic and Health Survey (DHS) data for wealth metrics used to train models, it can be extended to work with other sources of data as well.
