@@ -1,0 +1,20 @@
+
+r2 scores for each trained model using each dataset:
+- all = clusters with all households included
+- m = clustering to include only male head of household
+- f = clustering to include only female head of household
+
+
+all_on_all:	 0.973
+all_on_m:	 0.956
+all_on_f:	 0.913
+
+
+m_on_all:	 0.969
+m_on_m:		 0.974
+m_on_f:		 0.881
+
+
+f_on_all:	 0.897
+f_on_m:		 0.829
+f_on_f:		 0.958

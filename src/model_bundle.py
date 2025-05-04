@@ -1,3 +1,4 @@
+import sys
 import os
 from pathlib import Path
 from configparser import ConfigParser, ExtendedInterpolation
@@ -23,9 +24,21 @@ def run_model(model_func, config):
     # run the given model_func in our ProjectRunner
     getattr(PR, model_func)()
 
+
 if __name__ == "__main__":
+
+    if len(sys.argv) > 1:
+        config_file = sys.argv[1]
+    else:
+        config_file = "eqai_config.ini"
+
+    if config_file not in os.listdir():
+        raise FileNotFoundError(
+            f"{config_file} file not found. Make sure you run this from the root directory of the repo and file exists."
+        )
+
     config = ConfigParser(interpolation=ExtendedInterpolation())
-    config.read("config.ini")
+    config.read(config_file)
 
     model_funcs =  parse_list(config["main"]["model_funcs"])
 
@@ -68,8 +81,9 @@ if __name__ == "__main__":
 
     project_list = parse_list(config["main"]["projects_to_run"])
 
-    for p in project_list:
-        if config.has_option(p, "sub_projects"):
-            project_list.extend(parse_list(config[p]["sub_projects"]))
+    if config.getboolean("main", "run_sub_projects"):
+        for p in project_list:
+            if config.has_option(p, "sub_projects"):
+                project_list.extend(parse_list(config[p]["sub_projects"]))
 
     run_all_projects(config, project_list)

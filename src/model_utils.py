@@ -183,14 +183,15 @@ def evaluate_model(
             )
             # mlflow.log_param(score, nested_scores[score].mean())
             # mlflow.log_param(f'{score}_list', nested_scores[score])
+            mlflow.log_metric(f"mean_{score}", nested_scores[score].mean())
 
             print(nested_scores[score])
             if score == 'test_r2':
                 r_squared = nested_scores[score].mean()
 
-        formatted_indicator = ' '.join([x for x in indicator.split() if '(' not in x]).title()
-        if wandb is not None:
-            wandb.log({'{} R-squared'.format(formatted_indicator): r_squared})
+        # formatted_indicator = ' '.join([x for x in indicator.split() if '(' not in x]).title()
+        # if wandb is not None:
+        #     wandb.log({'{} R-squared'.format(formatted_indicator): r_squared})
 
         # Plot results
         # if plot:
@@ -215,6 +216,8 @@ def evaluate_model(
         for z in range(len(X.columns)):
             mlflow.log_metric(f"{X.columns[z]}_importance",
                               cv.best_estimator_.named_steps["regressor"].feature_importances_[z])
+
+
 
         # if mlflow.active_run() is not None:
         #     mlflow.sklearn.log_model(cv.best_estimator_,
@@ -242,6 +245,15 @@ def evaluate_model(
                     show=show
                 )
                 mlflow.log_artifact(output_file + f"rf_feature_importance_{index}.png")
+
+                rf_permutation_importance(
+                    cv, X, y, size=figsize,
+                    output_file=output_file + f"rf_permutation_importance_{index}.png",
+                    show=show
+                )
+                mlflow.log_artifact(output_file + f"rf_permutation_importance_{index}.png")
+
+
             elif model_type == "xgboost":
                 xgb_feature_importance(
                     cv, X, y, size=figsize,
@@ -289,53 +301,30 @@ def get_param_grid(model_type='ridge'):
             # "regressor__min_samples_split": stats.randint(2, 10),
             # "regressor__min_samples_leaf": stats.randint(1, 10),
             # "regressor__bootstrap": [True, False],
-            # "regressor__n_estimators": [256,300],
-            # "regressor__max_features": ["sqrt"],
-            # "regressor__max_depth": [20],
-            # "regressor__min_samples_split": [4,6],
-            # "regressor__min_samples_leaf": [2,4],
-            # # "regressor__bootstrap": [True]
 
             # "regressor__criterion": ["squared_error"],
-            # "regressor__n_estimators": [500],
-            # "regressor__max_features": [0.33],
-            # "regressor__max_depth": [20],
-            # "regressor__min_samples_split": [2],
-            # "regressor__min_samples_leaf": [1],
+            # "regressor__n_estimators": [100, 500, 1000, 2000],
+            # "regressor__max_features": [0.33, "sqrt"],
+            # "regressor__max_depth": [5, 10, 25],
+            # "regressor__min_samples_split": [2, 8, 16],
+            # "regressor__min_samples_leaf": [1, 4, 8],
             # "regressor__bootstrap": [True]
 
+            # "regressor__criterion": ["squared_error"],
+            # "regressor__n_estimators": [500, 1000],
+            # "regressor__max_features": [0.33],
+            # "regressor__max_depth": [10, 25],
+            # "regressor__min_samples_split": [2, 4],
+            # "regressor__min_samples_leaf": [1, 2],
+            # "regressor__bootstrap": [True]
 
             "regressor__criterion": ["squared_error"],
-            "regressor__n_estimators": [500, 100],
+            "regressor__n_estimators": [500],
             "regressor__max_features": [0.33],
-            "regressor__max_depth": [20, 10],
+            "regressor__max_depth": [10],
             "regressor__min_samples_split": [2],
             "regressor__min_samples_leaf": [1],
             "regressor__bootstrap": [True]
-
-            # "regressor__criterion": ["squared_error"],
-            # "regressor__n_estimators": [1, 10],
-            # "regressor__max_features": [0.33],
-            # "regressor__max_depth": [2],
-            # "regressor__min_samples_split": [10],
-            # "regressor__min_samples_leaf": [10],
-            # "regressor__bootstrap": [True]
-
-            # "regressor__criterion": ["squared_error"],
-            # "regressor__n_estimators": [300, 500, 1000],
-            # "regressor__max_features": [ "sqrt",0.33, 0.5, 1.0],
-            # "regressor__max_depth": [7, 10, 15, 20],
-            # "regressor__min_samples_split": [2, 3, 5],
-            # "regressor__min_samples_leaf": [1, 2, 4],
-            # # "regressor__bootstrap": [True]
-
-            # "regressor__criterion": ["squared_error"],
-            # "regressor__n_estimators": [300, 500],
-            # "regressor__max_features": ["sqrt", 0.33, 0.4, 0.5],
-            # "regressor__max_depth": [7, 10, 15, 20],
-            # "regressor__min_samples_split": [2, 3, 5, 10],
-            # "regressor__min_samples_leaf": [1, 2, 4],
-            # "regressor__bootstrap": [True]
         }
     elif model_type == "xgboost":
         param_grid = {
@@ -647,6 +636,48 @@ def rf_feature_importance(
         plt.show(block=False)
 
 
+def rf_permutation_importance(
+    cv, X, y, n_features=20, size=(10, 15),
+    output_file=None,
+    show=False
+):
+    """ Plots the feature importances for random forest regressor.
+
+    Parameters
+    ----------
+    cv :
+    X : pandas DataFrame, numpy array, or 2D list
+        Contains the feature matrix for training
+    y : pandas Series or list
+        Contains the target vector to predict
+    n_features : int
+        Number of features to plot
+    size : tuple
+        Size of the figure
+    """
+    model = cv.best_estimator_.named_steps["regressor"]
+    results = permutation_importance(model, X, y, n_repeats=10)
+    raw_scores = results.importances
+    median_score = np.median(raw_scores, axis=1)
+    df = pd.DataFrame(index=X.columns, data=median_score, columns=["Permutation Importance"])
+
+    plt.figure()
+
+    df.sort_values(
+        by="Permutation Importance", ascending=False
+    ).iloc[
+        :n_features
+    ].plot(
+        kind="barh", figsize=size
+    )
+    plt.grid()
+    plt.gca().invert_yaxis()
+    if output_file:
+        plt.savefig(fname=output_file, bbox_inches="tight")
+    if show:
+        plt.show(block=False)
+
+
 def xgb_feature_importance(
     cv, X, y, n_features=30, size=(10, 15)
 ):
@@ -706,7 +737,7 @@ def rf_permutation_importance_dataframe(cv, X, y):
     y : pandas Series or list
         Contains the target vector to predict
     """
-    results = permutation_importance(cv.best_estiator_names_steps, X, y)
+    results = permutation_importance(cv.best_estimator_.named_steps, X, y)
     raw_scores = results.importances
     df = pd.DataFrame(index=X.columns, data=raw_scores, columns='Raw Permutation Importance')
     return df

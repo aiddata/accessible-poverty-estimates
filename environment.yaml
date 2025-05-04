@@ -1,4 +1,4 @@
-name: osm-rf
+name: ape-env
 channels:
   - conda-forge
   - defaults

@@ -38,7 +38,7 @@ class ProjectRunner:
         self.output_name = config[self.project]["output_name"]
 
         # Scoring metrics
-        self.scoring = {"r2": data_utils.pearsonr2, "rmse": data_utils.rmse}
+        self.scoring = {"r2": data_utils.pearsonr2, "rmse": data_utils.rmse, "mape": data_utils.mape}
 
         self.search_type = "grid"
 
@@ -360,12 +360,18 @@ class ProjectRunner:
 
 if __name__ == "__main__":
 
-    if "config.ini" not in os.listdir():
+    if len(sys.argv) > 1:
+        config_file = sys.argv[1]
+    else:
+        config_file = "config.ini"
+
+    if config_file not in os.listdir():
         raise FileNotFoundError(
-            "config.ini file not found. Make sure you run this from the root directory of the repo."
+            f"{config_file} file not found. Make sure you run this from the root directory of the repo and file exists."
         )
 
     config = ConfigParser(interpolation=ExtendedInterpolation())
-    config.read("config.ini")
+    config.read(config_file)
+
     # ProjectRunner(config).run_all_models()
     ProjectRunner(config).run_sub()
